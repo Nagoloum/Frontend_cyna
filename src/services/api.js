@@ -43,26 +43,6 @@ api.interceptors.response.use(
 // Fonctions API
 // ========================
 
-export const getTodos = async () => {
-  const response = await api.get('/todos');
-  return response.data; // ← On retourne directement les données
-};
-
-export const createTodo = async (todoData) => {
-  const response = await api.post('/todos', todoData);
-  return response.data; // ← Todo créé avec _id, etc.
-};
-
-export const updateTodo = async (id, updates) => {
-  const response = await api.put(`/todos/${id}`, updates);
-  return response.data; // ← Todo mis à jour
-};
-
-export const deleteTodo = async (id) => {
-  const response = await api.delete(`/todos/${id}`);
-  return response.data; // ← { message, todos } d'après ton controller
-};
-
 // Bonus : fonction pour login (si tu en as besoin plus tard)
 export const login = async (credentials) => {
   const response = await api.post('/auth/login', credentials);
