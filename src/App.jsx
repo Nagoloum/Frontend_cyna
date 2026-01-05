@@ -12,7 +12,7 @@ import PrivacyPolicyComponent from './components/PrivacyPolicyComponent';
 import ErrorPage from './pages/ErrorPage';
 
 // Pages privées
-import HomePage from './pages/Home';
+import HomPage from './pages/Home';
 
 // Layouts
 import RouteLayout from './layouts/RouteLayout';     // Gère loader + auth + transitions
