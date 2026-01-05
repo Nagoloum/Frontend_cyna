@@ -60,7 +60,7 @@ export default function AuthPage() {
         {/* Image à gauche (desktop) ou en haut (mobile) */}
         <div className="md:w-1/2 w-full">
           <img
-            src="./images/img2.jpg"
+            src="./images/img.jpg"
             alt="Illustration"
             className="w-full h-full object-cover md:rounded-l-3xl md:rounded-tr-none rounded-t-3xl"
           />
@@ -70,7 +70,7 @@ export default function AuthPage() {
         <div className="md:w-1/2 w-full flex items-center justify-center p-10 md:p-12">
           <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col">
             {/* Titre */}
-            <div className="flex flex-row items-center justify-center gap-8 mb-1">
+            <div className="flex flex-row lg:items-center lg:justify-start items-center justify-center gap-8 mb-1">
               <div className="order-1 md:order-1">
                 <img
                   src="/logo.png"
@@ -85,7 +85,7 @@ export default function AuthPage() {
 
             </div>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center transition-colors duration-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400 lg:text-start text-center transition-colors duration-700">
               {isLogin
                 ? 'Welcome back! Please sign in to continue'
                 : 'Create an account to get started'}
@@ -114,21 +114,39 @@ export default function AuthPage() {
 
             {/* Champ Nom (seulement en inscription) */}
             {!isLogin && (
-              <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-12 rounded-full overflow-hidden pl-6 gap-3 mt-4 transition-all duration-500">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 21V19C20 15.6863 17.3137 13 14 13H10C6.68629 13 4 15.6863 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400" />
-                  <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required={!isLogin}
-                  className="bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-sm w-full transition-colors duration-500"
-                />
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-12 rounded-full overflow-hidden pl-6 gap-3 mt-4 transition-all duration-500">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 15.6863 17.3137 13 14 13H10C6.68629 13 4 15.6863 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400" />
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="First name"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required={!isLogin}
+                    className="bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-sm w-full transition-colors duration-500"
+                  />
+                </div>
+
+                <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-12 rounded-full overflow-hidden pl-6 gap-3 mt-4 transition-all duration-500">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 15.6863 17.3137 13 14 13H10C6.68629 13 4 15.6863 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400" />
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Last name"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required={!isLogin}
+                    className="bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-sm w-full transition-colors duration-500"
+                  />
+                </div>
               </div>
             )}
+
 
             {/* Email */}
             <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-12 rounded-full overflow-hidden pl-6 gap-3 mt-4 transition-all duration-500">
@@ -202,11 +220,12 @@ export default function AuthPage() {
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>
             </p>
-           
-            
+
+
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-4 text-center transition-colors duration-700">
-              En continuant, vous acceptez les <a href='/terms-of-use' className='text-indigo-600 dark:text-indigo-400'>conditions d'utilisation</a> et la <a href='/privacy-policy' className='text-indigo-600 dark:text-indigo-400'>politique de confidentialité</a> de <span className='text-indigo-600 dark:text-indigo-400'>RememberMe</span>.
+              By continuing, you agree to the <a href="/terms-of-use" className="text-indigo-600 dark:text-indigo-400">Terms of Use</a> and the <a href="/privacy-policy" className="text-indigo-600 dark:text-indigo-400">Privacy Policy</a> of <span className="text-indigo-600 dark:text-indigo-400">Cyna</span>.
             </p>
+
           </form>
         </div>
       </div>

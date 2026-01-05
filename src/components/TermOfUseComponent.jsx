@@ -121,7 +121,7 @@ export default function TermsOfUseComponent() {
           {/* Last Update */}
           <div className="pt-12 border-t border-gray-200 dark:border-gray-700">
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Last updated: December 30, 2025
+              Last updated: January 05, 2026
             </p>
           </div>
         </div>
