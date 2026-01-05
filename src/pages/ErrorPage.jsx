@@ -5,6 +5,8 @@ export default function ErrorPage() {
   return (
     <div>
       <ErrorPageCompoenent />
+
+      
     </div>
   )
 }
