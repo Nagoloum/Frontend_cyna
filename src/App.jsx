@@ -12,10 +12,6 @@ import PrivacyPolicyComponent from './components/PrivacyPolicyComponent';
 import ErrorPage from './pages/ErrorPage';
 
 // Pages privées
-import UpcomingPage from './pages/Upcoming';
-import TodayPage from './pages/Today';
-import CalendarPage from './pages/Calendar';
-import StickyWallPage from './pages/StickyWall';
 import HomePage from './pages/Home';
 
 // Layouts
@@ -49,47 +45,6 @@ function App() {
               <RouteLayout requireAuth={true}>
                 <Layout>
                   <HomePage />
-                </Layout>
-              </RouteLayout>
-            }
-          />
-
-          <Route
-            path="/upcoming"
-            element={
-              <RouteLayout requireAuth={true}>
-                <Layout>
-                  <UpcomingPage />
-                </Layout>
-              </RouteLayout>
-            }
-          />
-          <Route
-            path="/today"
-            element={
-              <RouteLayout requireAuth={true}>
-                <Layout>
-                  <TodayPage />
-                </Layout>
-              </RouteLayout>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <RouteLayout requireAuth={true}>
-                <Layout>
-                  <CalendarPage />
-                </Layout>
-              </RouteLayout>
-            }
-          />
-          <Route
-            path="/sticky-wall"
-            element={
-              <RouteLayout requireAuth={true}>
-                <Layout>
-                  <StickyWallPage />
                 </Layout>
               </RouteLayout>
             }
