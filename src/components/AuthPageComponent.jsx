@@ -19,17 +19,17 @@ export default function AuthPageComponent() {
     e.preventDefault();
 
     const url = isLogin
-      ? 'http://localhost:5000/api/auth/login'
-      : 'http://localhost:5000/api/auth/register';
+      ? 'http://localhost:3000/api/auth/login'
+      : 'http://localhost:3000/api/auth/register';
 
     const body = isLogin
       ? { email: formData.email, password: formData.password }
       : {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password
-        };
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password
+      };
 
     try {
       const res = await fetch(url, {
@@ -40,9 +40,11 @@ export default function AuthPageComponent() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+      if (res.ok && data.success) {
+        if (data.data) {  // Check if data field exists (it's there for login, not for register)
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('user', JSON.stringify(data.data.user));
+        }
         navigate('/home', { replace: true });
       } else {
         alert(data.message || 'Erreur d’authentification');
