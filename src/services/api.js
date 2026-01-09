@@ -1,7 +1,7 @@
 // services/api.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api'; // Change si besoin
+const API_URL = 'http://localhost:3000/api'; // Change si besoin
 
 const api = axios.create({
   baseURL: API_URL,
@@ -46,12 +46,17 @@ api.interceptors.response.use(
 // Bonus : fonction pour login (si tu en as besoin plus tard)
 export const login = async (credentials) => {
   const response = await api.post('/auth/login', credentials);
-  const token = response.data.token;
-  if (token) {
-    localStorage.setItem('token', token);
-    setAuthToken(token);
+  const data = response.data;  // Axios returns response.data directly
+  if (data.success && data.data) {
+    const token = data.data.token;
+    if (token) {
+      localStorage.setItem('token', token);
+      setAuthToken(token);
+    }
+    return data.data;  // Return the inner data for consistency
+  } else {
+    throw new Error(data.message || 'Login failed');
   }
-  return response.data;
 };
 
 export default api;
