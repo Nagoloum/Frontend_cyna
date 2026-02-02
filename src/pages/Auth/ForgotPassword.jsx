@@ -1,5 +1,4 @@
-import React from 'react'
-import ForgotPasswordComponent from '../components/ForgotPasswordComponent.jsx';
+import ForgotPasswordComponent from '../../components/Auth/ForgotPasswordComponent.jsx';
 
 export default function ForgotPassword() {
   return (

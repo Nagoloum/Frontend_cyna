@@ -1,10 +1,9 @@
-import React from 'react'
-import ErrorPageCompoenent from '../components/ErrorPageComponent.jsx';
+import ErrorPageComponent from '../components/Error/ErrorPageComponent.jsx';
 
 export default function ErrorPage() {
   return (
     <div>
-      <ErrorPageCompoenent />
+      <ErrorPageComponent />
 
       
     </div>

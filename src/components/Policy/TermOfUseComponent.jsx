@@ -33,34 +33,34 @@ export default function TermsOfUseComponent() {
               1. Acceptance of Terms
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              By using RememberMe, you agree to these Terms of Use and our Privacy Policy. If you do not agree, please do not use the app.
+              These Terms of Use govern your access to and use of the CYNA website, mobile application, and SaaS cybersecurity services. By accessing or using our services, you agree to be bound by these terms. If you do not agree, do not use the platform.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              2. Description of Service
+              2. Services
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              The app allows you to create, manage, and delete tasks. The service is free but may be limited or modified at any time.
+              CYNA provides SaaS cybersecurity solutions (SOC, EDR, XDR, etc.) through subscription plans. Detailed features, SLAs, and pricing are described on the product pages and/or in the specific order confirmation.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              3. User Account
+              3. Account & Security
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              You must create an account with a valid email address. You are responsible for the security of your password. We may suspend your account in the event of a violation of these terms.
+              You must create an account to purchase services. You are responsible for maintaining the confidentiality of your credentials and for all activities under your account. Notify us immediately of any unauthorized use.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              4. Permitted Use
+              4. Subscriptions & Payments
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              You may not use the app for illegal activities, harassment, or spam. You grant us a non-exclusive license to your tasks for the purpose of providing the service.
+              Subscriptions are billed monthly or annually and renew automatically unless canceled before the renewal date via your account. All payments are processed securely via our payment provider. Prices are in EUR, exclusive and inclusive of applicable taxes.
             </p>
           </section>
 
@@ -69,7 +69,7 @@ export default function TermsOfUseComponent() {
               5. Intellectual Property
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              The app and its content are protected by copyright. You may not copy, distribute, or modify it without permission.
+              All content, software, trademarks, and services on the platform are owned by CYNA or its licensors. You may not copy, modify, distribute, or create derivative works without our prior written consent.
             </p>
           </section>
 
@@ -78,50 +78,50 @@ export default function TermsOfUseComponent() {
               6. Limitation of Liability
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              The app is provided “as is”. We are not liable for data loss or indirect damages. To the extent permitted by law, our liability is limited to the amount paid (0€ for the free version).
+              CYNA provides services “as is”. We are not liable for indirect, incidental, or consequential damages. Our total liability shall not exceed the amount you paid in the 12 months preceding the claim.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              7. GDPR and Personal Data
+              7. Termination
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              We comply with the GDPR. Please refer to our Privacy Policy for details about your rights and how we process your data.
+              You may cancel your subscription at any time (effective at the end of the current billing period). We may suspend or terminate your access for non-payment, violation of these terms, or security reasons.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              8. Changes to the Terms
+              8. Governing Law & Dispute Resolution
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              We may modify these terms. You will be notified by email. Continued use constitutes acceptance.
+              These terms are governed by French law. Any dispute shall be submitted to the exclusive jurisdiction of the courts of Paris, France, after an attempt at amicable resolution.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              9. Termination
+              9. Changes to Terms
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              You may delete your account at any time. We may terminate it in case of violation.
+              We may update these Terms of Use. Significant changes will be notified by email or in-app notice. Continued use after changes constitutes acceptance.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              10. Governing Law
+              10. Contact Us
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              These terms are governed by French law. Any dispute will be submitted to the courts of Paris.
+              For any questions: <a href="mailto:support@cyna-it.fr" className="text-indigo-600 dark:text-indigo-400 underline">support@cyna-it.fr</a><br />
+              CYNA-IT – 10 rue de Penthievre, 75008 Paris, France
             </p>
           </section>
 
-          {/* Last Update */}
           <div className="pt-12 border-t border-gray-200 dark:border-gray-700">
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Last updated: January 05, 2026
+              Last updated: February 2026
             </p>
           </div>
         </div>

@@ -14,7 +14,7 @@ export default function PasswordInput({
   const toggleVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <div className={`relative flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-14 rounded-full overflow-hidden pl-6 gap-3 transition-all duration-500 ${className}`}>
+    <div className={`relative flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-14 rounded-full overflow-hidden pl-6 gap-3 transition-all duration-500 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 dark:focus-within:border-indigo-400 ${className}`}>
       {/* Icône cadenas */}
       <svg width="14" height="18" viewBox="0 0 13 17" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
