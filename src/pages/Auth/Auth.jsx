@@ -1,5 +1,4 @@
-import React from 'react'
-import AuthPageComponent from '../components/AuthPageComponent.jsx';
+import AuthPageComponent from '../../components/Auth/AuthPageComponent.jsx';
 
 export default function Auth() {
   return (

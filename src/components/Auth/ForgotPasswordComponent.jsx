@@ -1,33 +1,32 @@
 // src/pages/ForgotPassword.jsx
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Ici, tu appelleras ton endpoint backend pour envoyer le lien de réinitialisation
-    // Exemple : POST /api/auth/forgot-password
     try {
-      // const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
-      // });
+      const res = await fetch('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-      // Simulation d'envoi réussi (à remplacer par le vrai appel)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        alert(data?.message || 'Erreur lors de la demande.');
+        return;
+      }
 
       setIsSubmitted(true);
-      // eslint-disable-next-line no-unused-vars
-    } catch (err) {
+    } catch {
       alert('Erreur lors de l’envoi. Veuillez réessayer.');
     } finally {
       setLoading(false);
@@ -85,7 +84,7 @@ export default function ForgotPassword() {
 
             {/* Message d'explication */}
             <p className="text-sm text-gray-500 dark:text-gray-400 lg:text-start text-center mb-4">
-              No worries! Enter your email address below and we'll send you a code to reset your password.
+              No worries! Enter your email address below and we'll send you a link to reset your password.
             </p>
 
             {/* État après envoi réussi */}
@@ -100,19 +99,17 @@ export default function ForgotPassword() {
                   Check your email
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  We have sent a reset code to <span className="font-medium">{email}</span>
+                  We have sent a reset link to <span className="font-medium">{email}</span>
                 </p>
-                <button
-                  onClick={() => navigate('/verification-code')}
-                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white font-medium rounded-full transition"
-                >
-                  Enter verification code
-                </button>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Click the link in your inbox to set a new password.
+                </p>
+
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Champ Email */}
-                <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-14 rounded-full overflow-hidden pl-6 gap-3 transition-all duration-500">
+                <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-14 rounded-full overflow-hidden pl-6 gap-3 transition-all duration-500 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 dark:focus-within:border-indigo-400">
                   <svg width="18" height="14" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fillRule="evenodd" clipRule="evenodd" d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
                   </svg>
@@ -138,7 +135,7 @@ export default function ForgotPassword() {
                       Sending...
                     </span>
                   ) : (
-                    'Send Reset Link'
+                    'Send reset link'
                   )}
                 </button>
               </form>

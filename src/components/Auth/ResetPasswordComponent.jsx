@@ -1,10 +1,13 @@
 /* eslint-disable no-unused-vars */
 // src/pages/ResetPassword.jsx
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import PasswordInput from '../components/PasswordInput';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import PasswordInput from './PasswordInput.jsx';
 
 export default function ResetPasswordComponent() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,28 +18,31 @@ export default function ResetPasswordComponent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (newPassword !== confirmPassword) {
-      alert('The passwords do not match. Please try again.');
+    if (!token) {
+      alert('Reset token is missing.');
       return;
     }
 
-    if (newPassword.length < 6) {
-      alert('Password must be at least 6 characters long.');
+    if (newPassword !== confirmPassword) {
+      alert('The passwords do not match. Please try again.');
       return;
     }
 
     setLoading(true);
 
     try {
-      // À remplacer par ton vrai appel API
-      // await fetch('http://localhost:5000/api/auth/reset-password', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token: 'from-url-or-state', newPassword })
-      // });
+      const res = await fetch('http://localhost:3000/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword }),
+      });
 
-      // Simulation de succès
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        alert(data?.message || 'Error resetting password. Please try again.');
+        return;
+      }
 
       setIsSuccess(true);
 
@@ -101,7 +107,9 @@ export default function ResetPasswordComponent() {
 
             {/* Message d'explication */}
             <p className="text-sm text-gray-500 dark:text-gray-400 lg:text-start text-center mb-8">
-              Your new password must be different from previously used passwords.
+              {!token
+                ? 'Reset token is missing. Please use the link from your email.'
+                : 'Your new password must be different from previously used passwords.'}
             </p>
 
             {/* État de succès */}
@@ -152,7 +160,7 @@ export default function ResetPasswordComponent() {
                 {/* Bouton de confirmation */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !token}
                   className="w-full h-14 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 font-medium shadow-lg hover:shadow-xl transition-all duration-500 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {loading ? (
