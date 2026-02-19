@@ -1,11 +1,10 @@
-import ErrorPageComponent from '../components/Error/ErrorPageComponent.jsx';
+import React from 'react'
+import ErrorPageCompoenent from '../components/Error/ErrorPageComponent';
 
 export default function ErrorPage() {
   return (
     <div>
-      <ErrorPageComponent />
-
-      
+      <ErrorPageCompoenent />
     </div>
   )
 }
