@@ -1,10 +1,21 @@
-// import MainPage from './MainPage';
+import CategoryGrid from "@/components/Home/CategoryGrid";
+import { HeroCarousel } from "@/components/Home/HeroCarousel";
+import TopProducts from "@/components/Home/TopProducts";
 
-export default function Home() {
+export default function HomePage() {
   return (
-   <>
-      {/* <MainPage /> */}
-      <p>Bienvenue sur CYNA User</p>
-    </>
-  )
+    <div className="flex flex-col font-sans">
+      {/* 1. Carrousel (3 parties, modifiable) */}
+      <HeroCarousel />
+
+      {/* 2. Grille de Catégories (Ordre modifiable) */}
+      <CategoryGrid />
+
+      {/* 3. Les Top Produits (Sélection Back-office) */}
+      <TopProducts />
+
+      {/* 5. Pied de page (Non fixe, suit le scroll) */}
+      {/* <Footer /> */}
+    </div>
+  );
 }
