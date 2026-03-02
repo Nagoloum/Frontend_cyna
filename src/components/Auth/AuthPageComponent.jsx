@@ -54,7 +54,7 @@ export default function AuthPageComponent() {
 
         // Redirection selon le rôle
         if (user.role === 'ADMIN') {
-          navigate('/dashboard', { replace: true });
+          navigate('/admin', { replace: true });
         } else {
           // CUSTOMER ou autre rôle par défaut
           navigate('/home', { replace: true });
