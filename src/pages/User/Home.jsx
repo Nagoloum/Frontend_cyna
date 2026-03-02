@@ -1,9 +1,9 @@
-import Navbar from './Navbar';
-import Carousel from './Carousel';
-import InfoSection from './InfoSection';
-import CategoryGrid from './CategoryGrid';
-import TopProducts from './TopProducts';
-import Footer from './Footer';
+import Navbar from '../../components/Home/Navbar';
+import Carousel from '../../components/Home/Carousel';
+import InfoSection from '../../components/Home/InfoSection';
+import CategoryGrid from '../../components/Home/CategoryGrid';
+import TopProducts from '../../components/Home/TopProducts';
+import Footer from '../../components/Home/Footer';
 
 export default function HomePage() {
   return (
