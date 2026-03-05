@@ -10,7 +10,6 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import logo from "../../../public/logo.png";
 
 const navLinks = [
   { label: "Accueil", href: "/" },
@@ -37,7 +36,7 @@ const Navbar = () => {
           {/* 1. LOGO */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img
-              src={logo}
+              src="/logo.png"
               alt="Logo"
               className="h-8 md:h-10 w-auto object-contain"
             />
