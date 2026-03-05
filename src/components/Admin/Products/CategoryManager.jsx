@@ -1,6 +1,6 @@
 // src/components/admin/products/CategoryManager.jsx
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { X, Plus, Edit2, Trash2, Check, Loader2, Tag } from 'lucide-react';
 import { categoriesAPI } from '../../../services/api';
 
@@ -38,19 +38,46 @@ export default function CategoryManager({ categories: initialCategories = [], on
   const [categories, setCategories] = useState(initialCategories);
   const [editingCat, setEditingCat] = useState(null); // { slug, name } ou null
   const [newName, setNewName]       = useState('');
+  const [newOrder, setNewOrder]     = useState('');
+  const [newImageFile, setNewImageFile] = useState(null);
   const [loadingSlug, setLoadingSlug] = useState(null);
   const [error, setError]           = useState(null);
+
+  const defaultNextOrder = useMemo(() => {
+    if (!categories.length) return 1;
+    const orders = categories
+      .map((c) => (typeof c.order === 'number' ? c.order : null))
+      .filter((v) => v !== null);
+    if (!orders.length) return categories.length + 1;
+    return Math.max(...orders) + 1;
+  }, [categories]);
 
   // ── Créer ──
   const handleCreate = async () => {
     if (!newName.trim()) return;
+    if (!newImageFile) {
+      setError('Image is required for a new category.');
+      return;
+    }
+    const orderValue =
+      newOrder && !Number.isNaN(Number(newOrder))
+        ? Number(newOrder)
+        : defaultNextOrder;
+
     setError(null);
     setLoadingSlug('new');
     try {
-      const res = await categoriesAPI.create({ name: newName.trim() });
+      const formData = new FormData();
+      formData.append('name', newName.trim());
+      formData.append('order', String(orderValue));
+      formData.append('newImage', newImageFile);
+
+      const res = await categoriesAPI.create(formData);
       const created = res.data?.data ?? res.data;
       setCategories((prev) => [...prev, created]);
       setNewName('');
+      setNewOrder('');
+      setNewImageFile(null);
       onSaved?.();
     } catch (err) {
       setError(err.response?.data?.message ?? 'Error while creating.');
@@ -119,30 +146,65 @@ export default function CategoryManager({ categories: initialCategories = [], on
           )}
 
           {/* Champ ajout */}
-          <div className="flex items-center gap-2">
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              placeholder="New category name…"
-              className="
-                flex-1 h-9 px-3 rounded-xl text-sm
-                bg-gray-50 dark:bg-gray-700
-                border border-gray-200 dark:border-gray-600
-                text-gray-900 dark:text-white placeholder-gray-400
-                focus:outline-none focus:ring-2 focus:ring-indigo-500/30
-                focus:border-indigo-400 dark:focus:border-indigo-500 transition-all
-              "
-            />
-            <button
-              onClick={handleCreate}
-              disabled={!newName.trim() || loadingSlug === 'new'}
-              className="h-9 w-9 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
-            >
-              {loadingSlug === 'new'
-                ? <Loader2 size={14} className="animate-spin" />
-                : <Plus size={16} />}
-            </button>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="New category name…"
+                className="
+                  flex-1 h-9 px-3 rounded-xl text-sm
+                  bg-gray-50 dark:bg-gray-700
+                  border border-gray-200 dark:border-gray-600
+                  text-gray-900 dark:text-white placeholder-gray-400
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30
+                  focus:border-indigo-400 dark:focus:border-indigo-500 transition-all
+                "
+              />
+              <input
+                type="number"
+                min="1"
+                value={newOrder}
+                onChange={(e) => setNewOrder(e.target.value)}
+                placeholder={String(defaultNextOrder)}
+                className="
+                  w-20 h-9 px-2 rounded-xl text-sm
+                  bg-gray-50 dark:bg-gray-700
+                  border border-gray-200 dark:border-gray-600
+                  text-gray-900 dark:text-white placeholder-gray-400
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30
+                  focus:border-indigo-400 dark:focus:border-indigo-500 transition-all
+                "
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setNewImageFile(file);
+                }}
+                className="
+                  flex-1 text-xs
+                  file:h-8 file:px-3 file:mr-3
+                  file:rounded-xl file:border-0
+                  file:bg-indigo-500 file:text-white
+                  file:text-xs file:font-medium
+                  text-gray-600 dark:text-gray-300
+                "
+              />
+              <button
+                onClick={handleCreate}
+                disabled={!newName.trim() || !newImageFile || loadingSlug === 'new'}
+                className="h-9 w-9 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
+              >
+                {loadingSlug === 'new'
+                  ? <Loader2 size={14} className="animate-spin" />
+                  : <Plus size={16} />}
+              </button>
+            </div>
           </div>
 
           {/* List categorys */}

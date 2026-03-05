@@ -89,7 +89,7 @@ export default function ReportExportPanel({ period }) {
 
       setDoneIds((prev) => [...prev, option.id]);
       setTimeout(() => setDoneIds((prev) => prev.filter((id) => id !== option.id)), 3000);
-    } catch (err) {
+    } catch {
       setError(`Export error "${option.label}". Vérifiez que l'API est disponible.`);
     } finally {
       setLoadingId(null);

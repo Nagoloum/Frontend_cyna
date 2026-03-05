@@ -8,7 +8,8 @@ export { default as StatusBadge }    from './StatusBadge';
 export { default as Spinner, PageLoader, OverlayLoader } from './Spinner';
 export { default as ExportButton }   from './ExportButton';
 export { default as AlertBanner }    from './AlertBanner';
-export { ToastProvider, useToast }   from './ToastNotification';
+export { ToastProvider }            from './ToastNotification';
+export { useToast }                 from './ToastContext';
 export {
   InputField,
   PasswordField,

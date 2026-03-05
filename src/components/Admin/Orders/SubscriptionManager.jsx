@@ -4,13 +4,20 @@ import { RefreshCw, XCircle, CheckCircle, Loader2, Calendar, Package } from 'luc
 import { ordersAPI } from '../../../services/api';
 import StatusBadge from '../shared/StatusBadge';
 
+const isSubscriptionExpiringSoon = (renewalDate) => {
+  const now = Date.now();
+  const diffDays =
+    (new Date(renewalDate).getTime() - now) / (1000 * 60 * 60 * 24);
+  return diffDays <= 7;
+};
+
 // ── Ligne subscription ──────────────────────────────────────────────────────────
 function SubscriptionRow({ sub, onRenew, onCancel, loading }) {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
   const isExpiringSoon = sub.renewalDate
-    ? (new Date(sub.renewalDate) - Date.now()) / (1000 * 60 * 60 * 24) <= 7
+    ? isSubscriptionExpiringSoon(sub.renewalDate)
     : false;
 
   return (

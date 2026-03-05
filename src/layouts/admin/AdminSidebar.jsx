@@ -113,42 +113,44 @@ export default function AdminSidebar() {
           </p>
         )}
 
-        {NAV_ITEMS.map(({ label, to, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `
-              group flex items-center gap-3 px-3 py-2.5 rounded-xl
-              text-sm font-medium transition-all duration-200
-              ${collapsed ? 'justify-center' : ''}
-              ${
-                isActive
-                  ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-              }
-            `}
-            title={collapsed ? label : undefined}
-          >
-            {({ isActive }) => (
-              <>
-                <Icon
-                  size={18}
-                  className={`flex-shrink-0 transition-colors duration-200 ${
-                    isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                  }`}
-                />
-                {!collapsed && <span>{label}</span>}
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `
+                group flex items-center gap-3 px-3 py-2.5 rounded-xl
+                text-sm font-medium transition-all duration-200
+                ${collapsed ? 'justify-center' : ''}
+                ${
+                  isActive
+                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }
+              `}
+              title={collapsed ? item.label : undefined}
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    size={18}
+                    className={`flex-shrink-0 transition-colors duration-200 ${
+                      isActive
+                        ? 'text-indigo-600 dark:text-indigo-400'
+                        : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                    }`}
+                  />
+                  {!collapsed && <span>{item.label}</span>}
 
-                {/* Indicateur actif */}
-                {isActive && !collapsed && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
+                  {isActive && !collapsed && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* ── Section admin info + Logout ── */}

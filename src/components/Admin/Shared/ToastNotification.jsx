@@ -1,9 +1,7 @@
 // src/components/admin/shared/ToastNotification.jsx
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
-
-// ── Context ───────────────────────────────────────────────────────────────────
-const ToastContext = createContext(null);
+import { ToastContext } from './ToastContext';
 
 const ICONS = {
   success: CheckCircle,
@@ -133,19 +131,3 @@ export function ToastProvider({ children }) {
   );
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────────
-/**
- * useToast — Hook pour déclencher des notifications depuis n'importe quel composant
- *
- * Usage :
- *   const toast = useToast();
- *   toast.success('Product created', 'The product was added to the catalog.');
- *   toast.error('Error', 'Unable to delete this product.');
- *   toast.warning('Warning', 'Low stock for this product.');
- *   toast.info('Info', 'Les données ont été actualisées.');
- */
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast doit être utilisé dans un <ToastProvider>');
-  return ctx;
-}

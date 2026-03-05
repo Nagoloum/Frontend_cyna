@@ -42,34 +42,34 @@ export default function QuickActions() {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {ACTIONS.map(({ label, description, icon: Icon, to, color, iconBg }) => (
-        <button
-          key={to}
-          onClick={() => navigate(to)}
-          className={`
-            group flex flex-col items-start gap-3 p-4 rounded-2xl
-            border transition-all duration-200 text-left
-            ${color}
-          `}
-        >
-          {/* Icône */}
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-            <Icon size={17} />
-          </div>
+      {ACTIONS.map((action) => {
+        const Icon = action.icon;
+        return (
+          <button
+            key={action.to}
+            onClick={() => navigate(action.to)}
+            className={`
+              group flex flex-col items-start gap-3 p-4 rounded-2xl
+              border transition-all duration-200 text-left
+              ${action.color}
+            `}
+          >
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${action.iconBg}`}>
+              <Icon size={17} />
+            </div>
 
-          {/* Texte */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold leading-tight">{label}</p>
-            <p className="text-xs opacity-70 mt-0.5 leading-tight hidden sm:block">{description}</p>
-          </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold leading-tight">{action.label}</p>
+              <p className="text-xs opacity-70 mt-0.5 leading-tight hidden sm:block">{action.description}</p>
+            </div>
 
-          {/* Flèche hover */}
-          <ArrowRight
-            size={14}
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 self-end"
-          />
-        </button>
-      ))}
+            <ArrowRight
+              size={14}
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 self-end"
+            />
+          </button>
+        );
+      })}
     </div>
   );
 }
