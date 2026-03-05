@@ -6,7 +6,7 @@ import { productsAPI } from '../../../services/api';
 
 const BILLING_PERIODS = ['monthly', 'annual', 'one-time'];
 
-export default function ProductModal({ product = null, categories = [], onClose, onSaved }) {
+export default function ProductModal({ product = null, services = [], onClose, onSaved }) {
   const isEdit = !!product;
   const fileInputRef = useRef(null);
 
@@ -20,6 +20,7 @@ export default function ProductModal({ product = null, categories = [], onClose,
     price: '',
     billingPeriod: 'monthly',
     categorySlug: '',
+    serviceId: '',
     isActive: true,
     quantity: '',
   });
@@ -30,12 +31,19 @@ export default function ProductModal({ product = null, categories = [], onClose,
   // Pré-remplir si édition
   useEffect(() => {
     if (product) {
+      const rawService = product.service;
+      const serviceId =
+        typeof rawService === 'string'
+          ? rawService
+          : rawService?._id ?? '';
+
       setForm({
         name: product.name ?? '',
         description: product.description ?? '',
         price: product.price ?? '',
         billingPeriod: product.billingPeriod ?? 'monthly',
         categorySlug: product.category?.slug ?? product.categorySlug ?? '',
+        serviceId,
         isActive: product.isActive !== false,
         quantity: product.quantity ?? '',
       });
@@ -91,21 +99,47 @@ export default function ProductModal({ product = null, categories = [], onClose,
 
     if (!form.name.trim()) { setError('Product name is required.'); return; }
     if (!form.price || isNaN(Number(form.price))) { setError('Price must be a valid number.'); return; }
+    if (!form.serviceId) { setError('Service is required.'); return; }
 
     setLoading(true);
     try {
+      const priceValue = Number(form.price);
+      let priceMonth = 0;
+      let priceYear = 0;
+
+      if (form.billingPeriod === 'monthly') {
+        priceMonth = priceValue;
+        priceYear = Math.round(priceValue * 12 * 100) / 100;
+      } else if (form.billingPeriod === 'annual') {
+        priceYear = priceValue;
+        priceMonth = Math.round((priceValue / 12) * 100) / 100;
+      } else {
+        priceMonth = priceValue;
+      }
+
+      const stock = form.quantity ? Number(form.quantity) : 0;
+
+      const basePayload = {
+        serviceId: form.serviceId,
+        name: form.name.trim(),
+        priceMonth,
+        priceYear,
+        stock,
+        is_selected: form.isActive,
+        priority: false,
+      };
+
       // Construction du payload
       // Si des images sont présentes → FormData, sinon JSON
       let payload;
       if (imageFiles.length > 0) {
         payload = new FormData();
-        Object.entries(form).forEach(([k, v]) => payload.append(k, String(v)));
+        Object.entries(basePayload).forEach(([k, v]) =>
+          payload.append(k, String(v)),
+        );
         imageFiles.forEach((f) => payload.append('images', f));
-        // Images existantes à conserver
-        existingImages.forEach((url) => payload.append('existingImages', url));
       } else {
-        payload = { ...form, price: Number(form.price) };
-        if (isEdit) payload.existingImages = existingImages;
+        payload = basePayload;
       }
 
       if (isEdit) {
@@ -245,17 +279,17 @@ export default function ProductModal({ product = null, categories = [], onClose,
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Category
+                Service
               </label>
               <select
-                name="categorySlug"
-                value={form.categorySlug}
+                name="serviceId"
+                value={form.serviceId}
                 onChange={handleChange}
                 className="w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
               >
-                <option value="">No category</option>
-                {categories.map((cat) => (
-                  <option key={cat.slug} value={cat.slug}>{cat.name}</option>
+                <option value="">Select a service…</option>
+                {services.map((service) => (
+                  <option key={service._id} value={service._id}>{service.name}</option>
                 ))}
               </select>
             </div>

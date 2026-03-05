@@ -94,18 +94,21 @@ export default function ReplyEditor({ onSend, disabled = false, recipientEmail =
             { icon: Bold,   type: 'bold',   title: 'Bold (selection)' },
             { icon: Italic, type: 'italic', title: 'Italic (selection)' },
             { icon: List,   type: 'list',   title: 'List' },
-          ].map(({ icon: Icon, type, title }) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => applyFormat(type)}
-              disabled={disabled}
-              title={title}
-              className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 transition-all"
-            >
-              <Icon size={13} />
-            </button>
-          ))}
+          ].map((btn) => {
+            const Icon = btn.icon;
+            return (
+              <button
+                key={btn.type}
+                type="button"
+                onClick={() => applyFormat(btn.type)}
+                disabled={disabled}
+                title={btn.title}
+                className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 transition-all"
+              >
+                <Icon size={13} />
+              </button>
+            );
+          })}
         </div>
 
         {/* Réponses rapides */}

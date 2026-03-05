@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, RefreshCw } from 'lucide-react';
-import { productsAPI, categoriesAPI } from '../../services/api';
+import { productsAPI, categoriesAPI, servicesAPI } from '../../services/api';
 
 import ProductTable       from '../../components/Admin/Products/ProductTable';
 import ProductModal       from '../../components/Admin/Products/ProductModal';
@@ -15,6 +15,7 @@ export default function ProductsPage() {
   // ── State données ──
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
+  const [services, setServices]     = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -50,10 +51,26 @@ export default function ProductsPage() {
         sortBy,
         order:        sortOrder,
       });
-      const data = res.data?.data ?? res.data;
-      setProducts(Array.isArray(data?.items ?? data) ? (data?.items ?? data) : []);
-      if (data?.total !== undefined) {
-        setPagination((p) => ({ ...p, total: data.total }));
+
+      const payload = res.data?.data ?? res.data;
+      const items =
+        Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : Array.isArray(payload)
+              ? payload
+              : [];
+
+      setProducts(items);
+
+      if (typeof payload?.total === 'number') {
+        setPagination((p) => ({
+          ...p,
+          total: payload.total,
+          page: payload.page ?? p.page,
+          limit: payload.limit ?? p.limit,
+        }));
       }
     } catch (err) {
       setError('Unable to load products.');
@@ -67,15 +84,38 @@ export default function ProductsPage() {
   const fetchCategories = useCallback(async () => {
     try {
       const res = await categoriesAPI.getAll();
-      const data = res.data?.data ?? res.data;
-      setCategories(Array.isArray(data) ? data : []);
+      const payload = res.data?.data ?? res.data;
+      const list =
+        Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+      setCategories(list);
     } catch (err) {
       console.error('Error loading categories:', err);
     }
   }, []);
 
+  const fetchServices = useCallback(async () => {
+    try {
+      const res = await servicesAPI.getAll();
+      const payload = res.data?.data ?? res.data;
+      const list =
+        Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+      setServices(list);
+    } catch (err) {
+      console.error('Error loading services:', err);
+    }
+  }, []);
+
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { fetchServices(); }, [fetchServices]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCreate = () => { setSelectedProduct(null); setShowProductModal(true); };
@@ -210,6 +250,7 @@ export default function ProductsPage() {
         <ProductModal
           product={selectedProduct}
           categories={categories}
+          services={services}
           onClose={handleModalClose}
           onSaved={handleModalSaved}
         />
