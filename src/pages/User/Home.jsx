@@ -1,4 +1,5 @@
 import CategoryGrid from "@/components/Home/CategoryGrid";
+import Footer from "@/components/Home/Footer";
 import { HeroCarousel } from "@/components/Home/HeroCarousel";
 import TopProducts from "@/components/Home/TopProducts";
 
@@ -15,7 +16,7 @@ export default function HomePage() {
       <TopProducts />
 
       {/* 5. Pied de page (Non fixe, suit le scroll) */}
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }
