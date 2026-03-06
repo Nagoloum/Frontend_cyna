@@ -56,7 +56,7 @@ function App() {
         <Route
           path="/home"
           element={
-            <RouteLayout requireAuth={true}>
+            <RouteLayout>
               <Layout>
                 <HomePage />
               </Layout>
