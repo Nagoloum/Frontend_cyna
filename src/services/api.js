@@ -1,35 +1,49 @@
 // src/services/api.js
 import axios from 'axios';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Instance Axios
-// ─────────────────────────────────────────────────────────────────────────────
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
+
+export const buildImageUrl = (path) => {
+  // 1. Check if path exists AND is actually a string
+  if (!path || typeof path !== 'string') {
+    return null;
+  }
+
+  // 2. Now it's safe to use string methods
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  const clean = path.startsWith('/') ? path.slice(1) : path;
+  return `${BASE_URL}/${clean}`;
+};
+
+/** Unwrap any NestJS response shape into a plain array */
+export const extractList = (responseData) => {
+  const d = responseData;
+  const inner = d?.data ?? d;
+  const arr   = inner?.items ?? inner?.data ?? inner;
+  return Array.isArray(arr) ? arr : [];
+};
+
+export const extractTotal = (responseData) =>
+  responseData?.data?.total ?? responseData?.total ?? 0;
+
+// ── Axios instance ────────────────────────────────────────────────────────────
 
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Token management
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const setAuthToken = (token) => {
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common['Authorization'];
-  }
+  if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  else delete api.defaults.headers.common['Authorization'];
 };
 
 const storedToken = localStorage.getItem('token');
 if (storedToken) setAuthToken(storedToken);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Response interceptor — global error handling
-// ─────────────────────────────────────────────────────────────────────────────
 
 api.interceptors.response.use(
   (response) => response,
@@ -44,9 +58,7 @@ api.interceptors.response.use(
   }
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH  →  /api/auth
-// ─────────────────────────────────────────────────────────────────────────────
+// ── AUTH ──────────────────────────────────────────────────────────────────────
 
 export const login = async (credentials) => {
   const response = await api.post('/auth/login', credentials);
@@ -54,254 +66,119 @@ export const login = async (credentials) => {
   if (data.success && data.data) {
     const token = data.data.token;
     const user  = data.data.user ?? data.data;
-
     if (token) {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setAuthToken(token);
     }
     return data.data;
-  } else {
-    throw new Error(data.message || 'Login failed');
   }
+  throw new Error(data.message || 'Login failed');
 };
 
 export const authAPI = {
   login,
-
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setAuthToken(null);
     window.location.href = '/auth';
   },
-
-  /** GET /api/auth/user/me — fetch current user */
   me: async () => {
-    const response = await api.get('/auth/user/me');
-    const data = response.data;
-    return data.data ?? data;
+    const res = await api.get('/auth/user/me');
+    return res.data?.data ?? res.data;
   },
-
-  forgotPassword: (email) =>
-    api.post('/auth/forgot-password', { email }),
-
-  changePassword: (currentPassword, newPassword) =>
-    api.post('/auth/change-password', { currentPassword, newPassword }),
-
-  emailConfirmation: (token) =>
-    api.get(`/auth/email-confirmation?token=${encodeURIComponent(token)}`),
+  forgotPassword:    (email)                         => api.post('/auth/forgot-password', { email }),
+  changePassword:    (currentPassword, newPassword)  => api.post('/auth/change-password', { currentPassword, newPassword }),
+  emailConfirmation: (token)                         => api.get(`/auth/email-confirmation?token=${encodeURIComponent(token)}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// USERS  →  /api/users
-// ─────────────────────────────────────────────────────────────────────────────
+// ── USERS ─────────────────────────────────────────────────────────────────────
 
 export const usersAPI = {
-  /** GET /api/users */
-  getAll: (params = {}) =>
-    api.get('/users', { params }),
-
-  /** GET /api/users/:id */
-  getById: (id) =>
-    api.get(`/users/${id}`),
-
-  /** PATCH /api/users/profil/:id */
-  updateProfile: (id, data) =>
-    api.patch(`/users/profil/${id}`, data),
-
-  /** DELETE /api/users/:id */
-  delete: (id) =>
-    api.delete(`/users/${id}`),
+  getAll:        (params = {}) => api.get('/users', { params }),
+  getById:       (id)          => api.get(`/users/${id}`),
+  updateProfile: (id, data)    => api.patch(`/users/profil/${id}`, data),
+  delete:        (id)          => api.delete(`/users/${id}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CATEGORIES  →  /api/categories
-// ─────────────────────────────────────────────────────────────────────────────
+// ── CATEGORIES ────────────────────────────────────────────────────────────────
+// DTO: { name (required), newImage (file, required), description?, order (required) }
 
 export const categoriesAPI = {
-  /** GET /api/categories */
-  getAll: (params = {}) =>
-    api.get('/categories', { params }),
-
-  /** GET /api/categories/category-by-order */
-  getAllByOrder: () =>
-    api.get('/categories/category-by-order'),
-
-  /** GET /api/categories/:slug */
-  getBySlug: (slug) =>
-    api.get(`/categories/${slug}`),
-
-  /** POST /api/categories */
-  create: (data) => {
-    const isFormData = data instanceof FormData;
-    return api.post('/categories', data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
-  },
-
-  /** PATCH /api/categories/:slug */
-  update: (slug, data) => {
-    const isFormData = data instanceof FormData;
-    return api.patch(`/categories/${slug}`, data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
-  },
-
-  /** DELETE /api/categories/:slug */
-  delete: (slug) =>
-    api.delete(`/categories/${slug}`),
+  getAll:       (params = {}) => api.get('/categories', { params }),
+  getAllByOrder: ()            => api.get('/categories/category-by-order'),
+  getBySlug:    (slug)        => api.get(`/categories/${slug}`),
+  create:       (formData)    => api.post('/categories', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update:       (slug, data)  => api.patch(`/categories/${slug}`, data, {
+    headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  }),
+  delete:       (slug)        => api.delete(`/categories/${slug}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SERVICES  →  /api/services
-// ─────────────────────────────────────────────────────────────────────────────
+// ── SERVICES ──────────────────────────────────────────────────────────────────
+// DTO: { name (required), categoryId (required), description?, available?, TechFile? }
 
 export const servicesAPI = {
-  /** GET /api/services */
-  getAll: (params = {}) =>
-    api.get('/services', { params }),
-
-  /** GET /api/services/:slug */
-  getBySlug: (slug) =>
-    api.get(`/services/${slug}`),
-
-  /** POST /api/services */
-  create: (data) => {
-    const isFormData = data instanceof FormData;
-    return api.post('/services', data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
-  },
-
-  /** PATCH /api/services/:slug */
-  update: (slug, data) => {
-    const isFormData = data instanceof FormData;
-    return api.patch(`/services/${slug}`, data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
-  },
-
-  /** DELETE /api/services/:slug */
-  delete: (slug) =>
-    api.delete(`/services/${slug}`),
+  getAll:    (params = {}) => api.get('/services', { params }),
+  getBySlug: (slug)        => api.get(`/services/${slug}`),
+  create:    (data)        => api.post('/services', data),
+  update:    (slug, data)  => api.patch(`/services/${slug}`, data),
+  delete:    (slug)        => api.delete(`/services/${slug}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PRODUCTS  →  /api/products
-// ─────────────────────────────────────────────────────────────────────────────
+// ── PRODUCTS ──────────────────────────────────────────────────────────────────
+// DTO: { serviceId (required), name (required), images[]?, priceMonth, priceYear, stock?, is_selected?, priority? }
 
 export const productsAPI = {
-  /** GET /api/products
-   *  Params: { page, limit, search, categorySlug, sortBy, order }
-   */
-  getAll: (params = {}) =>
-    api.get('/products', { params }),
-
-  /** GET /api/products/product-by-order */
-  getAllByOrder: () =>
-    api.get('/products/product-by-order'),
-
-  /** GET /api/products/:slug */
-  getBySlug: (slug) =>
-    api.get(`/products/${slug}`),
-
-  /** POST /api/products */
-  create: (data) => {
-    const isFormData = data instanceof FormData;
-    return api.post('/products', data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
-  },
-
-  /** PATCH /api/products/:slug */
-  update: (slug, data) => {
-    const isFormData = data instanceof FormData;
-    return api.patch(`/products/${slug}`, data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
-  },
-
-  /** DELETE /api/products/:slug */
-  delete: (slug) =>
-    api.delete(`/products/${slug}`),
+  getAll:       (params = {}) => api.get('/products', { params }),
+  getAllByOrder: ()            => api.get('/products/product-by-order'),
+  getBySlug:    (slug)        => api.get(`/products/${slug}`),
+  create: (data) => api.post('/products', data, {
+    headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  }),
+  update: (slug, data) => api.patch(`/products/${slug}`, data, {
+    headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  }),
+  delete: (slug) => api.delete(`/products/${slug}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ORDERS  →  /api/orders  (endpoints TBD — graceful fallback built-in)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── ORDERS ────────────────────────────────────────────────────────────────────
 
 export const ordersAPI = {
-  /** GET /api/orders */
-  getAll: (params = {}) =>
-    api.get('/orders', { params }),
-
-  /** GET /api/orders/:id */
-  getById: (id) =>
-    api.get(`/orders/${id}`),
-
-  /** PATCH /api/orders/:id/status */
-  updateStatus: (id, status) =>
-    api.patch(`/orders/${id}/status`, { status }),
-
-  /** POST /api/orders/:id/refund */
-  refund: (id) =>
-    api.post(`/orders/${id}/refund`),
+  getAll:       (params = {}) => api.get('/orders', { params }),
+  getById:      (id)          => api.get(`/orders/${id}`),
+  updateStatus: (id, status)  => api.patch(`/orders/${id}/status`, { status }),
+  refund:       (id)          => api.post(`/orders/${id}/refund`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPPORT  →  /api/support  (endpoints TBD)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── SUPPORT ───────────────────────────────────────────────────────────────────
 
 export const supportAPI = {
-  getAll: (params = {}) =>
-    api.get('/support', { params }),
-
-  getById: (id) =>
-    api.get(`/support/${id}`),
-
-  reply: (id, message) =>
-    api.patch(`/support/${id}/reply`, { message }),
-
-  updateStatus: (id, status) =>
-    api.patch(`/support/${id}/status`, { status }),
+  getAll:       (params = {}) => api.get('/support', { params }),
+  getById:      (id)          => api.get(`/support/${id}`),
+  reply:        (id, message) => api.patch(`/support/${id}/reply`, { message }),
+  updateStatus: (id, status)  => api.patch(`/support/${id}/status`, { status }),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DASHBOARD  →  derived from existing endpoints (products, categories, users)
-// NOTE: No /admin/dashboard endpoints exist yet in the backend.
-// Dashboard stats are computed client-side from real data.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
 
 export const dashboardAPI = {
-  /**
-   * Fetch all data needed to build KPIs.
-   * Returns { products, categories, users }
-   */
   fetchAll: async () => {
-    const [productsRes, categoriesRes, usersRes] = await Promise.allSettled([
-      api.get('/products', { params: { limit: 1000 } }),
+    const [pR, cR, uR, sR] = await Promise.allSettled([
+      api.get('/products',   { params: { limit: 1000 } }),
       api.get('/categories'),
       api.get('/users'),
+      api.get('/services'),
     ]);
-
-    const extract = (res) => {
-      if (res.status === 'rejected') return [];
-      const d = res.value.data;
-      // Handle all common NestJS shapes:
-      // { data: [...] } | { data: { items: [...], total } } | { items: [...] } | [...]
-      const inner = d?.data ?? d;
-      const arr   = inner?.items ?? inner?.data ?? inner;
-      return Array.isArray(arr) ? arr : [];
-    };
-
+    const extract = (res) => res.status === 'rejected' ? [] : extractList(res.value.data);
     return {
-      products: extract(productsRes),
-      categories: extract(categoriesRes),
-      users: extract(usersRes),
+      products:   extract(pR),
+      categories: extract(cR),
+      users:      extract(uR),
+      services:   extract(sR),
     };
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 export default api;
