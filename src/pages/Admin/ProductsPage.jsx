@@ -1,231 +1,198 @@
-// src/pages/Admin/Products.jsx
-import { useState, useEffect, useCallback } from 'react';
+// src/pages/admin/ProductsPage.jsx
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, FolderOpen, RefreshCw, AlertCircle } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, RefreshCw } from 'lucide-react';
+import ProductTable from '../../components/admin/products/ProductTable';
+import ProductModal from '../../components/admin/products/ProductModal';
+import ProductDeleteModal from '../../components/admin/products/ProductDeleteModal';
+import CategoryManager from '../../components/admin/products/CategoryManager';
 import { productsAPI, categoriesAPI, servicesAPI } from '../../services/api';
 
-import ProductTable       from '../../components/Admin/Products/ProductTable';
-import ProductModal       from '../../components/Admin/Products/ProductModal';
-import ProductDeleteModal from '../../components/Admin/Products/ProductDeleteModal';
-import CategoryManager    from '../../components/Admin/Products/CategoryManager';
+const DEFAULT_PAGINATION = { page: 1, limit: 10, total: 0 };
 
 export default function ProductsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // ── State données ──
+  // ── State ──────────────────────────────────────────────────────────────────
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
   const [services, setServices]     = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
 
-  // ── State UI ──
+  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
   const [search, setSearch]         = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [sortBy, setSortBy]         = useState('createdAt');
   const [sortOrder, setSortOrder]   = useState('desc');
 
-  // ── Modals ──
-  const [showProductModal, setShowProductModal]   = useState(false);
-  const [showDeleteModal, setShowDeleteModal]     = useState(false);
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [selectedProduct, setSelectedProduct]     = useState(null); // null = création
-  const [productToDelete, setProductToDelete]     = useState(null);
+  // Modals
+  const [showCreate, setShowCreate]   = useState(false);
+  const [editProduct, setEditProduct] = useState(null);
+  const [deleteProduct, setDeleteProduct] = useState(null);
+  const [showCategories, setShowCategories] = useState(false);
 
-  // Ouvrir directement le modal création si ?action=create dans l'URL
-  useEffect(() => {
-    if (searchParams.get('action') === 'create') setShowProductModal(true);
-  }, [searchParams]);
+  const searchTimeout = useRef(null);
 
-  // ── Fetch products ─────────────────────────────────────────────────────────
-  const fetchProducts = useCallback(async () => {
+  // ── Data fetching ──────────────────────────────────────────────────────────
+
+  const fetchProducts = useCallback(async (opts = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await productsAPI.getAll({
-        page:         pagination.page,
-        limit:        pagination.limit,
-        search:       search || undefined,
-        categorySlug: filterCategory || undefined,
-        sortBy,
-        order:        sortOrder,
-      });
-
-      const payload = res.data?.data ?? res.data;
-      const items =
-        Array.isArray(payload?.data)
-          ? payload.data
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload)
-              ? payload
-              : [];
-
+      const params = {
+        page: opts.page ?? pagination.page,
+        limit: pagination.limit,
+        sortBy: opts.sortBy ?? sortBy,
+        order: opts.sortOrder ?? sortOrder,
+        ...(opts.search ?? search ? { search: opts.search ?? search } : {}),
+        ...(opts.filterCategory ?? filterCategory ? { categorySlug: opts.filterCategory ?? filterCategory } : {}),
+      };
+      const res = await productsAPI.getAll(params);
+      const d = res.data;
+      const inner = d?.data ?? d;
+      const items = Array.isArray(inner?.items) ? inner.items
+                  : Array.isArray(inner?.data)  ? inner.data
+                  : Array.isArray(inner)         ? inner
+                  : [];
+      const total = d?.data?.total ?? d?.total ?? items.length;
       setProducts(items);
-
-      if (typeof payload?.total === 'number') {
-        setPagination((p) => ({
-          ...p,
-          total: payload.total,
-          page: payload.page ?? p.page,
-          limit: payload.limit ?? p.limit,
-        }));
-      }
+      setPagination((prev) => ({ ...prev, page: params.page, total }));
     } catch (err) {
-      setError('Unable to load products.');
-      console.error(err);
+      setError(err.response?.data?.message ?? 'Failed to load products.');
     } finally {
       setLoading(false);
     }
   }, [pagination.page, pagination.limit, search, filterCategory, sortBy, sortOrder]);
 
-  // ── Fetch categorys ───────────────────────────────────────────────────────
   const fetchCategories = useCallback(async () => {
     try {
       const res = await categoriesAPI.getAll();
-      const payload = res.data?.data ?? res.data;
-      const list =
-        Array.isArray(payload?.data)
-          ? payload.data
-          : Array.isArray(payload)
-            ? payload
-            : [];
-      setCategories(list);
-    } catch (err) {
-      console.error('Error loading categories:', err);
+      const d = res.data;
+      const inner = d?.data ?? d;
+      const arr   = inner?.items ?? inner?.data ?? inner;
+      setCategories(Array.isArray(arr) ? arr : []);
+    } catch {
+      setCategories([]);
     }
   }, []);
 
   const fetchServices = useCallback(async () => {
     try {
       const res = await servicesAPI.getAll();
-      const payload = res.data?.data ?? res.data;
-      const list =
-        Array.isArray(payload?.data)
-          ? payload.data
-          : Array.isArray(payload)
-            ? payload
-            : [];
-      setServices(list);
-    } catch (err) {
-      console.error('Error loading services:', err);
+      const d = res.data;
+      const si = d?.data ?? d;
+      const sa = si?.items ?? si?.data ?? si;
+      setServices(Array.isArray(sa) ? sa : []);
+    } catch {
+      setServices([]);
     }
   }, []);
 
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
-  useEffect(() => { fetchServices(); }, [fetchServices]);
+  useEffect(() => {
+    fetchCategories();
+    fetchServices();
+  }, [fetchCategories, fetchServices]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // Open create modal if URL has ?action=create
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setShowCreate(true);
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleCreate = () => { setSelectedProduct(null); setShowProductModal(true); };
-  const handleEdit   = (product) => { setSelectedProduct(product); setShowProductModal(true); };
-  const handleDelete = (product) => { setProductToDelete(product); setShowDeleteModal(true); };
 
-  const handleModalClose = () => { setShowProductModal(false); setSelectedProduct(null); };
-  const handleModalSaved = () => { handleModalClose(); fetchProducts(); };
-
-  const handleDeleteConfirmed = async () => {
-    if (!productToDelete) return;
-    try {
-      await productsAPI.delete(productToDelete.slug);
-      setShowDeleteModal(false);
-      setProductToDelete(null);
-      fetchProducts();
-    } catch (err) {
-      console.error('Error suppression:', err);
-    }
-  };
-
-  const handleSort = (field) => {
-    if (sortBy === field) setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-    else { setSortBy(field); setSortOrder('asc'); }
-    setPagination((p) => ({ ...p, page: 1 }));
-  };
-
-  const handleSearch = (val) => {
-    setSearch(val);
-    setPagination((p) => ({ ...p, page: 1 }));
+  const handleSearch = (value) => {
+    setSearch(value);
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      fetchProducts({ search: value, page: 1 });
+    }, 400);
   };
 
   const handleFilterCategory = (slug) => {
     setFilterCategory(slug);
-    setPagination((p) => ({ ...p, page: 1 }));
+    fetchProducts({ filterCategory: slug, page: 1 });
   };
 
-  return (
-    <div className="space-y-6">
+  const handleSort = (field) => {
+    const newOrder = sortBy === field && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortBy(field);
+    setSortOrder(newOrder);
+    fetchProducts({ sortBy: field, sortOrder: newOrder, page: 1 });
+  };
 
-      {/* ── En-tête ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  const handlePageChange = (page) => {
+    setPagination((prev) => ({ ...prev, page }));
+    fetchProducts({ page });
+  };
+
+  const handleSaved = () => {
+    setShowCreate(false);
+    setEditProduct(null);
+    fetchProducts({ page: 1 });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteProduct) return;
+    await productsAPI.delete(deleteProduct.slug);
+    setDeleteProduct(null);
+    fetchProducts({ page: pagination.page });
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-            SaaS Products
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {pagination.total > 0
-              ? `${pagination.total} product${pagination.total > 1 ? 's' : ''} in total`
-              : 'Service catalog management'}
+            Manage your SaaS catalog
           </p>
         </div>
-
         <div className="flex items-center gap-2">
-          {/* Gérer categorys */}
           <button
-            onClick={() => setShowCategoryManager(true)}
-            className="
-              flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-sm font-medium
-              bg-white dark:bg-gray-800
-              border border-gray-200 dark:border-gray-700
-              text-gray-600 dark:text-gray-400
-              hover:border-indigo-400 dark:hover:border-indigo-500
-              hover:text-indigo-600 dark:hover:text-indigo-400
-              transition-all duration-200 shadow-sm
-            "
+            onClick={() => setShowCategories(true)}
+            className="flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all shadow-sm"
           >
-            Categories
+            <FolderOpen size={14} />
+            <span className="hidden sm:inline">Categories</span>
           </button>
-
-          {/* Refresh */}
           <button
-            onClick={fetchProducts}
+            onClick={() => fetchProducts()}
             disabled={loading}
-            className="
-              flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-sm font-medium
-              bg-white dark:bg-gray-800
-              border border-gray-200 dark:border-gray-700
-              text-gray-600 dark:text-gray-400
-              hover:border-indigo-400 dark:hover:border-indigo-500
-              hover:text-indigo-600 dark:hover:text-indigo-400
-              disabled:opacity-50 transition-all duration-200 shadow-sm
-            "
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 disabled:opacity-50 transition-all shadow-sm"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-
-          {/* Add product */}
           <button
-            onClick={handleCreate}
-            className="
-              flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium
-              bg-indigo-500 hover:bg-indigo-600
-              text-white transition-all duration-200 shadow-sm
-            "
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all shadow-sm"
           >
-            <Plus size={15} />
+            <Plus size={14} />
             Add Product
           </button>
         </div>
       </div>
 
-      {/* ── Error ── */}
+      {/* Error */}
       {error && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
-          <span>⚠️</span><span>{error}</span>
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+          <button onClick={() => fetchProducts()} className="ml-auto text-xs underline">Retry</button>
         </div>
       )}
 
-      {/* ── Products table ── */}
+      {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm overflow-hidden">
         <ProductTable
           products={products}
@@ -239,38 +206,36 @@ export default function ProductsPage() {
           onSearch={handleSearch}
           onFilterCategory={handleFilterCategory}
           onSort={handleSort}
-          onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onPageChange={handlePageChange}
+          onEdit={setEditProduct}
+          onDelete={setDeleteProduct}
         />
       </div>
 
-      {/* ── Modal Création / Édition ── */}
-      {showProductModal && (
+      {/* Modals */}
+      {(showCreate || editProduct) && (
         <ProductModal
-          product={selectedProduct}
+          product={editProduct}
           categories={categories}
           services={services}
-          onClose={handleModalClose}
-          onSaved={handleModalSaved}
+          onClose={() => { setShowCreate(false); setEditProduct(null); }}
+          onSaved={handleSaved}
         />
       )}
 
-      {/* ── Modal Suppression ── */}
-      {showDeleteModal && (
+      {deleteProduct && (
         <ProductDeleteModal
-          product={productToDelete}
-          onClose={() => { setShowDeleteModal(false); setProductToDelete(null); }}
-          onConfirm={handleDeleteConfirmed}
+          product={deleteProduct}
+          onClose={() => setDeleteProduct(null)}
+          onConfirm={handleDeleteConfirm}
         />
       )}
 
-      {/* ── Modal Categories ── */}
-      {showCategoryManager && (
+      {showCategories && (
         <CategoryManager
           categories={categories}
-          onClose={() => setShowCategoryManager(false)}
-          onSaved={() => { fetchCategories(); }}
+          onClose={() => setShowCategories(false)}
+          onSaved={fetchCategories}
         />
       )}
     </div>

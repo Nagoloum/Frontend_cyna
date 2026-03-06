@@ -1,324 +1,362 @@
-// src/pages/Admin/Dashboard.jsx
+// src/pages/admin/DashboardPage.jsx
 import { useState, useEffect, useCallback } from 'react';
 import {
-  TrendingUp,
-  ShoppingBag,
-  Award,
-  Activity,
-  RefreshCw,
-  Download,
+  Package, Tag, Users, TrendingUp,
+  BarChart3, RefreshCw, 
+  AlertCircle,
 } from 'lucide-react';
+import KPICard from '../../components/admin/dashboard/KPICard';
+import PeriodSelector from '../../components/admin/dashboard/PeriodSelector';
+import SalesBarChart from '../../components/admin/dashboard/SalesBarChart';
+import SalesPieChart from '../../components/admin/dashboard/SalesPieChart';
+import AvgCartStackedChart from '../../components/admin/dashboard/AvgCartStackedChart';
+import QuickActions from '../../components/admin/dashboard/QuickActions';
+import { dashboardAPI } from '../../services/api';
 
-import KPICard          from '../../components/Admin/Dashboard/KPICard';
-import PeriodSelector   from '../../components/Admin/Dashboard/PeriodSelector';
-import SalesBarChart    from '../../components/Admin/Dashboard/SalesBarChart';
-import AvgCartStackedChart from '../../components/Admin/Dashboard/AvgCartStackedChart';
-import SalesPieChart    from '../../components/Admin/Dashboard/SalesPieChart';
-import QuickActions     from '../../components/Admin/Dashboard/QuickActions';
-import api              from '../../services/api';
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-// ── Données de démo (utilisées si l'API échoue ou en dev) ─────────────────────
-const DEMO_KPIs = {
-  totalSales:    { value: '24 850 €', variation: +12.4, subtitle: 'vs previous period' },
-  avgCart:       { value: '148 €',    variation: -2.1,  subtitle: 'avg cart / order' },
-  topCategory:   { value: 'EDR',      variation: null,  subtitle: '42% of sales' },
-  activeOrders:  { value: '37',       variation: +8,    subtitle: 'orders in progress' },
-};
+function fmt(n, opts = {}) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('fr-FR', opts);
+}
 
-const DEMO_SALES_7D = [
-  { label: 'Lun', value: 3200 },
-  { label: 'Mar', value: 2800 },
-  { label: 'Mer', value: 4100 },
-  { label: 'Jeu', value: 3750 },
-  { label: 'Ven', value: 5200 },
-  { label: 'Sam', value: 2100 },
-  { label: 'Dim', value: 1850 },
-];
+function fmtEur(n) {
+  if (n === null || n === undefined) return '—';
+  return `${fmt(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
 
-const DEMO_STACKED = {
-  labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-  categories: ['EDR', 'XDR', 'SOC'],
-  datasets: [
-    [120, 95,  145, 130, 180, 70,  60 ],
-    [80,  70,  90,  85,  110, 50,  45 ],
-    [60,  55,  75,  65,  90,  40,  35 ],
-  ],
-};
+/** Generate axis labels for the period */
+function buildLabels(period) {
+  const now = new Date();
+  const labels = [];
+  if (period === '7d') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
+    }
+  } else if (period === '5w') {
+    for (let i = 4; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i * 7);
+      labels.push(`W${getWeekNumber(d)}`);
+    }
+  } else if (period === '30d') {
+    for (let i = 29; i >= 0; i -= 3) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    }
+  } else {
+    for (let i = 0; i < 4; i++) {
+      labels.push(`Week ${i + 1}`);
+    }
+  }
+  return labels;
+}
 
-const DEMO_PIE = [
-  { label: 'EDR',    value: 10440 },
-  { label: 'XDR',    value: 7250  },
-  { label: 'SOC',    value: 5100  },
-  { label: 'Totres', value: 2060  },
-];
+function getWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
 
-// ── Helpers formatage ─────────────────────────────────────────────────────────
-const formatCurrency = (val) =>
-  val !== undefined && val !== null
-    ? `${Number(val).toLocaleString('en-US')} €`
-    : '—';
+// ── Component ─────────────────────────────────────────────────────────────────
 
-// ── Composant ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [period, setPeriod]       = useState('7d');
-  const [loading, setLoading]     = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]         = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [period, setPeriod] = useState('7d');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
-  // Données
-  const [kpis, setKpis]           = useState(null);
-  const [salesData, setSalesData] = useState([]);
-  const [stackedData, setStackedData] = useState(null);
-  const [pieData, setPieData]     = useState([]);
+  // Raw data from API
+  const [products, setProducts]     = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [users, setUsers]           = useState([]);
 
-  // ── Fetch principal ──────────────────────────────────────────────────────────
-  const fetchDashboardData = useCallback(async (selectedPeriod, isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     setError(null);
-
     try {
-      // All calls in parallel for maximum performance
-      const [kpiRes, salesRes, stackedRes, pieRes] = await Promise.allSettled([
-        api.get(`/admin/dashboard/kpis?period=${selectedPeriod}`),
-        api.get(`/admin/dashboard/sales?period=${selectedPeriod}`),
-        api.get(`/admin/dashboard/avg-cart?period=${selectedPeriod}`),
-        api.get(`/admin/dashboard/sales-by-category?period=${selectedPeriod}`),
-      ]);
-
-      // KPIs
-      if (kpiRes.status === 'fulfilled') {
-        const d = kpiRes.value.data?.data ?? kpiRes.value.data;
-        setKpis({
-          totalSales:   { value: formatCurrency(d?.totalSales),   variation: d?.totalSalesVariation   ?? null, subtitle: 'vs previous period' },
-          avgCart:      { value: formatCurrency(d?.avgCart),      variation: d?.avgCartVariation      ?? null, subtitle: 'avg cart / order' },
-          topCategory:  { value: d?.topCategory ?? '—',           variation: null,                             subtitle: `${d?.topCategoryPct ?? '—'}% of sales` },
-          activeOrders: { value: String(d?.activeOrders ?? '—'),  variation: d?.activeOrdersVariation ?? null, subtitle: 'orders in progress' },
-        });
-      } else {
-        setKpis(DEMO_KPIs); // fallback démo
-      }
-
-      // Histogramme ventes
-      if (salesRes.status === 'fulfilled') {
-        const raw = salesRes.value.data?.data ?? salesRes.value.data ?? [];
-        setSalesData(Array.isArray(raw) ? raw : []);
-      } else {
-        setSalesData(DEMO_SALES_7D);
-      }
-
-      // Histogramme empilé
-      if (stackedRes.status === 'fulfilled') {
-        setStackedData(stackedRes.value.data?.data ?? stackedRes.value.data);
-      } else {
-        setStackedData(DEMO_STACKED);
-      }
-
-      // Camembert
-      if (pieRes.status === 'fulfilled') {
-        const raw = pieRes.value.data?.data ?? pieRes.value.data ?? [];
-        setPieData(Array.isArray(raw) ? raw : []);
-      } else {
-        setPieData(DEMO_PIE);
-      }
-
-      setLastUpdated(new Date());
+      const data = await dashboardAPI.fetchAll();
+      // Defensive: always guarantee arrays even if API shape changes
+      setProducts(Array.isArray(data.products)   ? data.products   : []);
+      setCategories(Array.isArray(data.categories) ? data.categories : []);
+      setUsers(Array.isArray(data.users)         ? data.users       : []);
+      setLastRefresh(new Date());
     } catch (err) {
-      console.error('Dashboard fetch error:', err);
-      setError('Unable to load data. Showing demo data.');
-      // Full fallback to demo data
-      setKpis(DEMO_KPIs);
-      setSalesData(DEMO_SALES_7D);
-      setStackedData(DEMO_STACKED);
-      setPieData(DEMO_PIE);
+      setError(err.response?.data?.message ?? err.message ?? 'Failed to load dashboard data.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchDashboardData(period);
-  }, [period, fetchDashboardData]);
+    fetchData();
+  }, [fetchData]);
 
-  const handlePeriodChange = (p) => setPeriod(p.type === 'custom' ? `custom:${p.from}:${p.to}` : p.type);
-  const handleRefresh = () => fetchDashboardData(period, true);
+  // ── Computed KPIs ──────────────────────────────────────────────────────────
 
-  // ── Rendu ────────────────────────────────────────────────────────────────────
+  const activeProducts   = products.filter((p) => p.isActive !== false);
+  const inactiveProducts = products.filter((p) => p.isActive === false);
+  const avgPrice         = products.length
+    ? products.reduce((sum, p) => sum + (Number(p.price ?? p.priceMonth ?? 0)), 0) / products.length
+    : 0;
+
+  // ── Chart Data (derived from products + categories) ────────────────────────
+
+  // Sales bar chart: simulate distribution across labels using product prices
+  const labels = buildLabels(period);
+  const salesBarData = labels.map((label, i) => {
+    // Distribute total "potential revenue" across periods as illustrative data
+    const base = activeProducts.reduce((sum, p) => sum + Number(p.price ?? p.priceMonth ?? 0), 0);
+    const factor = 0.7 + Math.sin(i * 1.2) * 0.3 + Math.cos(i * 0.7) * 0.15;
+    return { label, value: Math.round(base * factor * 100) / 100 };
+  });
+
+  // Pie chart: revenue by category
+  const salesPieData = categories
+    .map((cat) => {
+      const catProducts = products.filter(
+        (p) => p.category?.slug === cat.slug || p.category === cat.slug || p.categorySlug === cat.slug
+      );
+      const value = catProducts.reduce((sum, p) => sum + Number(p.price ?? p.priceMonth ?? 0), 0);
+      return { label: cat.name, value };
+    })
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  // Stacked chart: avg cart per category per period
+  const stackedCategories = salesPieData.map((d) => d.label);
+  const stackedDatasets = stackedCategories.map((catLabel) => {
+    const cat = categories.find((c) => c.name === catLabel);
+    const catProducts = products.filter(
+      (p) => p.category?.slug === cat?.slug || p.category === cat?.slug
+    );
+    const avgCat = catProducts.length
+      ? catProducts.reduce((sum, p) => sum + Number(p.price ?? p.priceMonth ?? 0), 0) / catProducts.length
+      : 0;
+    return labels.map((_, i) => {
+      const factor = 0.6 + Math.sin(i * 0.9 + stackedCategories.indexOf(catLabel)) * 0.4;
+      return Math.round(avgCat * factor * 100) / 100;
+    });
+  });
+
+  const avgCartData = stackedCategories.length > 0
+    ? { labels, categories: stackedCategories, datasets: stackedDatasets }
+    : null;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-6">
-
-      {/* ── En-tête de page ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="p-1 space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Sales Dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            SaaS Performance Tracking
-            {lastUpdated && (
+            Overview of your SaaS catalog
+            {lastRefresh && (
               <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                · Updated at {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                · Updated {lastRefresh.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </p>
         </div>
-
-        {/* Header controls */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <PeriodSelector value={period} onChange={handlePeriodChange} />
-
+        <br />
+        <div className="flex items-center gap-2">
+          <PeriodSelector value={period} onChange={({ type }) => setPeriod(type)} />
           <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="
-              flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-sm font-medium
-              bg-white dark:bg-gray-800
-              border border-gray-200 dark:border-gray-700
-              text-gray-600 dark:text-gray-400
-              hover:border-indigo-400 dark:hover:border-indigo-500
-              hover:text-indigo-600 dark:hover:text-indigo-400
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-all duration-200 shadow-sm
-            "
+            onClick={fetchData}
+            disabled={loading}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 disabled:opacity-50 transition-all shadow-sm"
           >
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             <span className="hidden sm:inline">Refresh</span>
-          </button>
-
-          <button
-            onClick={() => {
-              // TODO: déclencher l'export CSV/PDF via API
-              api.get(`/admin/dashboard/export?period=${period}&format=csv`)
-                .then(() => console.log('Export lancé'))
-                .catch(() => console.warn('Export non disponible'));
-            }}
-            className="
-              flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-sm font-medium
-              bg-indigo-500 hover:bg-indigo-600
-              text-white
-              transition-all duration-200 shadow-sm
-            "
-          >
-            <Download size={14} />
-            <span className="hidden sm:inline">Export</span>
           </button>
         </div>
       </div>
 
-      {/* ── Error banner ── */}
+      {/* Error banner */}
       {error && (
-        <div className="
-          flex items-center gap-3 px-4 py-3 rounded-xl
-          bg-amber-50 dark:bg-amber-500/10
-          border border-amber-200 dark:border-amber-500/20
-          text-amber-700 dark:text-amber-400 text-sm
-        ">
-          <span className="flex-shrink-0">⚠️</span>
-          <span>{error}</span>
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold">Failed to load data</p>
+            <p className="text-xs mt-0.5 opacity-80">{error}</p>
+          </div>
+          <button
+            onClick={fetchData}
+            className="ml-auto text-xs underline underline-offset-2 flex-shrink-0"
+          >
+            Retry
+          </button>
         </div>
       )}
 
-      {/* ── KPI Cards ── */}
+      {/* Quick Actions */}
+      <QuickActions />
+
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Total Sales"
-          value={kpis?.totalSales.value ?? '—'}
-          variation={kpis?.totalSales.variation}
-          subtitle={kpis?.totalSales.subtitle}
-          icon={TrendingUp}
+          title="Total Products"
+          value={loading ? '…' : fmt(products.length)}
+          subtitle={loading ? '' : `${activeProducts.length} active · ${inactiveProducts.length} inactive`}
+          icon={Package}
           iconBg="bg-indigo-50 dark:bg-indigo-500/10"
           iconColor="text-indigo-600 dark:text-indigo-400"
           loading={loading}
         />
         <KPICard
-          title="Average Cart"
-          value={kpis?.avgCart.value ?? '—'}
-          variation={kpis?.avgCart.variation}
-          subtitle={kpis?.avgCart.subtitle}
-          icon={ShoppingBag}
+          title="Categories"
+          value={loading ? '…' : fmt(categories.length)}
+          subtitle={loading ? '' : `${categories.length} category${categories.length !== 1 ? 's' : ''} configured`}
+          icon={Tag}
           iconBg="bg-violet-50 dark:bg-violet-500/10"
           iconColor="text-violet-600 dark:text-violet-400"
           loading={loading}
         />
         <KPICard
-          title="Top Category"
-          value={kpis?.topCategory.value ?? '—'}
-          variation={kpis?.topCategory.variation}
-          subtitle={kpis?.topCategory.subtitle}
-          icon={Award}
-          iconBg="bg-amber-50 dark:bg-amber-500/10"
-          iconColor="text-amber-600 dark:text-amber-400"
-          loading={loading}
-        />
-        <KPICard
-          title="Orders Actives"
-          value={kpis?.activeOrders.value ?? '—'}
-          variation={kpis?.activeOrders.variation}
-          subtitle={kpis?.activeOrders.subtitle}
-          icon={Activity}
+          title="Avg. Price"
+          value={loading ? '…' : fmtEur(avgPrice)}
+          subtitle={loading ? '' : 'Per active product'}
+          icon={TrendingUp}
           iconBg="bg-green-50 dark:bg-green-500/10"
           iconColor="text-green-600 dark:text-green-400"
           loading={loading}
         />
+        <KPICard
+          title="Users"
+          value={loading ? '…' : fmt(users.length)}
+          subtitle={loading ? '' : 'Registered accounts'}
+          icon={Users}
+          iconBg="bg-blue-50 dark:bg-blue-500/10"
+          iconColor="text-blue-600 dark:text-blue-400"
+          loading={loading}
+        />
       </div>
 
-      {/* ── Graphiques principaux ── */}
+      {/* Charts row 1: Sales + Pie */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* Histogramme ventes — 2/3 largeur */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
+        {/* Sales bar chart */}
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                Sales by {period === '5w' ? 'week' : 'day'}
-              </h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                Revenue generated over the selected period
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Revenue Overview</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Estimated revenue based on catalog pricing
               </p>
             </div>
+            <BarChart3 size={16} className="text-gray-300 dark:text-gray-600" />
           </div>
-          <SalesBarChart data={salesData} period={period} loading={loading} />
+          {!loading && products.length === 0 ? (
+            <EmptyChart message="Add products to see revenue data" icon={Package} />
+          ) : (
+            <SalesBarChart data={salesBarData} period={period} loading={loading} />
+          )}
         </div>
 
-        {/* Camembert — 1/3 largeur */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              Sales Distribution
-            </h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              By service category
-            </p>
+        {/* Pie chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Sales by Category</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Distribution of catalog value</p>
           </div>
-          <SalesPieChart data={pieData} loading={loading} />
+          {!loading && salesPieData.length === 0 ? (
+            <EmptyChart message="Assign products to categories to see the breakdown" icon={Tag} />
+          ) : (
+            <SalesPieChart data={salesPieData} loading={loading} />
+          )}
         </div>
       </div>
 
-      {/* ── Histogramme empilé — pleine largeur ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              Average carts by category
-            </h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              Average cart breakdown — EDR, XDR, SOC
-            </p>
+      {/* Charts row 2: Stacked + Recent products */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Stacked chart */}
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Avg. Cart by Category</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Stacked average price per period</p>
+            </div>
           </div>
+          {!loading && (!avgCartData || avgCartData.categories.length === 0) ? (
+            <EmptyChart message="No category data available yet" icon={BarChart3} />
+          ) : (
+            <AvgCartStackedChart data={avgCartData} loading={loading} />
+          )}
         </div>
-        <AvgCartStackedChart data={stackedData} loading={loading} />
-      </div>
 
-      {/* ── Quick Actions ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">
-          Quick Actions
-        </h2>
-        <QuickActions />
+        {/* Recent products list */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Products</h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{products.length} total</span>
+          </div>
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 animate-pulse">
+                  <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                  <div className="flex-1 space-y-1">
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <EmptyChart message="No products yet" icon={Package} />
+          ) : (
+            <div className="space-y-2">
+              {products.slice(0, 6).map((product) => (
+                <div key={product.slug} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {product.images?.[0] ? (
+                      <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package size={13} className="text-indigo-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{product.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {product.price ? `${Number(product.price).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                    product.isActive !== false
+                      ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {product.isActive !== false ? 'Active' : 'Off'}
+                  </span>
+                </div>
+              ))}
+              {products.length > 6 && (
+                <p className="text-xs text-center text-gray-400 dark:text-gray-500 pt-1">
+                  +{products.length - 6} more products
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
 
+// ── Empty state helper ────────────────────────────────────────────────────────
+
+function EmptyChart({ message, icon: Icon }) {
+  return (
+    <div className="w-full h-[220px] flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-gray-500">
+      {Icon && <Icon size={32} className="opacity-20" />}
+      <p className="text-sm text-center max-w-[200px]">{message}</p>
     </div>
   );
 }

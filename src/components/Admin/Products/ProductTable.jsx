@@ -35,7 +35,11 @@ export default function ProductTable({
   pagination, search, filterCategory, sortBy, sortOrder,
   onSearch, onFilterCategory, onSort, onPageChange, onEdit, onDelete,
 }) {
-  const totalPages = Math.ceil(pagination.total / pagination.limit) || 1;
+  // Defensive normalisation — guards against API returning an object instead of array
+  const safeProducts   = Array.isArray(products)   ? products   : [];
+  const safeCategories = Array.isArray(categories) ? categories : [];
+
+  const totalPages = Math.ceil((pagination?.total ?? 0) / (pagination?.limit ?? 10)) || 1;
 
   const formatPrice = (p) =>
     p !== undefined && p !== null
@@ -85,7 +89,7 @@ export default function ProductTable({
           "
         >
           <option value="">All categories</option>
-          {categories.map((cat) => (
+          {safeCategories.map((cat) => (
             <option key={cat.slug} value={cat.slug}>{cat.name}</option>
           ))}
         </select>
@@ -126,7 +130,7 @@ export default function ProductTable({
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/40">
             {loading
               ? [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
-              : products.length === 0
+              : safeProducts.length === 0
               ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-16 text-center">
@@ -140,7 +144,7 @@ export default function ProductTable({
                   </td>
                 </tr>
               )
-              : products.map((product) => (
+              : safeProducts.map((product) => (
                 <tr
                   key={product.slug}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-100 group"

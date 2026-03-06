@@ -1,7 +1,7 @@
 // src/layouts/admin/AdminHeader.jsx
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Shield, ChevronDown, User, LogOut, Settings, X } from 'lucide-react';
+import { Shield, ChevronDown, User, LogOut, Settings } from 'lucide-react';
 
 // ── Utilitaire : lire le user depuis le token JWT ─────────────────────────────
 const getUserFromToken = () => {
@@ -22,9 +22,7 @@ const getUserFromToken = () => {
 
 // ── Composant ─────────────────────────────────────────────────────────────────
 export default function AdminHeader() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [notifications] = useState(3); // TODO: fetch depuis API
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -47,12 +45,6 @@ export default function AdminHeader() {
     navigate('/auth');
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    // TODO: implement global search (products/orders)
-    console.log('Recherche globale :', searchQuery);
-  };
 
   // Admin initials for avatar
   const initials = user?.name
@@ -61,47 +53,13 @@ export default function AdminHeader() {
 
   return (
     <header className="
-      h-16 flex-shrink-0 flex items-center justify-between
+      h-16 flex-shrink-0 flex items-right justify-between 
       px-6 gap-4
       bg-white dark:bg-gray-900
       border-b border-gray-200 dark:border-gray-700/60
     ">
-      {/* ── Global search bar ── */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-md">
-        <div className="
-          relative flex items-center
-          bg-gray-50 dark:bg-gray-800
-          border border-gray-200 dark:border-gray-700
-          rounded-xl h-9 px-3 gap-2
-          focus-within:ring-2 focus-within:ring-indigo-500/30
-          focus-within:border-indigo-400 dark:focus-within:border-indigo-500
-          transition-all duration-200
-        ">
-          <Search size={15} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search products, orders…"
-            className="
-              bg-transparent text-sm text-gray-700 dark:text-gray-300
-              placeholder-gray-400 dark:placeholder-gray-500
-              outline-none w-full
-            "
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      </form>
-
-      {/* ── Actions droite ── */}
+      <div></div>
+      
       <div className="flex items-center gap-3">
 
         {/* Badge 2FA */}
@@ -115,21 +73,7 @@ export default function AdminHeader() {
           <span className="text-xs font-semibold text-green-600 dark:text-green-400">2FA</span>
         </div>
 
-        {/* Notifications */}
-        <button className="relative p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-200">
-          <Bell size={18} />
-          {notifications > 0 && (
-            <span className="
-              absolute top-1 right-1
-              w-4 h-4 rounded-full
-              bg-indigo-500 text-white
-              text-[10px] font-bold
-              flex items-center justify-center
-            ">
-              {notifications > 9 ? '9+' : notifications}
-            </span>
-          )}
-        </button>
+        
 
         {/* Menu utilisateur */}
         <div className="relative" ref={userMenuRef}>
