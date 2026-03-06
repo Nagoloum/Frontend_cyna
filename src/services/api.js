@@ -5,18 +5,15 @@ import axios from 'axios';
 // Instance Axios
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Utilise VITE_API_URL si défini dans .env, sinon fallback localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gestion du token
+// Token management
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const setAuthToken = (token) => {
@@ -27,25 +24,20 @@ export const setAuthToken = (token) => {
   }
 };
 
-// Charger le token au démarrage (si déjà connecté)
 const storedToken = localStorage.getItem('token');
-if (storedToken) {
-  setAuthToken(storedToken);
-}
+if (storedToken) setAuthToken(storedToken);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Intercepteur réponse — gestion globale des erreurs
+// Response interceptor — global error handling
 // ─────────────────────────────────────────────────────────────────────────────
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Nettoyage complet de la session
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setAuthToken(null);
-      // Redirection vers login
       window.location.href = '/auth';
     }
     return Promise.reject(error);
@@ -61,8 +53,11 @@ export const login = async (credentials) => {
   const data = response.data;
   if (data.success && data.data) {
     const token = data.data.token;
+    const user  = data.data.user ?? data.data;
+
     if (token) {
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
       setAuthToken(token);
     }
     return data.data;
@@ -81,26 +76,48 @@ export const authAPI = {
     window.location.href = '/auth';
   },
 
+  /** GET /api/auth/user/me — fetch current user */
+  me: async () => {
+    const response = await api.get('/auth/user/me');
+    const data = response.data;
+    return data.data ?? data;
+  },
+
   forgotPassword: (email) =>
     api.post('/auth/forgot-password', { email }),
 
-  resetPassword: (token, newPassword) =>
-    api.post('/auth/reset-password', { token, newPassword }),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
 
   emailConfirmation: (token) =>
     api.get(`/auth/email-confirmation?token=${encodeURIComponent(token)}`),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// USERS  →  /api/users
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const usersAPI = {
+  /** GET /api/users */
+  getAll: (params = {}) =>
+    api.get('/users', { params }),
+
+  /** GET /api/users/:id */
+  getById: (id) =>
+    api.get(`/users/${id}`),
+
+  /** PATCH /api/users/profil/:id */
+  updateProfile: (id, data) =>
+    api.patch(`/users/profil/${id}`, data),
+
+  /** DELETE /api/users/:id */
+  delete: (id) =>
+    api.delete(`/users/${id}`),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CATEGORIES  →  /api/categories
 // ─────────────────────────────────────────────────────────────────────────────
-// Routes confirmées dans les logs NestJS :
-//   POST   /api/categories
-//   GET    /api/categories
-//   GET    /api/categories/category-by-order
-//   GET    /api/categories/:slug
-//   PATCH  /api/categories/:slug
-//   DELETE /api/categories/:slug
 
 export const categoriesAPI = {
   /** GET /api/categories */
@@ -116,12 +133,20 @@ export const categoriesAPI = {
     api.get(`/categories/${slug}`),
 
   /** POST /api/categories */
-  create: (data) =>
-    api.post('/categories', data),
+  create: (data) => {
+    const isFormData = data instanceof FormData;
+    return api.post('/categories', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
+  },
 
   /** PATCH /api/categories/:slug */
-  update: (slug, data) =>
-    api.patch(`/categories/${slug}`, data),
+  update: (slug, data) => {
+    const isFormData = data instanceof FormData;
+    return api.patch(`/categories/${slug}`, data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
+  },
 
   /** DELETE /api/categories/:slug */
   delete: (slug) =>
@@ -131,12 +156,6 @@ export const categoriesAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 // SERVICES  →  /api/services
 // ─────────────────────────────────────────────────────────────────────────────
-// Routes confirmées dans les logs NestJS :
-//   POST   /api/services
-//   GET    /api/services
-//   GET    /api/services/:slug
-//   PATCH  /api/services/:slug
-//   DELETE /api/services/:slug
 
 export const servicesAPI = {
   /** GET /api/services */
@@ -148,12 +167,20 @@ export const servicesAPI = {
     api.get(`/services/${slug}`),
 
   /** POST /api/services */
-  create: (data) =>
-    api.post('/services', data),
+  create: (data) => {
+    const isFormData = data instanceof FormData;
+    return api.post('/services', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
+  },
 
   /** PATCH /api/services/:slug */
-  update: (slug, data) =>
-    api.patch(`/services/${slug}`, data),
+  update: (slug, data) => {
+    const isFormData = data instanceof FormData;
+    return api.patch(`/services/${slug}`, data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
+  },
 
   /** DELETE /api/services/:slug */
   delete: (slug) =>
@@ -163,17 +190,10 @@ export const servicesAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCTS  →  /api/products
 // ─────────────────────────────────────────────────────────────────────────────
-// Routes confirmées dans les logs NestJS :
-//   POST   /api/products
-//   GET    /api/products
-//   GET    /api/products/product-by-order
-//   GET    /api/products/:slug
-//   PATCH  /api/products/:slug
-//   DELETE /api/products/:slug
 
 export const productsAPI = {
   /** GET /api/products
-   *  Params supportés : { page, limit, search, categorySlug, sortBy, order }
+   *  Params: { page, limit, search, categorySlug, sortBy, order }
    */
   getAll: (params = {}) =>
     api.get('/products', { params }),
@@ -186,9 +206,7 @@ export const productsAPI = {
   getBySlug: (slug) =>
     api.get(`/products/${slug}`),
 
-  /** POST /api/products
-   *  Détecte automatiquement FormData (upload images) vs JSON
-   */
+  /** POST /api/products */
   create: (data) => {
     const isFormData = data instanceof FormData;
     return api.post('/products', data, {
@@ -210,10 +228,8 @@ export const productsAPI = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ORDERS  →  /api/orders
+// ORDERS  →  /api/orders  (endpoints TBD — graceful fallback built-in)
 // ─────────────────────────────────────────────────────────────────────────────
-// ⚠️ Routes pas encore dans les logs — à valider avec le backend
-//    Mettre à jour les endpoints quand disponibles
 
 export const ordersAPI = {
   /** GET /api/orders */
@@ -234,52 +250,57 @@ export const ordersAPI = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUPPORT  →  /api/support
+// SUPPORT  →  /api/support  (endpoints TBD)
 // ─────────────────────────────────────────────────────────────────────────────
-// ⚠️ Routes pas encore dans les logs — à valider avec le backend
 
 export const supportAPI = {
-  /** GET /api/support */
   getAll: (params = {}) =>
     api.get('/support', { params }),
 
-  /** GET /api/support/:id */
   getById: (id) =>
     api.get(`/support/${id}`),
 
-  /** PATCH /api/support/:id/reply */
   reply: (id, message) =>
     api.patch(`/support/${id}/reply`, { message }),
 
-  /** PATCH /api/support/:id/status */
   updateStatus: (id, status) =>
     api.patch(`/support/${id}/status`, { status }),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DASHBOARD  →  /api/admin/dashboard
+// DASHBOARD  →  derived from existing endpoints (products, categories, users)
+// NOTE: No /admin/dashboard endpoints exist yet in the backend.
+// Dashboard stats are computed client-side from real data.
 // ─────────────────────────────────────────────────────────────────────────────
-// ⚠️ Routes pas encore dans les logs — à valider avec le backend
 
 export const dashboardAPI = {
-  getKpis: (period) =>
-    api.get('/admin/dashboard/kpis', { params: { period } }),
+  /**
+   * Fetch all data needed to build KPIs.
+   * Returns { products, categories, users }
+   */
+  fetchAll: async () => {
+    const [productsRes, categoriesRes, usersRes] = await Promise.allSettled([
+      api.get('/products', { params: { limit: 1000 } }),
+      api.get('/categories'),
+      api.get('/users'),
+    ]);
 
-  getSales: (period) =>
-    api.get('/admin/dashboard/sales', { params: { period } }),
+    const extract = (res) => {
+      if (res.status === 'rejected') return [];
+      const d = res.value.data;
+      // Handle all common NestJS shapes:
+      // { data: [...] } | { data: { items: [...], total } } | { items: [...] } | [...]
+      const inner = d?.data ?? d;
+      const arr   = inner?.items ?? inner?.data ?? inner;
+      return Array.isArray(arr) ? arr : [];
+    };
 
-  getAvgCart: (period) =>
-    api.get('/admin/dashboard/avg-cart', { params: { period } }),
-
-  getSalesByCategory: (period) =>
-    api.get('/admin/dashboard/sales-by-category', { params: { period } }),
-
-  /** Retourne un Blob binaire pour déclencher un téléchargement */
-  export: (period, format = 'csv') =>
-    api.get('/admin/dashboard/export', {
-      params: { period, format },
-      responseType: 'blob',
-    }),
+    return {
+      products: extract(productsRes),
+      categories: extract(categoriesRes),
+      users: extract(usersRes),
+    };
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
