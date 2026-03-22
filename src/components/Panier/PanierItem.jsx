@@ -2,55 +2,78 @@ export default function PanierItem({
   article,
   supprimerArticle,
   mettreAJourQuantite,
+  changerDuree,
 }) {
-  const sousTotal = article.prix * article.quantite;
+  const multiplicateur = article.durée === 'annuel' ? 10 : 1; // ex : annuel = 10 mois payés
+  const prixUnitaire = article.prix * multiplicateur;
+  const sousTotal = prixUnitaire * article.quantite;
 
   return (
-    <div className="flex gap-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
-      {/* Image produit */}
-      <div className="flex-shrink-0">
-        <img
-          src={article.image}
-          alt={article.nom}
-          className="w-24 h-24 object-cover rounded-lg"
-        />
-      </div>
+    <div
+      className={`flex gap-4 p-4 rounded-lg border ${
+        article.disponible ? 'bg-white border-gray-200' : 'bg-gray-100 border-red-200 opacity-80'
+      }`}
+    >
+      <img
+        src={article.image}
+        alt={article.nom}
+        className="w-24 h-24 object-cover rounded-lg"
+      />
 
-      {/* Détails produit */}
-      <div className="flex-grow">
-        <h3 className="text-lg font-semibold text-gray-900">{article.nom}</h3>
-        <p className="text-gray-600 mt-1">{article.prix.toFixed(2)} €</p>
+      <div className="flex-1">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">{article.nom}</h3>
+          {!article.disponible && (
+            <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded">
+              Indisponible
+            </span>
+          )}
+        </div>
 
-        {/* Contrôle quantité */}
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            onClick={() => mettreAJourQuantite(article.id, article.quantite - 1)}
-            className="px-3 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition"
-          >
-            −
-          </button>
-          <span className="text-gray-900 font-semibold w-8 text-center">
-            {article.quantite}
-          </span>
-          <button
-            onClick={() => mettreAJourQuantite(article.id, article.quantite + 1)}
-            className="px-3 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition"
-          >
-            +
-          </button>
+        <div className="mt-2 flex flex-col gap-2 text-sm text-gray-700">
+          <div>
+            Durée :
+            <select
+              value={article.durée}
+              onChange={(e) => changerDuree(article.id, e.target.value)}
+              className="ml-2 rounded border border-gray-300 px-2 py-1"
+            >
+              <option value="mensuel">Mensuel</option>
+              <option value="annuel">Annuel</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              disabled={!article.disponible}
+              onClick={() => mettreAJourQuantite(article.id, article.quantite - 1)}
+              className="w-8 h-8 rounded border border-gray-300 disabled:opacity-40"
+            >
+              −
+            </button>
+            <span className="w-8 text-center">{article.quantite}</span>
+            <button
+              disabled={!article.disponible}
+              onClick={() => mettreAJourQuantite(article.id, article.quantite + 1)}
+              className="w-8 h-8 rounded border border-gray-300 disabled:opacity-40"
+            >
+              +
+            </button>
+          </div>
+
+          <p className="text-gray-600">
+            Prix unitaire : {prixUnitaire.toFixed(2)} € / {article.durée}
+          </p>
+          <p className="text-gray-900 font-bold">Total : {sousTotal.toFixed(2)} €</p>
         </div>
       </div>
 
-      {/* Sous-total et bouton supprimer */}
-      <div className="flex flex-col items-end justify-between">
-        <p className="text-lg font-bold text-gray-900">{sousTotal.toFixed(2)} €</p>
-        <button
-          onClick={() => supprimerArticle(article.id)}
-          className="text-red-600 hover:text-red-800 font-semibold text-sm transition"
-        >
-          Supprimer
-        </button>
-      </div>
+      <button
+        onClick={() => supprimerArticle(article.id)}
+        className="self-start text-red-600 hover:text-red-800 text-sm font-semibold"
+      >
+        Retirer
+      </button>
     </div>
   );
 }
