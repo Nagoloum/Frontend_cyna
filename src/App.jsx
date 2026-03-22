@@ -34,6 +34,7 @@ import AdminLayout from "./layouts/AdminLayout"; // Layout admin (sidebar admin,
 import ThemeToggle from "./components/Kit/ThemeToggle";
 import Layout from "./components/Kit/Layout";
 import HomePage from "./pages/User/Home";
+import PanierPage from "./pages/User/PanierPage";
 
 function App() {
   return (
@@ -63,7 +64,16 @@ function App() {
             </RouteLayout>
           }
         />
-
+        <Route
+          path="/panier"
+          element={
+            <RouteLayout>
+              <Layout>
+                <PanierPage />
+              </Layout>
+            </RouteLayout>
+          }
+        />  
         {/* ── Routes admin (rôle ADMIN obligatoire) ── */}
         {/*
           Toutes les routes /admin/* sont protégées par le même RouteLayout.
