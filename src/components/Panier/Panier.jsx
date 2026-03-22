@@ -68,7 +68,7 @@ export default function Panier() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Mon Panier SaaS</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">Mon Panier Cyna</h1>
 
         {!isLogged && articles.length > 0 && (
           <div className="mb-6 rounded-lg bg-yellow-100 border border-yellow-300 p-4">

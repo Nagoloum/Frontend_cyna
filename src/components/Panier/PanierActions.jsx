@@ -7,7 +7,7 @@ export default function PanierActions({ indisponible, isLogged, onLogin }) {
     <div className="mt-6">
       {!isLogged && (
         <button
-          onClick={onLogin}
+          onClick={() => navigate('/auth')}
           className="w-full mb-3 bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600"
         >
           Se connecter / créer un compte
