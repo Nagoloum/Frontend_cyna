@@ -35,6 +35,7 @@ import ThemeToggle from "./components/Kit/ThemeToggle";
 import Layout from "./components/Kit/Layout";
 import HomePage from "./pages/User/Home";
 import PanierPage from "./pages/User/PanierPage";
+import CheckoutPage from "./pages/User/CheckoutPage";
 
 function App() {
   return (
@@ -74,12 +75,16 @@ function App() {
             </RouteLayout>
           }
         />  
-        {/* ── Routes admin (rôle ADMIN obligatoire) ── */}
-        {/*
-          Toutes les routes /admin/* sont protégées par le même RouteLayout.
-          L'AdminLayout gère la sidebar admin, le header, etc.
-          Pour ajouter une page admin : ajoute simplement une <Route> enfant.
-        */}
+        <Route
+          path="/checkout"
+          element={
+            <RouteLayout>
+              <Layout>
+                <CheckoutPage />
+              </Layout>
+            </RouteLayout>
+          }
+        />
         <Route
           path="/admin"
           element={

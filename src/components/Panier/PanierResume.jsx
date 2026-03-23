@@ -1,4 +1,4 @@
-export default function PanierResume({ articles = [], articlesTotaux = [] }) {
+export default function PanierResume({ articles = [], articlesTotaux = [], isCheckout = false }) {
   const sousTotal = (articles || []).reduce((sum, a) => {
     const mult = a.durée === 'annuel' ? 10 : 1;
     return sum + a.prix * mult * a.quantite;
@@ -10,9 +10,14 @@ export default function PanierResume({ articles = [], articlesTotaux = [] }) {
   const remise = sousTotal > 500 ? sousTotal * 0.1 : 0;
   const totalAvecRemise = total - remise;
 
+  // Ajuste les classes du conteneur en fonction du contexte
+  const containerClasses = isCheckout
+    ? "bg-slate-50 border border-slate-200 rounded-lg p-6"
+    : "bg-white rounded-lg border border-gray-200 shadow-sm p-6 sticky top-6";
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sticky top-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Résumé</h2>
+    <div className={containerClasses}>
+      {!isCheckout && <h2 className="text-2xl font-bold text-gray-900 mb-4">Résumé</h2>}
 
       <div className="space-y-2 text-gray-700">
         <div className="flex justify-between">
@@ -39,7 +44,7 @@ export default function PanierResume({ articles = [], articlesTotaux = [] }) {
       <div className="mt-5 border-t border-gray-200 pt-4 flex justify-between items-center font-bold text-xl text-gray-900">
         <span>Total</span>
         <span>{totalAvecRemise.toFixed(2)} €</span>
-        </div>
+      </div>
     </div>
   );
 }
