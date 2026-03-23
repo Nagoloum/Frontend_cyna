@@ -27,7 +27,7 @@ const savedAddresses = [
   },
 ];
 
-const AddressStep = ({ onNext, onAddressSelect }) => {
+const AddressStep = ({ onNext }) => {
   // Par défaut, on sélectionne la première adresse si elle existe.
   const [selectedAddressId, setSelectedAddressId] = useState(savedAddresses.length > 0 ? savedAddresses[0].id : null);
 
@@ -40,22 +40,19 @@ const AddressStep = ({ onNext, onAddressSelect }) => {
     // TODO: Implémentez la logique pour sauvegarder la nouvelle adresse via une API
     const newAddress = { ...formData, id: Date.now() }; // Simule un nouvel ID
     // Passez la nouvelle adresse à l'étape suivante
-    onAddressSelect(newAddress);
-    onNext(); // Passe à l'étape suivante automatiquement
+    onNext(newAddress); // Passe à l'étape suivante automatiquement
   };
 
   // Gère la sélection d'une adresse existante
   const handleSelectAddress = (address) => {
     setSelectedAddressId(address.id);
-    onAddressSelect(address);
   }
 
   // Gère le clic sur le bouton "Continuer"
   const handleContinue = () => {
     const selectedAddress = savedAddresses.find(a => a.id === selectedAddressId);
     if (selectedAddress) {
-      onAddressSelect(selectedAddress);
-      onNext();
+      onNext(selectedAddress);
     } else {
       // Peut-être afficher une erreur si aucune adresse n'est sélectionnée
       console.error("Aucune adresse n'est sélectionnée.");
