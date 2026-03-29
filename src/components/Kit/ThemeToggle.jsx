@@ -35,7 +35,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="fixed bottom-8 right-8 z-50 p-2.5 bg-white dark:bg-gray-800 rounded-full hover:shadow-indigo-500/20 dark:hover:shadow-indigo-400/30 border border-gray-200 dark:border-gray-700 transition-all duration-500 group"
+      className="fixed bottom-4 right-4 z-50 p-2.5 bg-white dark:bg-gray-800 rounded-full hover:shadow-indigo-500/20 dark:hover:shadow-indigo-400/30 border border-gray-200 dark:border-gray-700 transition-all duration-500 group"
       aria-label="Toggle dark mode"
     >
       <div className="relative w-8 h-8">

@@ -1,170 +1,138 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { categoriesAPI, buildImageUrl } from "@/services/api";
+import { ArrowRight, Layers } from "lucide-react";
 
-const categories = [
-  {
-    id: 1,
+const SkeletonCard = () => (
+  <div className="cyna-card p-0 overflow-hidden">
+    <div className="skeleton aspect-[4/3] w-full" />
+    <div className="p-4 space-y-2">
+      <div className="skeleton h-4 w-3/4 rounded" />
+      <div className="skeleton h-3 w-1/2 rounded" />
+    </div>
+  </div>
+);
 
-    name: "Vêtements",
-
-    description: "Nouvelle collection",
-
-    image:
-      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=500",
-
-    href: "/categories/vetements",
-  },
-
-  {
-    id: 2,
-
-    name: "Accessoires",
-
-    description: "Détails essentiels",
-
-    image:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=500",
-
-    href: "/categories/accessoires",
-  },
-
-  {
-    id: 3,
-
-    name: "Chaussures",
-
-    description: "Marchez avec style",
-
-    image:
-      "https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=500",
-
-    href: "/categories/chaussures",
-  },
-
-  {
-    id: 4,
-
-    name: "Nouveautés",
-
-    description: "Arrivages récents",
-
-    image:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=500",
-
-    href: "/nouveautes",
-  },
-
-  {
-    id: 5,
-
-    name: "Nouveautés",
-
-    description: "Arrivages récents",
-
-    image:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=500",
-
-    href: "/nouveautes",
-  },
-
-  {
-    id: 6,
-
-    name: "Nouveautés",
-
-    description: "Arrivages récents",
-
-    image:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=500",
-
-    href: "/nouveautes",
-  },
-
-  {
-    id: 7,
-
-    name: "Nouveautés",
-
-    description: "Arrivages récents",
-
-    image:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=500",
-
-    href: "/nouveautes",
-  },
-];
-
-const CategoryCarousel = () => {
+const CategoryCard = ({ category }) => {
+  const imageUrl = buildImageUrl(category.image?.path || category.image);
   return (
-    <section className="max-w-7xl mx-auto py-10 bg-white px-4 md:px-8">
-      <div className="flex items-center justify-center mb-10">
-        <h2 className="text-xl md:text-2xl font-bold text-[#1a1c20] uppercase tracking-tight text-center">
-          Nos Catégories
-        </h2>
-      </div>
-
-      {/* Sur MOBILE (par défaut) : On affiche une simple GRID
-          Sur DESKTOP (md:) : On laisse le composant Carousel gérer l'affichage
-      */}
-      <div className="block md:hidden">
-        <div className="grid grid-cols-2 gap-4">
-          {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
+    <Link
+      to={`/categories/${category.slug}`}
+      className="cyna-card group overflow-hidden block"
+      style={{ textDecoration: "none" }}
+    >
+      {/* Image */}
+      <div
+        className="relative overflow-hidden"
+        style={{ aspectRatio: "4/3", background: "var(--bg-muted)" }}
+      >
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={category.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Layers size={32} style={{ color: "var(--text-muted)" }} />
+          </div>
+        )}
+        {/* Overlay */}
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3"
+          style={{ background: "linear-gradient(to top, rgba(124,58,237,.7), transparent)" }}
+        >
+          <span className="text-white text-xs font-semibold font-[Syne] flex items-center gap-1">
+            View Products <ArrowRight size={12} />
+          </span>
         </div>
       </div>
 
-      {/* CAROUSEL : Uniquement visible à partir de md: */}
-      <div className="hidden md:block">
-        <Carousel
-          opts={{ align: "start", loop: true }}
-          className="w-full relative px-12"
+      {/* Info */}
+      <div className="p-3.5">
+        <h3
+          className="font-[Syne] font-700 text-sm leading-snug mb-1 group-hover:text-[var(--accent)] transition-colors"
+          style={{ color: "var(--text-primary)" }}
         >
-          <CarouselContent className="-ml-8">
-            {categories.map((category) => (
-              <CarouselItem
-                key={category.id}
-                className="pl-8 md:basis-1/3 lg:basis-1/4"
-              >
-                <CategoryCard category={category} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="left-0 h-10 w-10 rounded-full border-gray-200 text-gray-400" />
-          <CarouselNext className="right-0 h-10 w-10 rounded-full border-gray-200 text-gray-400" />
-        </Carousel>
+          {category.name}
+        </h3>
+        {category.description && (
+          <p
+            className="text-xs line-clamp-2 leading-relaxed"
+            style={{ color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {category.description}
+          </p>
+        )}
       </div>
-    </section>
+    </Link>
   );
 };
 
-/* Sous-composant pour éviter de répéter le code du design */
-const CategoryCard = ({ category }) => (
-  <Link
-    to={category.href}
-    className="flex flex-col items-center text-center group"
-  >
-    <div className="w-full aspect-square flex items-center justify-center mb-4 bg-[#f9f9f9] overflow-hidden rounded-2xl md:rounded-none transition-all duration-300">
-      <img
-        src={category.image}
-        alt={category.name}
-        className="w-3/4 h-3/4 object-contain transition-transform duration-700 group-hover:scale-110"
-      />
-    </div>
-    <h3 className="text-[13px] md:text-[16px] font-bold uppercase tracking-[0.2em] text-[#1a1c20] mb-1">
-      {category.name}
-    </h3>
-    <p className="text-[10px] md:text-[13px] italic text-gray-400 font-serif">
-      {category.description}
-    </p>
-  </Link>
-);
+export default function CategoryGrid() {
+  const [categories, setCategories] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
 
-export default CategoryCarousel;
+  React.useEffect(() => {
+    categoriesAPI.getAllByOrder()
+      .then((res) => {
+        const data = res.data?.data ?? res.data ?? [];
+        setCategories(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setCategories([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <section className="py-14 sm:py-16" style={{ background: "var(--bg-base)" }}>
+      <div className="cyna-container">
+        {/* Header */}
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="section-label">Catalog</p>
+            <h2 className="section-title">Our Solutions</h2>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)", fontFamily: "'DM Sans', sans-serif" }}>
+              Discover our complete range of cybersecurity solutions
+            </p>
+          </div>
+          <Link
+            to="/categories"
+            className="btn-ghost py-2 px-4 text-sm hidden sm:inline-flex gap-2"
+          >
+            View All <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        {/* Grid */}
+        {loading ? (
+          <div className="categories-grid">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : categories.length === 0 ? (
+          <div
+            className="rounded-2xl border border-dashed border-[var(--border)] p-12 text-center"
+            style={{ background: "var(--bg-subtle)" }}
+          >
+            <Layers size={32} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
+            <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
+              No categories available
+            </p>
+          </div>
+        ) : (
+          <div className="categories-grid">
+            {categories.map((cat) => (
+              <CategoryCard key={cat._id || cat.id || cat.slug} category={cat} />
+            ))}
+          </div>
+        )}
+
+        {/* Mobile see all */}
+        <div className="mt-6 text-center sm:hidden">
+          <Link to="/categories" className="btn-ghost gap-2 w-full justify-center">
+            View All Solutions <ArrowRight size={15} />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}

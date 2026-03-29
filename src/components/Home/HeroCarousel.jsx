@@ -1,139 +1,177 @@
 import * as React from "react";
 import Autoplay from "embla-carousel-autoplay";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Shield, ArrowRight, ChevronLeft, ChevronRight, Zap, Lock } from "lucide-react";
 
-const promoSlides = [
+const DEFAULT_SLIDES = [
   {
-    title: "Collection Printemps 2026",
-    description: "Découvrez les nouvelles tendances avec Wood Partners.",
-    image:
-      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1200",
-    buttonText: "Acheter maintenant",
+    title: "Next-Generation\nSOC Protection",
+    description: "Real-time monitoring, advanced threat detection, and incident response to secure your infrastructure.",
+    tag: "SOC",
+    color: "#7c3aed",
+    icon: Shield,
+    cta: "Discover the SOC",
   },
   {
-    title: "Offre Spéciale Accessoires",
-    description: "Jusqu'à -50% sur une sélection de montres et sacs.",
-    image:
-      "https://images.unsplash.com/photo-1491336477066-31156b5e4f35?auto=format&fit=crop&q=80&w=1200",
-    buttonText: "Voir les promos",
+    title: "Endpoint Detection\n& Response",
+    description: "Protect every endpoint in your IT environment with our AI-powered EDR solution.",
+    tag: "EDR",
+    color: "#6d28d9",
+    icon: Zap,
+    cta: "Explore EDR",
   },
   {
-    title: "Confort & Style",
-    description: "Des chaussures conçues pour durer toute la journée.",
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1200",
-    buttonText: "Explorer la gamme",
+    title: "Extended Detection\n& Response",
+    description: "A unified view of all your threats. Intelligent correlation across endpoints, network, and cloud.",
+    tag: "XDR",
+    color: "#5b21b6",
+    icon: Lock,
+    cta: "See XDR",
   },
 ];
 
 export function HeroCarousel() {
   const [api, setApi] = React.useState();
   const [current, setCurrent] = React.useState(0);
-  const [count, setCount] = React.useState(0);
+  const plugin = React.useRef(Autoplay({ delay: 5500, stopOnInteraction: true }));
 
-  const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true }),
-  );
-
-  // Initialisation de l'API Embla
   React.useEffect(() => {
     if (!api) return;
-
-    setCount(api.scrollSnapList().length);
     setCurrent(api.selectedScrollSnap());
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-    });
+    api.on("select", () => setCurrent(api.selectedScrollSnap()));
   }, [api]);
 
+  const slides = DEFAULT_SLIDES;
+
   return (
-    <section className="px-4 sm:px-6 lg:px-8 mb-12 relative group">
+    <section className="relative overflow-hidden" style={{ background: "var(--bg-subtle)" }}>
       <Carousel
-        setApi={setApi} // On lie l'API ici
+        setApi={setApi}
         plugins={[plugin.current]}
-        className="w-full max-w-7xl mx-auto overflow-hidden rounded-3xl"
+        className="w-full"
+        opts={{ loop: true }}
       >
         <CarouselContent>
-          {promoSlides.map((slide, index) => (
-            <CarouselItem key={index}>
-              <div className="relative h-[400px] md:h-[500px] w-full">
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40" />
-                <div className="relative h-full flex flex-col justify-center px-8 md:px-16 text-white max-w-2xl">
-                  <h2 className="text-4xl md:text-6xl font-bold mb-4">
-                    {slide.title}
-                  </h2>
-                  <p className="text-lg md:text-xl mb-8 opacity-90">
-                    {slide.description}
-                  </p>
-                  <Button
-                    size="lg"
-                    className="rounded-lg px-8 font-bold bg-secondary w-full"
-                  >
-                    {slide.buttonText}
-                  </Button>
+          {slides.map((slide, i) => {
+            const Icon = slide.icon;
+            return (
+              <CarouselItem key={i}>
+                <div className="relative py-4 max-h-[420px] sm:min-h-[480px] lg:min-h-[540px] flex items-center overflow-hidden">
+                  {/* Background gradient */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: `radial-gradient(ellipse 80% 60% at 70% 50%, ${slide.color}22 0%, transparent 70%), var(--bg-subtle)`,
+                    }}
+                  />
+                  {/* Grid pattern */}
+                  <div
+                    className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06]"
+                    style={{
+                      backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
+                      backgroundSize: "48px 48px",
+                    }}
+                  />
+                  {/* Floating orb */}
+                  <div
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-3xl opacity-20 pointer-events-none hidden lg:block"
+                    style={{ background: slide.color }}
+                  />
+
+                  <div className="cyna-container relative z-10 py-16 sm:py-20">
+                    <div className="max-w-xl">
+                      {/* Tag */}
+                      <div className="flex items-center gap-2 mb-5">
+                        <span className="badge badge-accent gap-1.5">
+                          <Icon size={11} />
+                          {slide.tag}
+                        </span>
+                        <span className="text-xs font-[Poppins]" style={{ color: "var(--text-muted)" }}>
+                          Cyna Security Platform
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <h1
+                        className="font-[Poppins] font-extrabold mb-4 leading-[1.1]"
+                        style={{
+                          fontSize: "clamp(1.8rem, 5vw, 3rem)",
+                          color: "var(--text-primary)",
+                          whiteSpace: "pre-line",
+                        }}
+                      >
+                        {slide.title}
+                      </h1>
+
+                      {/* Description */}
+                      <p
+                        className="text-base sm:text-lg mb-8 leading-relaxed"
+                        style={{ color: "var(--text-secondary)", maxWidth: "480px" }}
+                      >
+                        {slide.description}
+                      </p>
+
+                      {/* CTAs */}
+                      <button className="btn-ghost gap-2">
+                        Request a Demo
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right visual (desktop) */}
+                  <div className="absolute right-32 top-1/2 -translate-y-1/2 hidden lg:flex items-center justify-center">
+                    <div
+                      className="w-56 h-56 rounded-3xl flex items-center justify-center shadow-[var(--shadow-lg)] border border-[var(--border)]"
+                      style={{ background: "var(--bg-card)" }}
+                    >
+                      <div
+                        className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-[var(--shadow-accent)]"
+                        style={{ background: `linear-gradient(135deg, ${slide.color}, #a78bfa)` }}
+                      >
+                        <Icon size={44} color="#fff" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CarouselItem>
-          ))}
+              </CarouselItem>
+            );
+          })}
         </CarouselContent>
 
-        {/* Les points de navigation */}
-        <div className="absolute bottom-6 left-0 right-0">
-          <div className="flex items-center justify-center gap-2">
-            {promoSlides.map((_, index) => (
+        {/* Navigation */}
+        <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-6">
+          <button
+            onClick={() => api?.scrollPrev()}
+            className="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+            style={{ background: "var(--bg-card)", color: "var(--text-secondary)" }}
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          <div className="flex items-center gap-2">
+            {slides.map((_, i) => (
               <button
-                key={index}
-                className={`h-2 transition-all duration-300 rounded-full ${
-                  index === current ? "w-8 bg-white" : "w-2 bg-white/50"
+                key={i}
+                onClick={() => api?.scrollTo(i)}
+                className={`rounded-full transition-all duration-300 ${
+                  i === current ? "w-6 h-2" : "w-2 h-2 hover:opacity-70"
                 }`}
-                onClick={() => api?.scrollTo(index)}
-                aria-label={`Aller à la slide ${index + 1}`}
+                style={{
+                  background: i === current ? "var(--accent)" : "var(--border)",
+                }}
               />
             ))}
           </div>
-        </div>
 
-        {/* Les boutons de navigation */}
-        {current !== 0 && (
-          <CarouselPrevious className="left-4 hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity" />
-        )}
-        {count !== current + 1 && (
-          <CarouselNext className="right-4 hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity" />
-        )}
+          <button
+            onClick={() => api?.scrollNext()}
+            className="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+            style={{ background: "var(--bg-card)", color: "var(--text-secondary)" }}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
       </Carousel>
-      {/* Section Texte Fixe / Annonce */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="bg-secondary/30 border border-border rounded-2xl p-6 md:p-10 text-center">
-          <h3 className="text-xl md:text-2xl font-bold text-[#1a1c20] mb-3 uppercase tracking-wider">
-            Wood Partners — Votre destination mode durable
-          </h3>
-          <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Profitez de la livraison offerte dès 50€ d'achat. Nos collections
-            sont mises à jour chaque semaine pour vous offrir le meilleur des
-            tendances actuelles avec une qualité irréprochable.
-          </p>
-
-          {/* Optionnel : un petit badge ou lien discret */}
-          <div className="mt-4 flex justify-center gap-4 text-xs font-bold uppercase tracking-widest text-red-600">
-            <span>• Qualité Premium</span>
-            <span>• Support 24/7</span>
-            <span>• Retours Gratuits</span>
-          </div>
-        </div>
-      </div>
     </section>
   );
 }
