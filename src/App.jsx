@@ -1,15 +1,14 @@
 // src/App.jsx
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 // Pages publiques
-import GetStartedPage from "./pages/GetStarted";
+import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
+import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
+import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
 import AuthPage from "./pages/Auth/Auth";
+import EmailConfirmation from "./pages/Auth/EmailConfirmation";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
-import EmailConfirmation from "./pages/Auth/EmailConfirmation";
-import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
-import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
-import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
 import ErrorPage from "./pages/ErrorPage";
 
 // Pages privées utilisateur
@@ -18,21 +17,20 @@ import ErrorPage from "./pages/ErrorPage";
 // Pages admin
 import Dashboard from "./pages/Admin/Dashboard";
 // À ajouter au fur et à mesure :
-import ProductsPage from "./pages/Admin/ProductsPage";
-import OrdersPage from "./pages/Admin/OrdersPage";
-import SupportPage from "./pages/Admin/SupportPage";
-import ReportsPage from "./pages/Admin/ReportsPage";
 import MyProfile from "./pages/Admin/MyProfilePage";
+import OrdersPage from "./pages/Admin/OrdersPage";
+import ProductsPage from "./pages/Admin/ProductsPage";
+import ReportsPage from "./pages/Admin/ReportsPage";
 import Settings from "./pages/Admin/SettingsPage";
+import SupportPage from "./pages/Admin/SupportPage";
 
 // Layouts
+import AdminLayout from "./layouts/AdminLayout";
 import RouteLayout from "./layouts/RouteLayout";
-import AdminLayout from "./layouts/AdminLayout"; // Layout admin (sidebar admin, header admin)
-// 👆 à créer — on le fera ensemble
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
-import Layout from "./components/Kit/Layout";
+import Layout from "./layouts/Layout";
 import HomePage from "./pages/User/Home";
 
 function App() {
@@ -40,10 +38,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* ── Redirection racine ── */}
-        <Route path="/" element={<Navigate to="/getstarted" replace />} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
 
         {/* ── Routes publiques (pas d'auth requise) ── */}
-        <Route path="/getstarted" element={<GetStartedPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -56,11 +53,9 @@ function App() {
         <Route
           path="/home"
           element={
-            <RouteLayout>
-              <Layout>
-                <HomePage />
-              </Layout>
-            </RouteLayout>
+            <Layout>
+              <HomePage />
+            </Layout>
           }
         />
 

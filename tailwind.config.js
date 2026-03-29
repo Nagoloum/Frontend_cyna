@@ -6,7 +6,18 @@ export default {
   ], 
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
+      },
+      colors: {
+        accent: {
+          DEFAULT: '#7c3aed',
+          hover:   '#6d28d9',
+          light:   '#ede9fe',
+        },
+      },
+    },
   },
   plugins: [],
 }

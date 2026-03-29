@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -44,6 +43,16 @@ export const setAuthToken = (token) => {
 
 const storedToken = localStorage.getItem('token');
 if (storedToken) setAuthToken(storedToken);
+
+// ── Request interceptor : always attach the latest token from localStorage ──
+// Fixes the case where setAuthToken() was never called (e.g. login via native fetch)
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,

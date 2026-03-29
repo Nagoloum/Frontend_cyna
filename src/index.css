@@ -1,4 +1,386 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── DESIGN SYSTEM — CYNA ─────────────────────────────────────────────────── */
+
+:root {
+  --cyna-50: #f5f3ff;
+  --cyna-100: #ede9fe;
+  --cyna-200: #ddd6fe;
+  --cyna-300: #c4b5fd;
+  --cyna-400: #a78bfa;
+  --cyna-500: #8b5cf6;
+  --cyna-600: #7c3aed;
+  --cyna-700: #6d28d9;
+  --cyna-800: #5b21b6;
+  --cyna-900: #4c1d95;
+
+  --bg-base: #ffffff;
+  --bg-subtle: #f8f7ff;
+  --bg-muted: #f1f0f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8f7ff;
+  --border: #e5e3f0;
+  --border-strong: #c4b5fd;
+  --text-primary: #0f0e1a;
+  --text-secondary: #4b4869;
+  --text-muted: #8b87a8;
+  --text-on-accent: #ffffff;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-light: #ede9fe;
+  --accent-glow: rgba(124, 58, 237, 0.15);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow-sm:
+    0 1px 3px rgba(15, 14, 26, 0.06), 0 1px 2px rgba(15, 14, 26, 0.04);
+  --shadow-md:
+    0 4px 16px rgba(15, 14, 26, 0.08), 0 2px 6px rgba(15, 14, 26, 0.05);
+  --shadow-lg:
+    0 12px 32px rgba(15, 14, 26, 0.1), 0 4px 12px rgba(15, 14, 26, 0.06);
+  --shadow-accent: 0 8px 24px rgba(124, 58, 237, 0.25);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --navbar-h: 72px;
+}
+
+.dark {
+  --bg-base: #0b0a14;
+  --bg-subtle: #12101f;
+  --bg-muted: #1a1730;
+  --bg-card: #14122a;
+  --bg-card-hover: #1d1a35;
+  --border: #2a2545;
+  --border-strong: #5b21b6;
+  --text-primary: #f0eeff;
+  --text-secondary: #b8b0d8;
+  --text-muted: #6b6591;
+  --accent-light: #2d1f5e;
+  --accent-glow: rgba(139, 92, 246, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-accent: 0 8px 32px rgba(124, 58, 237, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+  font-size: 15px;
+  line-height: 1.6;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.cyna-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+@media (min-width: 640px) {
+  .cyna-container {
+    padding: 0 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .cyna-container {
+    padding: 0 2.5rem;
+  }
+}
+
+.cyna-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+.cyna-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-accent);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+.section-label::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.section-title {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+}
+.badge-accent {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
+}
+.badge-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.badge-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-muted) 25%,
+    var(--border) 50%,
+    var(--bg-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.cyna-divider {
+  height: 1px;
+  background: var(--border);
+  width: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-muted);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.products-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.categories-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px) {
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .categories-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===== TRANSITIONS FLUIDES POUR LE DARK MODE ===== */
+html {
+  transition:
+    background-color 0.6s ease,
+    color 0.6s ease;
+}
+
+* {
+  transition:
+    background-color 0.6s ease,
+    color 0.6s ease,
+    border-color 0.6s ease,
+    box-shadow 0.6s ease,
+    fill 0.6s ease;
+}
+
+/* Pour les éléments avec fond (cartes, boutons, etc.) */
+.bg-white,
+.bg-gray-100,
+.bg-indigo-600,
+.bg-indigo-500 {
+  transition: background-color 0.6s ease;
+}
+
+/* Pour les textes */
+.text-gray-900,
+.text-gray-600,
+.text-white {
+  transition: color 0.6s ease;
+}
+
+/* Pour les bordures et ombres */
+.border-gray-200,
+.border-gray-300,
+.shadow-xl,
+.shadow-2xl {
+  transition:
+    border-color 0.6s ease,
+    box-shadow 0.6s ease;
+}
+
+/* Pour les boutons hover */
+.hover\:bg-indigo-700:hover,
+.hover\:bg-indigo-600:hover {
+  transition: background-color 0.4s ease;
+}
+
+/* Optionnel : animation de fond global plus douce */
+.dark {
+  transition: background-color 1s ease;
+}
+
+::-webkit-scrollbar {
+  display: none; /* Épaisseur horizontale */
+}

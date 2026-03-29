@@ -326,6 +326,10 @@ export default function RouteLayout({
   const [authState, setAuthState]     = useState('checking'); // 'checking' | 'ok' | 'expired' | 'denied' | 'redirect'
   const [redirectTarget, setRedirectTarget] = useState(redirectTo);
 
+  // Stabilise allowedRoles : on ne garde que la version sérialisée pour éviter
+  // qu'un nouveau tableau littéral (["ADMIN"]) ne re-déclenche l'effet à chaque render.
+  const allowedRolesKey = JSON.stringify(allowedRoles);
+
   useEffect(() => {
     // ── Public route: skip all checks immediately
     if (!requireAuth) {
@@ -351,9 +355,10 @@ export default function RouteLayout({
     }
 
     // ── 3. Role check
-    if (allowedRoles.length > 0) {
+    const parsedRoles = JSON.parse(allowedRolesKey);
+    if (parsedRoles.length > 0) {
       const role = getRoleFromToken(token);
-      if (!role || !allowedRoles.includes(role)) {
+      if (!role || !parsedRoles.includes(role)) {
         setAuthState('denied');
         return;
       }
@@ -363,7 +368,8 @@ export default function RouteLayout({
     // Small intentional delay (300ms) so the loading screen doesn't flash
     const t = setTimeout(() => setAuthState('ok'), 300);
     return () => clearTimeout(t);
-  }, [requireAuth, redirectTo, allowedRoles]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requireAuth, redirectTo, allowedRolesKey]);
 
   // ── Countdown timer for expired / denied screens
   useEffect(() => {

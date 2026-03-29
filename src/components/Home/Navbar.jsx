@@ -1,117 +1,272 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  Search,
-  ShoppingBag,
-  User,
-  Menu,
-  X,
-  ChevronDown,
-  HelpCircle,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Search, ShoppingBag, User, Menu, X, LogOut, Shield, ChevronRight } from "lucide-react";
 
-const navLinks = [
-  { label: "Accueil", href: "/" },
-  {
-    label: "Catégories",
-    href: "/categories",
-    children: [
-      { label: "Vêtements", href: "/categories/vetements" },
-      { label: "Accessoires", href: "/categories/accessoires" },
-    ],
-  },
-  { label: "Nouveautés", href: "/nouveautes" },
-];
+const getUser = () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+  } catch { return null; }
+};
 
-const Navbar = () => {
+const NavLink = ({ to, children, active }) => (
+  <Link
+    to={to}
+    className={`relative px-3 py-2 text-sm font-semibold font-[Poppins] transition-colors duration-200 ${
+      active
+        ? "text-[var(--accent)]"
+        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+    }`}
+  >
+    {children}
+    {active && (
+      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[var(--accent)] rounded-full" />
+    )}
+  </Link>
+);
+
+export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const cartCount = 3;
+  const [search, setSearch] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = getUser();
+  const isLoggedIn = !!user;
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/home");
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+  };
+
+  const navLinks = [
+    { to: "/home", label: "Home" },
+    { to: "/categories", label: "Solutions" },
+    { to: "/products", label: "Products" },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm mb-10">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-20">
-        <div className="flex h-20 items-center justify-between gap-2 md:gap-4">
-          {/* 1. LOGO */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img
-              src="/logo.png"
-              alt="Logo"
-              className="h-8 md:h-10 w-auto object-contain"
-            />
+    <>
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+          scrolled
+            ? "bg-[var(--bg-card)] border-b border-[var(--border)] shadow-[var(--shadow-md)]"
+            : "bg-[var(--bg-base)] border-b border-[var(--border)]"
+        }`}
+        style={{ height: "var(--navbar-h)" }}
+      >
+        <div className="cyna-container h-full flex items-center gap-3">
+          {/* Logo */}
+          <Link to="/home" className="flex items-center gap-2.5 shrink-0 mr-2">
+            <img src="/logo.png" alt="Cyna" className="h-8 w-auto object-contain" />
+            <span
+              className="hidden sm:block font-[Syne] font-800 text-lg tracking-tight"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Cyna
+            </span>
+            <span className="badge badge-accent text-[10px] hidden sm:inline-flex">Security</span>
           </Link>
 
-          {/* 2. BARRE DE RECHERCHE (Maintenant visible aussi sur Mobile) */}
-          <div className="flex flex-1 max-w-md relative group mx-2">
-            <Input
-              type="text"
-              placeholder="Quel produit cherchez-vous ?"
-              className="w-full pl-4 pr-10 md:pl-5 md:pr-12 h-10 md:h-11 rounded-full border-gray-200 bg-gray-50 text-[12px] md:text-sm focus-visible:ring-primary focus:bg-white transition-all"
-            />
-            <button className="absolute right-1 top-1/2 -translate-y-1/2 bg-[#3b82f6] text-white p-1.5 md:p-2 rounded-full transition-colors">
-              <Search size={14} className="md:w-4 md:h-4" />
-            </button>
-          </div>
-
-          {/* 3. NAVIGATION (Desktop uniquement) */}
-          <nav className="hidden xl:flex items-center gap-1 shrink-0">
-            {navLinks.map((link) => (
-              <div
-                key={link.label}
-                className="relative"
-                onMouseEnter={() =>
-                  link.children && setOpenDropdown(link.label)
-                }
-                onMouseLeave={() => setOpenDropdown(null)}
-              >
-                <Link
-                  to={link.href}
-                  className="flex items-center gap-1 px-3 py-2 text-[13px] font-bold uppercase tracking-tight text-gray-700 hover:text-primary transition-colors"
-                >
-                  {link.label}
-                  {link.children && <ChevronDown size={12} />}
-                </Link>
-                {/* ... dropdown menu ... */}
-              </div>
+          {/* Nav links desktop */}
+          <nav className="hidden lg:flex items-center gap-1 shrink-0">
+            {navLinks.map((l) => (
+              <NavLink key={l.to} to={l.to} active={location.pathname === l.to}>
+                {l.label}
+              </NavLink>
             ))}
           </nav>
 
-          {/* 4. ACTIONS DROITE */}
-          <div className="flex items-center gap-1 md:gap-4 shrink-0">
-            {/* Account (Caché sur très petit mobile pour gagner de la place si besoin, ou gardé) */}
-            <Link
-              to="/compte"
-              className="p-2 text-muted-foreground hover:text-foreground"
-            >
-              <User size={22} strokeWidth={1.5} />
-            </Link>
-
-            {/* Cart */}
-            <Link
-              to="/panier"
-              className="relative p-2 text-muted-foreground hover:text-foreground"
-            >
-              <ShoppingBag size={22} strokeWidth={1.5} />
-              {cartCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#7C3AED] text-[10px] font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            {/* Mobile Menu Button */}
+          {/* Search */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-auto hidden sm:flex relative">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search for a solution..."
+              className="w-full pl-4 pr-10 h-10 rounded-full border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:bg-[var(--bg-card)] transition-all"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            />
             <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="xl:hidden p-2 text-gray-700"
+              type="submit"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              style={{ background: "var(--accent)", color: "#fff" }}
             >
-              <Menu size={24} />
+              <Search size={14} />
+            </button>
+          </form>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 ml-auto lg:ml-0 shrink-0">
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to={user?.role === "ADMIN" ? "/admin/dashboard" : "/account"}
+                  className="p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
+                  style={{ color: "var(--text-secondary)" }}
+                  title="My Account"
+                >
+                  <User size={20} strokeWidth={1.75} />
+                </Link>
+                <Link
+                  to="/cart"
+                  className="relative p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  <ShoppingBag size={20} strokeWidth={1.75} />
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="hidden sm:flex p-2.5 rounded-xl transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                  style={{ color: "var(--text-muted)" }}
+                  title="Logout"
+                >
+                  <LogOut size={20} strokeWidth={1.75} />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth" className="btn-ghost hidden sm:inline-flex py-2 px-4 text-sm">
+                  Sign In
+                </Link>
+                <Link to="/auth" className="btn-primary py-2 px-4 text-sm">
+                  Sign Up
+                </Link>
+              </>
+            )}
+
+            {/* Burger */}
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              className="lg:hidden p-2.5 rounded-xl ml-1 transition-colors hover:bg-[var(--bg-muted)]"
+              style={{ color: "var(--text-primary)" }}
+              aria-label="Menu"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
-      </div>
-    </header>
-  );
-};
+      </header>
 
-export default Navbar;
+      {/* Spacer */}
+      <div style={{ height: "var(--navbar-h)" }} />
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <nav
+            className="absolute top-[var(--navbar-h)] left-0 right-0 border-b border-[var(--border)] shadow-[var(--shadow-lg)]"
+            style={{ background: "var(--bg-card)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile search */}
+            <div className="p-4 border-b border-[var(--border)]">
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full pl-4 pr-10 h-11 rounded-full border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: "var(--accent)", color: "#fff" }}
+                >
+                  <Search size={14} />
+                </button>
+              </form>
+            </div>
+
+            {/* Nav links */}
+            <div className="py-2">
+              {navLinks.map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="flex items-center justify-between px-5 py-3.5 text-sm font-semibold font-[Syne] transition-colors hover:bg-[var(--bg-subtle)]"
+                  style={{
+                    color: location.pathname === l.to ? "var(--accent)" : "var(--text-primary)",
+                  }}
+                >
+                  {l.label}
+                  <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+                </Link>
+              ))}
+            </div>
+
+            {/* Auth section */}
+            <div className="border-t border-[var(--border)] p-4">
+              {isLoggedIn ? (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center font-[Syne] font-bold text-sm text-white"
+                    style={{ background: "var(--accent)" }}
+                  >
+                    {user?.email?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                      {user?.email}
+                    </p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      {user?.role}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{ color: "var(--danger)" }}
+                  >
+                    <LogOut size={18} />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <Link to="/auth" className="btn-ghost py-2.5 text-sm justify-center">
+                    Sign In
+                  </Link>
+                  <Link to="/auth" className="btn-primary py-2.5 text-sm justify-center">
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Footer links */}
+            <div
+              className="px-5 py-4 border-t border-[var(--border)] flex flex-wrap gap-x-5 gap-y-2"
+              style={{ background: "var(--bg-subtle)" }}
+            >
+              {["Terms of Use", "Legal Notice", "Contact", "About"].map((l) => (
+                <span key={l} className="text-xs cursor-pointer" style={{ color: "var(--text-muted)" }}>
+                  {l}
+                </span>
+              ))}
+            </div>
+          </nav>
+        </div>
+      )}
+    </>
+  );
+}
