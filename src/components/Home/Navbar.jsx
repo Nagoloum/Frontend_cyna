@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, LogOut, Shield, ChevronRight } from "lucide-react";
+import { ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const getUser = () => {
   try {
@@ -13,7 +13,7 @@ const getUser = () => {
 const NavLink = ({ to, children, active }) => (
   <Link
     to={to}
-    className={`relative px-3 py-2 text-sm font-semibold font-[Poppins] transition-colors duration-200 ${
+    className={`relative px-3 py-2 text-sm font-semibold font-[Kumbh Sans] transition-colors duration-200 ${
       active
         ? "text-[var(--accent)]"
         : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -75,7 +75,7 @@ export default function Navbar() {
           <Link to="/home" className="flex items-center gap-2.5 shrink-0 mr-2">
             <img src="/logo.png" alt="Cyna" className="h-8 w-auto object-contain" />
             <span
-              className="hidden sm:block font-[Syne] font-800 text-lg tracking-tight"
+              className="hidden sm:block font-[Kumbh Sans] font-800 text-lg tracking-tight"
               style={{ color: "var(--text-primary)" }}
             >
               Cyna
@@ -100,7 +100,7 @@ export default function Navbar() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search for a solution..."
               className="w-full pl-4 pr-10 h-10 rounded-full border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:bg-[var(--bg-card)] transition-all"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
+              style={{ fontFamily: "'Kumbh Sans', sans-serif" }}
             />
             <button
               type="submit"
@@ -204,7 +204,7 @@ export default function Navbar() {
                 <Link
                   key={l.to}
                   to={l.to}
-                  className="flex items-center justify-between px-5 py-3.5 text-sm font-semibold font-[Syne] transition-colors hover:bg-[var(--bg-subtle)]"
+                  className="flex items-center justify-between px-5 py-3.5 text-sm font-semibold font-[Kumbh Sans] transition-colors hover:bg-[var(--bg-subtle)]"
                   style={{
                     color: location.pathname === l.to ? "var(--accent)" : "var(--text-primary)",
                   }}
@@ -220,7 +220,7 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-[Syne] font-bold text-sm text-white"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center font-[Kumbh Sans] font-bold text-sm text-white"
                     style={{ background: "var(--accent)" }}
                   >
                     {user?.email?.[0]?.toUpperCase() || "U"}

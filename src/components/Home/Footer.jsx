@@ -1,5 +1,5 @@
+import { Github, Linkedin, Mail, Shield, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Shield, Twitter, Linkedin, Github, Mail } from "lucide-react";
 
 const CynaLogo = () => (
   <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 28, height: 28 }}>
@@ -11,7 +11,7 @@ const CynaLogo = () => (
     </defs>
   </svg>
 );
-
+ 
 const links = {
   Solutions: [
     { label: "SOC — Security Operations", href: "/categories" },
@@ -43,20 +43,20 @@ export default function Footer() {
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <CynaLogo />
-              <span className="font-[Syne] font-800 text-lg" style={{ color: "var(--text-primary)" }}>
+              <span className="font-[Kumbh Sans] font-800 text-lg" style={{ color: "var(--text-primary)" }}>
                 Cyna
               </span>
             </div>
-            <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--text-secondary)", fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
               The leading SaaS cybersecurity platform for businesses. SOC, EDR, XDR — secure your future.
             </p>
             {/* Socials */}
             <div className="flex items-center gap-2">
               {[
-                { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-                { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-                { icon: Github, href: "https://github.com", label: "GitHub" },
-                { icon: Mail, href: "mailto:contact@cyna-it.fr", label: "Email" },
+                { icon: Twitter, href: "#", label: "Twitter" },
+                { icon: Linkedin, href: "#", label: "LinkedIn" },
+                { icon: Github, href: "#", label: "GitHub" },
+                { icon: Mail, href: "#", label: "Email" },
               ].map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
@@ -64,7 +64,7 @@ export default function Footer() {
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center border border-[var(--border)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center border border-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
                   style={{ color: "var(--text-muted)" }}
                 >
                   <Icon size={16} />
@@ -77,7 +77,7 @@ export default function Footer() {
           {Object.entries(links).map(([title, items]) => (
             <div key={title}>
               <h4
-                className="font-[Syne] font-700 text-sm mb-4 uppercase tracking-wide"
+                className="font-[Kumbh Sans] font-700 text-sm mb-4 uppercase tracking-wide"
                 style={{ color: "var(--text-primary)" }}
               >
                 {title}
@@ -87,8 +87,8 @@ export default function Footer() {
                   <li key={item.label}>
                     <Link
                       to={item.href}
-                      className="text-sm transition-colors hover:text-[var(--accent)]"
-                      style={{ color: "var(--text-secondary)", fontFamily: "'DM Sans', sans-serif" }}
+                      className="text-sm hover:text-purple-900 hover:underline hover:underline-offset-4 hover:pl-0.5 transition-all"
+                      style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
                     >
                       {item.label}
                     </Link>
@@ -103,7 +103,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-[var(--border)] lg:py-5">
         <div className="cyna-container py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}>
             © {new Date().getFullYear()} Cyna-IT — 10 Rue de Penthièvre, 75008 Paris
           </p>
           <div className="flex items-center gap-1.5">

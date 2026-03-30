@@ -1,7 +1,7 @@
-import * as React from "react";
-import Autoplay from "embla-carousel-autoplay";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Shield, ArrowRight, ChevronLeft, ChevronRight, Zap, Lock } from "lucide-react";
+import Autoplay from "embla-carousel-autoplay";
+import { ChevronLeft, ChevronRight, Lock, Shield, Zap } from "lucide-react";
+import * as React from "react";
 
 const DEFAULT_SLIDES = [
   {
@@ -86,14 +86,14 @@ export function HeroCarousel() {
                           <Icon size={11} />
                           {slide.tag}
                         </span>
-                        <span className="text-xs font-[Poppins]" style={{ color: "var(--text-muted)" }}>
+                        <span className="text-xs font-[Kumbh Sans]" style={{ color: "var(--text-muted)" }}>
                           Cyna Security Platform
                         </span>
                       </div>
 
                       {/* Title */}
                       <h1
-                        className="font-[Poppins] font-extrabold mb-4 leading-[1.1]"
+                        className="font-[Kumbh Sans] font-extrabold mb-4 leading-[1.1]"
                         style={{
                           fontSize: "clamp(1.8rem, 5vw, 3rem)",
                           color: "var(--text-primary)",
