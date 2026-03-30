@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
+        sans: ['Kumbh Sans', 'sans-serif'],
       },
       colors: {
         accent: {

@@ -1,7 +1,7 @@
+import { buildImageUrl, productsAPI } from "@/services/api";
+import { ArrowRight, CheckCircle2, Package, ShoppingBag, Star, XCircle } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { productsAPI, buildImageUrl } from "@/services/api";
-import { ShoppingBag, Package, ArrowRight, CheckCircle2, XCircle, Star } from "lucide-react";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -69,7 +69,7 @@ const ProductCard = ({ product, onAddToCart }) => {
       <div className="p-4 flex flex-col flex-1 gap-3">
         <div>
           <h3
-            className="font-[Syne] font-700 text-sm leading-tight line-clamp-2 mb-1"
+            className="font-[Kumbh Sans] font-700 text-sm leading-tight line-clamp-2 mb-1"
             style={{ color: "var(--text-primary)" }}
           >
             {product.name}
@@ -82,7 +82,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div>
 
         {/* Availability */}
-        <div className="flex items-center gap-1.5 text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="flex items-center gap-1.5 text-xs" style={{ fontFamily: "'Kumbh Sans', sans-serif" }}>
           {isOut ? (
             <><XCircle size={13} style={{ color: "var(--danger)" }} />
             <span style={{ color: "var(--danger)" }}>Out of stock</span></>
@@ -96,7 +96,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         <div className="mt-auto flex items-center justify-between gap-2">
           <div>
             {priceMonth != null && (
-              <p className="font-[Syne] font-700 text-base" style={{ color: "var(--text-primary)" }}>
+              <p className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--text-primary)" }}>
                 {Number(priceMonth).toFixed(2)} €
                 <span className="text-xs font-normal ml-1" style={{ color: "var(--text-muted)" }}>/month</span>
               </p>
@@ -157,7 +157,7 @@ export default function TopProducts() {
           <div>
             <p className="section-label">Selection</p>
             <h2 className="section-title">Top Products Right Now</h2>
-            <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)", fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
               The most popular solutions among our customers
             </p>
           </div>

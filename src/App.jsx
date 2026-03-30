@@ -1,83 +1,106 @@
-// src/App.jsx
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Layouts
+import Layout from "./layouts/Layout";
+import RouteLayout from "./layouts/RouteLayout";
+import AdminLayout from "./layouts/AdminLayout";
 
 // Pages publiques
-import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
-import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
-import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
 import AuthPage from "./pages/Auth/Auth";
-import EmailConfirmation from "./pages/Auth/EmailConfirmation";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
+import EmailConfirmation from "./pages/Auth/EmailConfirmation";
+import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
+import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
+import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
 import ErrorPage from "./pages/ErrorPage";
 
-// Pages privées utilisateur
-// import HomePage from './pages/User/Home';
+// Pages utilisateur
+import HomePage from "./pages/User/Home";
+import CategoriesPage from "./pages/User/CategoriesPage";
+import CategoryDetailPage from "./pages/User/CategoryDetailPage";
+import ProductsPage from "./pages/User/ProductsPage";
+import ProductDetailPage from "./pages/User/ProductDetailPage";
+import CartPage from "./pages/User/CartPage";
+import CheckoutPage from "./pages/User/CheckoutPage";
+import OrderConfirmationPage from "./pages/User/OrderConfirmationPage";
+import SearchPage from "./pages/User/SearchPage";
+import AccountPage from "./pages/User/AccountPage";
 
 // Pages admin
 import Dashboard from "./pages/Admin/Dashboard";
-// À ajouter au fur et à mesure :
-import MyProfile from "./pages/Admin/MyProfilePage";
+import AdminProductsPage from "./pages/Admin/ProductsPage";
 import OrdersPage from "./pages/Admin/OrdersPage";
-import ProductsPage from "./pages/Admin/ProductsPage";
-import ReportsPage from "./pages/Admin/ReportsPage";
-import Settings from "./pages/Admin/SettingsPage";
 import SupportPage from "./pages/Admin/SupportPage";
-
-// Layouts
-import AdminLayout from "./layouts/AdminLayout";
-import RouteLayout from "./layouts/RouteLayout";
+import ReportsPage from "./pages/Admin/ReportsPage";
+import MyProfile from "./pages/Admin/MyProfilePage";
+import Settings from "./pages/Admin/SettingsPage";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
-import Layout from "./layouts/Layout";
-import HomePage from "./pages/User/Home";
+
+// Wrapper avec Navbar + Footer
+const PublicPage = ({ children }) => (
+  <Layout>{children}</Layout>
+);
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ── Redirection racine ── */}
+        {/* Redirect racine */}
         <Route path="/" element={<Navigate to="/home" replace />} />
 
-        {/* ── Routes publiques (pas d'auth requise) ── */}
+        {/* ── Routes publiques (avec layout Navbar+Footer) ── */}
+        <Route path="/home" element={<PublicPage><HomePage /></PublicPage>} />
+        <Route path="/categories" element={<PublicPage><CategoriesPage /></PublicPage>} />
+        <Route path="/categories/:slug" element={<PublicPage><CategoryDetailPage /></PublicPage>} />
+        <Route path="/products" element={<PublicPage><ProductsPage /></PublicPage>} />
+        <Route path="/products/:slug" element={<PublicPage><ProductDetailPage /></PublicPage>} />
+        <Route path="/cart" element={<PublicPage><CartPage /></PublicPage>} />
+        <Route path="/search" element={<PublicPage><SearchPage /></PublicPage>} />
+
+        {/* ── Routes privées utilisateur ── */}
+        <Route path="/checkout" element={
+          <RouteLayout requireAuth redirectTo="/auth">
+            <PublicPage><CheckoutPage /></PublicPage>
+          </RouteLayout>
+        } />
+        <Route path="/checkout/confirmation" element={
+          <RouteLayout requireAuth redirectTo="/auth">
+            <PublicPage><OrderConfirmationPage /></PublicPage>
+          </RouteLayout>
+        } />
+        <Route path="/account" element={
+          <RouteLayout requireAuth redirectTo="/auth">
+            <PublicPage><AccountPage /></PublicPage>
+          </RouteLayout>
+        } />
+        <Route path="/compte" element={<Navigate to="/account" replace />} />
+
+        {/* ── Auth ── */}
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
-        <Route path="/terms-of-use" element={<TermsOfUseComponent />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicyComponent />} />
-        <Route path="/cookie-policy" element={<CookiePolicyComponent />} />
 
-        {/* ── Routes privées utilisateur ── */}
-        <Route
-          path="/home"
-          element={
-            <Layout>
-              <HomePage />
-            </Layout>
-          }
-        />
+        {/* ── Pages légales ── */}
+        <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />
+        <Route path="/privacy-policy" element={<PublicPage><PrivacyPolicyComponent /></PublicPage>} />
+        <Route path="/cookie-policy" element={<PublicPage><CookiePolicyComponent /></PublicPage>} />
 
-        {/* ── Routes admin (rôle ADMIN obligatoire) ── */}
-        {/*
-          Toutes les routes /admin/* sont protégées par le même RouteLayout.
-          L'AdminLayout gère la sidebar admin, le header, etc.
-          Pour ajouter une page admin : ajoute simplement une <Route> enfant.
-        */}
+        {/* ── Admin (rôle ADMIN obligatoire) ── */}
         <Route
           path="/admin"
           element={
-            <RouteLayout requireAuth={true} allowedRoles={["ADMIN"]}>
+            <RouteLayout requireAuth allowedRoles={["ADMIN"]}>
               <AdminLayout />
             </RouteLayout>
           }
         >
-          {/* Redirection /admin → /admin/dashboard */}
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="products" element={<ProductsPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="support" element={<SupportPage />} />
           <Route path="reports" element={<ReportsPage />} />
@@ -85,11 +108,10 @@ function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* ── 404 ── */}
+        {/* 404 */}
         <Route path="*" element={<ErrorPage />} />
       </Routes>
 
-      {/* Composants visibles sur toutes les pages */}
       <ThemeToggle />
     </BrowserRouter>
   );

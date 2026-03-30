@@ -1,7 +1,7 @@
+import { buildImageUrl, categoriesAPI } from "@/services/api";
+import { ArrowRight, Layers } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { categoriesAPI, buildImageUrl } from "@/services/api";
-import { ArrowRight, Layers } from "lucide-react";
 
 const SkeletonCard = () => (
   <div className="cyna-card p-0 overflow-hidden">
@@ -42,7 +42,7 @@ const CategoryCard = ({ category }) => {
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3"
           style={{ background: "linear-gradient(to top, rgba(124,58,237,.7), transparent)" }}
         >
-          <span className="text-white text-xs font-semibold font-[Syne] flex items-center gap-1">
+          <span className="text-white text-xs font-semibold font-[Kumbh Sans] flex items-center gap-1">
             View Products <ArrowRight size={12} />
           </span>
         </div>
@@ -51,7 +51,7 @@ const CategoryCard = ({ category }) => {
       {/* Info */}
       <div className="p-3.5">
         <h3
-          className="font-[Syne] font-700 text-sm leading-snug mb-1 group-hover:text-[var(--accent)] transition-colors"
+          className="font-[Kumbh Sans] font-700 text-sm leading-snug mb-1 group-hover:text-[var(--accent)] transition-colors"
           style={{ color: "var(--text-primary)" }}
         >
           {category.name}
@@ -59,7 +59,7 @@ const CategoryCard = ({ category }) => {
         {category.description && (
           <p
             className="text-xs line-clamp-2 leading-relaxed"
-            style={{ color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}
           >
             {category.description}
           </p>
@@ -91,7 +91,7 @@ export default function CategoryGrid() {
           <div>
             <p className="section-label">Catalog</p>
             <h2 className="section-title">Our Solutions</h2>
-            <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)", fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
               Discover our complete range of cybersecurity solutions
             </p>
           </div>

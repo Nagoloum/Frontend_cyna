@@ -1,5 +1,4 @@
 import CategoryGrid from "@/components/Home/CategoryGrid";
-import Footer from "@/components/Home/Footer";
 import { HeroCarousel } from "@/components/Home/HeroCarousel";
 import TopProducts from "@/components/Home/TopProducts";
 

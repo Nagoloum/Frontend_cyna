@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-// src/layouts/RouteLayout.jsx
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { ShieldAlert, ShieldOff, Loader2, Lock } from 'lucide-react';
@@ -91,7 +90,7 @@ function LoadingScreen() {
             Cyna
           </span>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-            Admin
+            Auth
           </span>
         </div>
 
@@ -105,7 +104,7 @@ function LoadingScreen() {
           w-full max-w-xs
         ">
           {/* Animated icon */}
-          <div className="relative">
+          <div className="relative p-3">
             <div className="
               w-14 h-14 rounded-2xl
               bg-indigo-50 dark:bg-indigo-500/10
@@ -116,7 +115,7 @@ function LoadingScreen() {
             </div>
             {/* Spinning ring */}
             <div className="
-              absolute -inset-1.5 rounded-[18px]
+              absolute -inset-1.5 rounded-[100%]
               border-2 border-transparent
               border-t-indigo-500 border-r-indigo-400
               animate-spin
@@ -161,7 +160,7 @@ function ExpiredScreen({ redirectTo, countdown }) {
           <CynaLogo className="w-10 h-10" />
           <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Cyna</span>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-            Admin
+            Auth
           </span>
         </div>
 
@@ -228,7 +227,7 @@ function AccessDeniedScreen({ countdown }) {
           <CynaLogo className="w-10 h-10" />
           <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Cyna</span>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-            Admin
+            Auth
           </span>
         </div>
 
@@ -365,10 +364,10 @@ export default function RouteLayout({
     }
 
     // ── All good
-    // Small intentional delay (300ms) so the loading screen doesn't flash
-    const t = setTimeout(() => setAuthState('ok'), 300);
+    // Small intentional delay (2000ms) so the loading screen doesn't flash
+    const t = setTimeout(() => setAuthState('ok'), 2000);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireAuth, redirectTo, allowedRolesKey]);
 
   // ── Countdown timer for expired / denied screens
@@ -382,7 +381,7 @@ export default function RouteLayout({
       return;
     }
 
-    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    const t = setTimeout(() => setCountdown((c) => c - 1), 2000);
     return () => clearTimeout(t);
   }, [authState, countdown, redirectTo]);
 
