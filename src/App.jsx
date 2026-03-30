@@ -30,9 +30,9 @@ import AccountPage from "./pages/User/AccountPage";
 // Pages admin
 import Dashboard from "./pages/Admin/Dashboard";
 import AdminProductsPage from "./pages/Admin/ProductsPage";
-import OrdersPage from "./pages/Admin/OrdersPage";
-import SupportPage from "./pages/Admin/SupportPage";
-import ReportsPage from "./pages/Admin/ReportsPage";
+// import OrdersPage from "./pages/Admin/OrdersPage";
+// import SupportPage from "./pages/Admin/SupportPage";
+// import ReportsPage from "./pages/Admin/ReportsPage";
 import MyProfile from "./pages/Admin/MyProfilePage";
 import Settings from "./pages/Admin/SettingsPage";
 
@@ -101,9 +101,9 @@ function App() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<AdminProductsPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="support" element={<SupportPage />} />
-          <Route path="reports" element={<ReportsPage />} />
+          {/* <Route path="orders" element={<OrdersPage />} /> */}
+          {/* <Route path="support" element={<SupportPage />} /> */}
+          {/* <Route path="reports" element={<ReportsPage />} /> */}
           <Route path="profile" element={<MyProfile />} />
           <Route path="settings" element={<Settings />} />
         </Route>
