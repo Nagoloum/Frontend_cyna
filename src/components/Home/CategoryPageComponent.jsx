@@ -127,14 +127,14 @@ export default function CategoriesPage() {
       </div>
 
       {/* Grid */}
-      <div className="cyna-container py-12">
+      <div className="cyna-container py-12 sm:py-16">
         {loading ? (
           <div className="categories-grid">
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
           <div 
-            className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center" 
+            className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center mt-12" 
             style={{ background: "var(--bg-subtle)" }}
           >
             <Layers size={36} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
