@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useMemo, useState } from 'react';
 import { X, Plus, Edit2, Trash2, Check, Loader2, Tag, AlertCircle, Image } from 'lucide-react';
 import { categoriesAPI } from '../../../services/api';
+import { confirmDialog, notify } from '../../ui/feedback';
 
 function CategoryRow({ cat, onEdit, onDelete }) {
   return (
@@ -109,15 +110,26 @@ export default function CategoryManager({ categories: initialCategories = [], on
   // ── Delete ───────────────────────────────────────────────────────────────────
 
   const handleDelete = async (cat) => {
-    if (!window.confirm(`Delete category "${cat.name}"? This may affect associated products.`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete category',
+      message: `Are you sure you want to delete "${cat.name}"? This may affect associated products.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
     setError(null);
     setLoadingSlug(cat.slug);
     try {
       await categoriesAPI.delete(cat.slug);
       setCategories((prev) => prev.filter((c) => c.slug !== cat.slug));
+      notify.success('Category deleted', `"${cat.name}" has been removed.`);
       onSaved?.();
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Error while deleting.');
+      const msg = err.response?.data?.message ?? 'Error while deleting.';
+      setError(msg);
+      notify.error('Delete failed', msg);
     } finally {
       setLoadingSlug(null);
     }

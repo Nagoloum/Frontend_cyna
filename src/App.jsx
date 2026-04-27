@@ -37,6 +37,7 @@ import Settings from "./pages/Admin/SettingsPage";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
+import { NotifyProvider } from "./components/ui/feedback";
 
 // Wrapper avec Navbar + Footer
 const PublicPage = ({ children }) => (
@@ -45,8 +46,9 @@ const PublicPage = ({ children }) => (
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <NotifyProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Redirect racine */}
         <Route path="/" element={<Navigate to="/home" replace />} />
 
@@ -108,10 +110,11 @@ function App() {
 
         {/* 404 */}
         <Route path="*" element={<ErrorPage />} />
-      </Routes>
+        </Routes>
 
-      <ThemeToggle />
-    </BrowserRouter>
+        <ThemeToggle />
+      </BrowserRouter>
+    </NotifyProvider>
   );
 }
 
