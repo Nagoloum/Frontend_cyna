@@ -1,8 +1,16 @@
 // src/layouts/admin/AdminHeader.jsx
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { Shield, ChevronDown, User, LogOut, Settings, RefreshCw } from 'lucide-react';
 import ThemeToggle from '../../components/Kit/ThemeToggle';
+
+// ── Global admin refresh bus ────────────────────────────────────────────────
+// All admin pages (Dashboard, ProductsPage tabs, OrdersPage, …) listen for
+// `admin-refresh` and call their own fetcher when the event fires. This lets
+// us keep a single Refresh control in the top header.
+export const ADMIN_REFRESH_EVENT = 'admin-refresh';
+export const triggerAdminRefresh = () =>
+  window.dispatchEvent(new Event(ADMIN_REFRESH_EVENT));
 
 // ── Utilitaire : lire le user depuis le token JWT ─────────────────────────────
 const getUserFromToken = () => {
@@ -24,8 +32,18 @@ const getUserFromToken = () => {
 // ── Composant ─────────────────────────────────────────────────────────────────
 export default function AdminHeader() {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
+
+  const handleRefresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    triggerAdminRefresh();
+    // Visual feedback for ~900ms — pages are usually fast enough but the
+    // spinner shouldn't feel instantaneous (otherwise nothing visibly happens).
+    setTimeout(() => setRefreshing(false), 900);
+  };
 
   const user = getUserFromToken();
 
@@ -62,6 +80,25 @@ export default function AdminHeader() {
       <div></div>
       
       <div className="flex items-center gap-3">
+
+        {/* Global refresh */}
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Refresh dashboard data"
+          aria-label="Refresh"
+          className="
+            w-9 h-9 flex items-center justify-center rounded-xl
+            text-gray-500 dark:text-gray-400
+            bg-white dark:bg-gray-800
+            border border-gray-200 dark:border-gray-700
+            hover:border-indigo-400 hover:text-indigo-600
+            dark:hover:border-indigo-500 dark:hover:text-indigo-400
+            transition-all disabled:opacity-60
+          "
+        >
+          <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+        </button>
 
         {/* Theme toggle */}
         <ThemeToggle variant="inline" />
@@ -134,18 +171,18 @@ export default function AdminHeader() {
               {/* Actions */}
               <div className="py-1">
                 <button
-                  onClick={() => { setShowUserMenu(false); navigate('/admin/settings'); }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <Settings size={15} className="text-gray-400" />
-                  Settings
-                </button>
-                <button
                   onClick={() => { setShowUserMenu(false); navigate('/admin/profile'); }}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <User size={15} className="text-gray-400" />
                   My Profile
+                </button>
+                <button
+                  onClick={() => { setShowUserMenu(false); navigate('/admin/settings'); }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <Settings size={15} className="text-gray-400" />
+                  Settings
                 </button>
               </div>
 

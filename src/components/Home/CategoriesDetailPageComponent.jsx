@@ -1,8 +1,9 @@
 import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, categoriesAPI, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
-import { ArrowLeft, CheckCircle2, ChevronDown, Filter, Package, ShoppingBag, Star, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Filter, Package, ShoppingBag, Star, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import Select from "@/components/ui/Select";
 
 const SkeletonProduct = () => (
   <div className="cyna-card overflow-hidden">
@@ -239,18 +240,12 @@ export default function CategoryDetailPage() {
             </button>
 
             {/* Sort */}
-            <div className="relative">
-              <select
-                value={sort}
-                onChange={e => setSort(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-[Kumbh Sans] font-600 border border-[var(--border)] bg-[var(--bg-card)] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-                style={{ color: "var(--text-primary)" }}
-              >
+            <div className="w-44">
+              <Select size="sm" value={sort} onChange={e => setSort(e.target.value)}>
                 <option value="priority">Priority</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
-              </select>
-              <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+              </Select>
             </div>
           </div>
         </div>

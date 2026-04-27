@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Plus, RefreshCw, AlertCircle, Search,
+  Plus, AlertCircle, Search,
   Edit2, Trash2, Package, Tag, Layers,
   ChevronLeft, ChevronRight, ChevronsUpDown,
   ChevronUp, ChevronDown, X, Loader2, Upload,
@@ -18,6 +18,8 @@ import {
   slidersAPI, buildImageUrl, extractList, getImagePath,
 } from '../../services/api';
 import { notify } from '@/components/ui/feedback';
+import AdminSelect from '../../components/Admin/Shared/AdminSelect';
+import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 
 /**
  * Cross-tab signal so any list that depends on a shared resource
@@ -208,7 +210,8 @@ function SliderFormModal({ slider, onClose, onSaved }) {
     e.preventDefault();
     setError(null);
     if (!form.title.trim())   return setError('Title is required.');
-    if (!form.NameUrl.trim()) return setError('Label (NameUrl) is required.');
+    if (!form.NameUrl.trim()) return setError('Button label is required.');
+    if (!form.linkUrl.trim()) return setError('Link URL is required.');
     if (!isEdit && !imageFile) return setError('An image is required for a new slider.');
 
     setLoading(true);
@@ -216,8 +219,8 @@ function SliderFormModal({ slider, onClose, onSaved }) {
       const fd = new FormData();
       fd.append('title',   form.title.trim());
       fd.append('NameUrl', form.NameUrl.trim());
+      fd.append('linkUrl', form.linkUrl.trim());
       fd.append('order',   String(Number(form.order) || 0));
-      if (form.linkUrl.trim()) fd.append('linkUrl', form.linkUrl.trim());
       if (imageFile) fd.append('newImage', imageFile);
 
       if (isEdit) ensureOk(await slidersAPI.update(slider._id, fd));
@@ -281,18 +284,18 @@ function SliderFormModal({ slider, onClose, onSaved }) {
             <input name="title" value={form.title} onChange={handleChange} placeholder="e.g. Next-Generation SOC Protection" className={inp} />
           </div>
 
-          {/* NameUrl — displayed as tag/badge label */}
+          {/* NameUrl — used as the carousel CTA button label */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Badge label (NameUrl) <span className="text-red-500">*</span></label>
-            <input name="NameUrl" value={form.NameUrl} onChange={handleChange} placeholder="e.g. SOC, EDR, XDR" className={inp} />
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Short label shown in the badge on the slide.</p>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Button label <span className="text-red-500">*</span></label>
+            <input name="NameUrl" value={form.NameUrl} onChange={handleChange} placeholder="e.g. Discover, Learn more" className={inp} />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Text displayed on the carousel call-to-action button.</p>
           </div>
 
           {/* Link URL + Order */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Link URL <span className="text-gray-400 font-normal">(optional)</span>
+                Link URL <span className="text-red-500">*</span>
               </label>
               <input name="linkUrl" value={form.linkUrl} onChange={handleChange} placeholder="/categories" className={inp} />
             </div>
@@ -335,6 +338,12 @@ function SlidersTab() {
 
   useEffect(() => { fetchSliders(); }, [fetchSliders]);
 
+  useEffect(() => {
+    const onRefresh = () => fetchSliders();
+    window.addEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+  }, [fetchSliders]);
+
   const onSaved  = () => { setModal(null); fetchSliders(); };
   const onDelete = async () => {
     const title = modal.data.title;
@@ -355,10 +364,6 @@ function SlidersTab() {
         <p className="text-sm text-gray-500 dark:text-gray-400 flex-1">
           {sliders.length} slide{sliders.length !== 1 ? 's' : ''} — displayed in homepage hero carousel
         </p>
-        <button onClick={() => fetchSliders()} disabled={loading}
-          className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-indigo-400 disabled:opacity-50 transition-all">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-        </button>
         <button onClick={() => setModal({ type: 'create' })}
           className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all">
           <Plus size={13} />Add Slide
@@ -411,20 +416,17 @@ function SlidersTab() {
               </div>
 
               {/* Info */}
-              <div className="p-3 flex-1 flex flex-col gap-1">
+              <div className="p-3 flex-1 flex flex-col gap-2">
                 <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{s.title}</p>
-                <div className="flex items-center gap-2 mt-auto">
-                  {s.NameUrl && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                      {s.NameUrl}
+                {(s.NameUrl || s.linkUrl) && (
+                  <div className="flex items-center gap-2 mt-auto text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <span className="font-medium text-gray-700 dark:text-gray-300 truncate">
+                      {s.NameUrl || '—'}
                     </span>
-                  )}
-                  {s.linkUrl && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 truncate">
-                      <ExternalLink size={10} />{s.linkUrl}
-                    </span>
-                  )}
-                </div>
+                    <span className="text-gray-300 dark:text-gray-600">→</span>
+                    <span className="truncate">{s.linkUrl || '—'}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -463,8 +465,7 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
     priceMonth:  '',
     priceYear:   '',
     stock:       '',
-    is_selected: true,
-    priority:    false,
+    is_selected: false,
   });
 
   // Pre-fill / reset whenever the edited product changes (modal can be reused).
@@ -480,8 +481,7 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
       priceMonth:  product?.priceMonth  ?? product?.price ?? '',
       priceYear:   product?.priceYear   ?? '',
       stock:       product?.stock       ?? '',
-      is_selected: product?.is_selected ?? product?.isActive ?? true,
-      priority:    product?.priority    ?? false,
+      is_selected: product?.is_selected ?? false,
     });
     // We intentionally do not include `previews` in the dep array — the previews
     // we just set will trigger the cleanup effect below when the modal unmounts.
@@ -520,6 +520,7 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
     if (!form.name.trim())               return setError('Product name is required.');
     if (!form.serviceId)                 return setError('Please select a service.');
     if (!form.priceMonth && !form.priceYear) return setError('At least one price is required.');
+    if (!isEdit && imageFiles.length === 0) return setError('At least one image is required.');
 
     setLoading(true);
     try {
@@ -532,14 +533,13 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
         payload.append('priceYear',   String(Number(form.priceYear)  || 0));
         payload.append('stock',       String(Number(form.stock)      || 0));
         payload.append('is_selected', String(form.is_selected));
-        payload.append('priority',    String(form.priority));
         imageFiles.forEach(f => payload.append('images', f));
         existingImages.forEach(u => payload.append('existingImages', u));
       } else {
         payload = {
           serviceId: form.serviceId, name: form.name.trim(),
           priceMonth: Number(form.priceMonth) || 0, priceYear: Number(form.priceYear) || 0,
-          stock: Number(form.stock) || 0, is_selected: form.is_selected, priority: form.priority,
+          stock: Number(form.stock) || 0, is_selected: form.is_selected,
         };
       }
       if (isEdit) ensureOk(await productsAPI.update(product.slug, payload));
@@ -580,10 +580,10 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Service <span className="text-red-500">*</span></label>
-            <select name="serviceId" value={form.serviceId} onChange={handleChange} className={inp}>
+            <AdminSelect name="serviceId" value={form.serviceId} onChange={handleChange}>
               <option value="">Select a service…</option>
               {services.map(s => <option key={s._id ?? s.slug} value={s._id ?? s.slug}>{s.name}</option>)}
-            </select>
+            </AdminSelect>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {[['priceMonth','Monthly (€)'],['priceYear','Yearly (€)'],['stock','Stock']].map(([name, label]) => (
@@ -593,19 +593,22 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
               </div>
             ))}
           </div>
-          <div className="flex items-center gap-6">
-            {[['is_selected','Active / Visible'],['priority','Featured']].map(([name, label]) => (
-              <label key={name} className="flex items-center gap-2.5 cursor-pointer">
-                <div className="relative">
-                  <input type="checkbox" name={name} checked={form[name]} onChange={handleChange} className="sr-only peer" />
-                  <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
-                </div>
-                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-              </label>
-            ))}
+          <div>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <div className="relative">
+                <input type="checkbox" name="is_selected" checked={form.is_selected} onChange={handleChange} className="sr-only peer" />
+                <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
+              </div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Top product</span>
+            </label>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 ml-12">
+              Featured in the homepage <strong>Top Products</strong> section.
+            </p>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Product images</label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+              Product images {!isEdit && <span className="text-red-500">*</span>}
+            </label>
             {previews.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {previews.map((url, i) => (
@@ -618,7 +621,7 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
             )}
             <button type="button" onClick={() => fileRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
-              <Upload size={14} />{previews.length > 0 ? 'Add more images' : 'Upload images (optional)'}
+              <Upload size={14} />{previews.length > 0 ? 'Add more images' : isEdit ? 'Upload images' : 'Upload images (required)'}
             </button>
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={addImages} className="hidden" />
           </div>
@@ -679,8 +682,13 @@ function ProductsTab({ categories, services }) {
         fetch();
       }
     };
+    const onRefresh = () => fetch();
     window.addEventListener(ADMIN_DATA_EVENT, onChange);
-    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+    window.addEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    return () => {
+      window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+      window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    };
   }, [fetch]);
 
   const onSearch = v => { setSearch(v); clearTimeout(searchRef.current); searchRef.current = setTimeout(() => fetch({ search: v, page: 1 }), 400); };
@@ -707,15 +715,15 @@ function ProductsTab({ categories, services }) {
           <input value={search} onChange={e => onSearch(e.target.value)} placeholder="Search products…"
             className="w-full h-9 pl-8 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all" />
         </div>
-        <select value={filterCategory} onChange={e => { setFilterCategory(e.target.value); fetch({ filterCategory: e.target.value, page: 1 }); }}
-          className="h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all">
-          <option value="">All categories</option>
-          {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-        </select>
+        <div className="w-44">
+          <AdminSelect size="sm"
+            value={filterCategory}
+            onChange={e => { setFilterCategory(e.target.value); fetch({ filterCategory: e.target.value, page: 1 }); }}>
+            <option value="">All categories</option>
+            {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          </AdminSelect>
+        </div>
         <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{pagination.total} product{pagination.total !== 1 ? 's' : ''}</span>
-        <button onClick={() => fetch()} disabled={loading} className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-indigo-400 disabled:opacity-50 transition-all">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-        </button>
         <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all">
           <Plus size={13} />Add Product
         </button>
@@ -730,25 +738,35 @@ function ProductsTab({ categories, services }) {
               <tr className="border-b border-gray-200 dark:border-gray-700/60">
                 <Th label="Product"  field="name"      sortBy={sortBy} order={sortOrder} onSort={onSort} />
                 <Th label="Service"  field="service"   sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label="Category" />
                 <Th label="Monthly"  field="priceMonth" sortBy={sortBy} order={sortOrder} onSort={onSort} />
                 <Th label="Yearly"   field="priceYear"  sortBy={sortBy} order={sortOrder} onSort={onSort} />
                 <Th label="Stock"    field="stock"      sortBy={sortBy} order={sortOrder} onSort={onSort} />
-                <Th label="Status" />
+                <Th label="Top" />
                 <Th label="Created"  field="createdAt" sortBy={sortBy} order={sortOrder} onSort={onSort} />
                 <Th label="" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/40">
-              {loading ? [...Array(5)].map((_, i) => <SkeletonRow key={i} cols={8} />)
+              {loading ? [...Array(5)].map((_, i) => <SkeletonRow key={i} cols={9} />)
                 : products.length === 0 ? <EmptyState icon={Package} message="No products found" sub={search ? 'Try a different search term' : 'Create your first product'} />
                 : products.map(p => (
                   <tr key={p.slug ?? p._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                     <td className="px-4 py-3"><div className="flex items-center gap-3"><Thumb src={p.images?.[0]} alt={p.name} /><div className="min-w-0"><p className="font-medium text-gray-900 dark:text-white truncate max-w-[160px]">{p.name}</p><p className="text-xs text-gray-400 truncate max-w-[160px]">/{p.slug}</p></div></div></td>
                     <td className="px-4 py-3"><span className="text-sm text-gray-600 dark:text-gray-300">{p.service?.name ?? '—'}</span></td>
+                    <td className="px-4 py-3"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{p.service?.category?.name ?? '—'}</span></td>
                     <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{fmtPrice(p.priceMonth)}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{fmtPrice(p.priceYear)}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{p.stock ?? '∞'}</td>
-                    <td className="px-4 py-3"><StatusPill active={p.is_selected !== false && p.isActive !== false} /></td>
+                    <td className="px-4 py-3">
+                      {p.is_selected ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> Top
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-400 dark:text-gray-500 text-xs">{fmtDate(p.createdAt)}</td>
                     <td className="px-4 py-3"><div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
                       <button onClick={() => setModal({ type: 'edit', data: p })} className="p-1.5 rounded-lg text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 transition-all"><Edit2 size={13} /></button>
@@ -828,9 +846,15 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={13} className="mt-0.5 flex-shrink-0" />{error}</div>}
           <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Name <span className="text-red-500">*</span></label><input name="name" value={form.name} onChange={handleChange} placeholder="e.g. EDR Protection" className={inp} /></div>
-          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Category <span className="text-red-500">*</span></label><select name="categoryId" value={form.categoryId} onChange={handleChange} className={inp}><option value="">Select a category…</option>{categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}</select></div>
+          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Category <span className="text-red-500">*</span></label><AdminSelect name="categoryId" value={form.categoryId} onChange={handleChange}><option value="">Select a category…</option>{categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}</AdminSelect></div>
           <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Description</label><textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder="Optional…" className="w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
-          <label className="flex items-center gap-2.5 cursor-pointer"><div className="relative"><input type="checkbox" name="available" checked={form.available} onChange={handleChange} className="sr-only peer" /><div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors" /></div><span className="text-sm text-gray-700 dark:text-gray-300">Available to customers</span></label>
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <div className="relative">
+              <input type="checkbox" name="available" checked={form.available} onChange={handleChange} className="sr-only peer" />
+              <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
+            </div>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Available to customers</span>
+          </label>
           <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
             <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">{loading && <Loader2 size={13} className="animate-spin" />}{loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Service'}</button>
@@ -883,13 +907,18 @@ function ServicesTab({ categories }) {
   };
   const onSaved  = () => { setModal(null); fetch(); };
 
-  // Refetch when other tabs change services or categories.
+  // Refetch when other tabs change services or categories, or on global refresh.
   useEffect(() => {
     const onChange = (e) => {
       if (!e?.detail?.kind || ['service', 'category'].includes(e.detail.kind)) fetch();
     };
+    const onRefresh = () => fetch();
     window.addEventListener(ADMIN_DATA_EVENT, onChange);
-    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+    window.addEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    return () => {
+      window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+      window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    };
   }, [fetch]);
 
   return (
@@ -900,13 +929,13 @@ function ServicesTab({ categories }) {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services…"
             className="w-full h-9 pl-8 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all" />
         </div>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className="h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all">
-          <option value="">All categories</option>
-          {categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}
-        </select>
+        <div className="w-44">
+          <AdminSelect size="sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+            <option value="">All categories</option>
+            {categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}
+          </AdminSelect>
+        </div>
         <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{filtered.length} service{filtered.length !== 1 ? 's' : ''}</span>
-        <button onClick={() => fetch()} disabled={loading} className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-indigo-400 disabled:opacity-50 transition-all"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />Add Service</button>
       </div>
       {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}</div>}
@@ -1054,20 +1083,24 @@ function CategoriesTab() {
   };
   const onSaved  = () => { setModal(null); fetch(); };
 
-  // Refetch when categories change elsewhere in the dashboard.
+  // Refetch when categories change elsewhere, or on global refresh.
   useEffect(() => {
     const onChange = (e) => {
       if (!e?.detail?.kind || e.detail.kind === 'category') fetch();
     };
+    const onRefresh = () => fetch();
     window.addEventListener(ADMIN_DATA_EVENT, onChange);
-    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+    window.addEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    return () => {
+      window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+      window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    };
   }, [fetch]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-gray-500 dark:text-gray-400 flex-1">{categories.length} categor{categories.length !== 1 ? 'ies' : 'y'}</span>
-        <button onClick={() => fetch()} disabled={loading} className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-indigo-400 disabled:opacity-50 transition-all"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />Add Category</button>
       </div>
       {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}</div>}
