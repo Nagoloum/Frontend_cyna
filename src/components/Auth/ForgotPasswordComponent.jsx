@@ -1,6 +1,7 @@
 // src/pages/ForgotPassword.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { authAPI } from '@/services/api';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -12,22 +13,19 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      // POST /auth/forgot-password { email }
+      const res = await authAPI.forgotPassword(email);
+      const data = res.data;
 
-      const data = await res.json();
-
-      if (!res.ok || !data?.success) {
+      if (!data?.success) {
         alert(data?.message || 'Erreur lors de la demande.');
         return;
       }
 
       setIsSubmitted(true);
-    } catch {
-      alert('Erreur lors de l’envoi. Veuillez réessayer.');
+    } catch (err) {
+      const msg = err.response?.data?.message ?? 'Erreur lors de l’envoi. Veuillez réessayer.';
+      alert(msg);
     } finally {
       setLoading(false);
     }

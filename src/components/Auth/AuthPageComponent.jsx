@@ -20,19 +20,24 @@ export default function AuthPageComponent() {
 
     try {
       if (isLogin) {
-         const { token, user } = data.data; // structure de ta réponse ApiResponse
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        // Redirection selon le rôle
-        if (user.role === 'ADMIN') {
-          //navigate('/2FA', { replace: true })
-          navigate('/admin', { replace: true });
+        // loginAPI calls POST /auth/login, persists token+user in localStorage,
+        // decodes the JWT to derive role/email, and clears any prior 2FA state.
+        const { user } = await loginAPI({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (user?.role === 'ADMIN') {
+          // Admin login: backend has just emailed a 6-digit verification code
+          // (see auth.service.ts → login). The admin must enter it on /2FA
+          // before being granted access to /admin/*.
+          localStorage.setItem('twoFARequired', '1');
+          navigate('/2FA', { replace: true });
         } else {
           navigate('/home', { replace: true });
-
         }
 
-        if (user && !user.confirmed) {
+        if (user && user.confirmed === false) {
           setTimeout(() => {
             alert("Votre compte n'est pas encore confirmé.\nVeuillez vérifier votre boîte mail (et vos spams).");
           }, 800);
@@ -45,11 +50,11 @@ export default function AuthPageComponent() {
           password:  formData.password,
         });
         const data = res.data;
-        if (!data.success) {
-          alert(data.message || 'Erreur lors de la tentative');
+        if (!data?.success) {
+          alert(data?.message || 'Erreur lors de la tentative');
           return;
         }
-        alert(data.message || "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
+        alert(data?.message || "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
         setIsLogin(true);
       }
     } catch (err) {

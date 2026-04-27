@@ -58,6 +58,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('twoFAVerified');
+      localStorage.removeItem('twoFARequired');
       setAuthToken(null);
       window.location.href = '/auth';
     }
@@ -71,20 +73,44 @@ api.interceptors.response.use(
 //        GET  /auth/email-confirmation?token=
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Decode a JWT payload (no signature check — display-only). */
+const decodeJwt = (token) => {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+};
+
 export const login = async (credentials) => {
   const response = await api.post('/auth/login', credentials);
   const data = response.data;
-  if (data.success && data.data) {
-    const token = data.data.token;
-    const user  = data.data.user ?? data.data;
-    if (token) {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setAuthToken(token);
-    }
-    return data.data;
+  if (!data?.success || !data?.data?.token) {
+    throw new Error(data?.message || 'Login failed');
   }
-  throw new Error(data.message || 'Login failed');
+
+  const token = data.data.token;
+  // Backend's login response only contains { token }. Extract user info from
+  // the JWT payload so the frontend can drive role-based redirects.
+  const payload = decodeJwt(token) ?? {};
+  const user = data.data.user ?? {
+    _id:       payload._id     ?? payload.id   ?? payload.sub ?? null,
+    email:     payload.email   ?? null,
+    firstName: payload.firstName ?? null,
+    lastName:  payload.lastName  ?? null,
+    role:      payload.role    ?? null,
+    confirmed: payload.confirmed ?? true,
+  };
+
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+  // Clear any prior 2FA state — a fresh login restarts the flow.
+  localStorage.removeItem('twoFAVerified');
+  localStorage.removeItem('twoFARequired');
+  setAuthToken(token);
+
+  return { token, user };
 };
 
 export const authAPI = {
@@ -93,6 +119,8 @@ export const authAPI = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('twoFAVerified');
+    localStorage.removeItem('twoFARequired');
     setAuthToken(null);
     window.location.href = '/auth';
   },
@@ -105,6 +133,9 @@ export const authAPI = {
 
   /** POST /auth/register */
   register: (data) => api.post('/auth/register', data),
+
+  /** POST /auth/check-code  { code: "123456" } — verifies the 6-digit 2FA code */
+  verify2FA: (code) => api.post('/auth/check-code', { code }),
 
   /** GET /auth/email-confirmation?token= */
   emailConfirmation: (token) =>

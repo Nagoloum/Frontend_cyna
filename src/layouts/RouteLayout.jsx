@@ -322,7 +322,7 @@ export default function RouteLayout({
 
   // Countdown state for redirect screens (3 → 0)
   const [countdown, setCountdown]     = useState(3);
-  const [authState, setAuthState]     = useState('checking'); // 'checking' | 'ok' | 'expired' | 'denied' | 'redirect'
+  const [authState, setAuthState]     = useState('checking'); // 'checking' | 'ok' | 'expired' | 'denied' | 'redirect' | 'twoFA'
   const [redirectTarget, setRedirectTarget] = useState(redirectTo);
 
   // Stabilise allowedRoles : on ne garde que la version sérialisée pour éviter
@@ -355,10 +355,22 @@ export default function RouteLayout({
 
     // ── 3. Role check
     const parsedRoles = JSON.parse(allowedRolesKey);
+    const role = getRoleFromToken(token);
     if (parsedRoles.length > 0) {
-      const role = getRoleFromToken(token);
       if (!role || !parsedRoles.includes(role)) {
         setAuthState('denied');
+        return;
+      }
+    }
+
+    // ── 4. 2FA check (admin only). When the route allows ADMIN access, the
+    // admin must have completed the 6-digit email verification step before
+    // entering /admin/*. Customers are not affected.
+    if (role === 'ADMIN' && parsedRoles.includes('ADMIN')) {
+      const verified = localStorage.getItem('twoFAVerified') === '1';
+      if (!verified) {
+        setRedirectTarget('/2FA');
+        setAuthState('twoFA');
         return;
       }
     }
@@ -387,8 +399,8 @@ export default function RouteLayout({
 
   // ── Render states ──────────────────────────────────────────────────────────
 
-  // Silent redirect (no token) — no UI needed
-  if (authState === 'redirect') {
+  // Silent redirect (no token, or admin without 2FA verification) — no UI needed
+  if (authState === 'redirect' || authState === 'twoFA') {
     return <Navigate to={redirectTarget} replace state={{ from: location }} />;
   }
 
