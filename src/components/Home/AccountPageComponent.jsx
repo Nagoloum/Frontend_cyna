@@ -471,7 +471,7 @@ export default function AccountPage() {
   const tokenUser  = getUser();
   const [tab, setTab]       = useState("profile");
   const [profile, setProfile] = useState({ firstName: "", lastName: "", email: "" });
-  const [pwd, setPwd]       = useState({ current: "", new: "", confirm: "" });
+  const [pwd, setPwd]       = useState({ new: "", confirm: "" });
   const [showPwd, setShowPwd] = useState(false);
   const [msg, setMsg]       = useState(null);
   const [saving, setSaving] = useState(false);
@@ -516,7 +516,7 @@ export default function AccountPage() {
       // PATCH /users/profil/:id  { password: newPwd }
       await usersAPI.updateProfile(tokenUser.id, { password: pwd.new });
       notify("success", "Password changed successfully!");
-      setPwd({ current: "", new: "", confirm: "" });
+      setPwd({ new: "", confirm: "" });
     } catch {
       notify("error", "Error updating password.");
     }

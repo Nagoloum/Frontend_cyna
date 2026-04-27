@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import ThemeToggle from '../../components/Kit/ThemeToggle';
 
 // ── Utilitaire : lire le user depuis le token JWT ─────────────────────────────
 const getUserFromToken = () => {
@@ -61,6 +62,9 @@ export default function AdminHeader() {
       <div></div>
       
       <div className="flex items-center gap-3">
+
+        {/* Theme toggle */}
+        <ThemeToggle variant="inline" />
 
         {/* Badge 2FA */}
         <div className="

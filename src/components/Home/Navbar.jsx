@@ -1,6 +1,7 @@
 import { ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import ThemeToggle from "../Kit/ThemeToggle";
 
 const getUser = () => {
   try {
@@ -77,7 +78,7 @@ export default function Navbar() {
 
   const navLinks = [
     { to: "/home", label: "Home" },
-    { to: "/categories", label: "Solutions" },
+    { to: "/categories", label: "Categories" },
     { to: "/products", label: "Products" },
   ];
 
@@ -134,8 +135,10 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-1 ml-auto lg:ml-0 shrink-0">
+            {/* Theme toggle (visible on all public pages) */}
             {isLoggedIn ? (
               <>
+                <ThemeToggle variant="inline" />
                 <Link
                   to={user?.role === "ADMIN" ? "/admin/dashboard" : "/account"}
                   className="p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
@@ -169,6 +172,7 @@ export default function Navbar() {
                 >
                   <LogOut size={20} strokeWidth={1.75} />
                 </button>
+                
               </>
             ) : (
               <>
@@ -178,6 +182,7 @@ export default function Navbar() {
                 <Link to="/auth" className="btn-primary py-2 px-4 text-sm">
                   Sign Up
                 </Link>
+                <ThemeToggle variant="inline" />
               </>
             )}
 
