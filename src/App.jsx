@@ -31,6 +31,13 @@ import ContactPage from "./pages/User/ContactPage";
 // Pages admin
 import Dashboard from "./pages/Admin/Dashboard";
 import AdminProductsPage from "./pages/Admin/ProductsPage";
+
+import TwoFactor from "./pages/Auth/TwoFactor";
+
+// import OrdersPage from "./pages/Admin/OrdersPage";
+// import SupportPage from "./pages/Admin/SupportPage";
+// import ReportsPage from "./pages/Admin/ReportsPage";
+
 import OrdersPage from "./pages/Admin/OrdersPage";
 import MyProfile from "./pages/Admin/MyProfilePage";
 import Settings from "./pages/Admin/SettingsPage";
@@ -83,6 +90,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
+        <Route path="/2FA" element={<TwoFactor />} /> 
 
         {/* ── Pages légales ── */}
         <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />
@@ -101,6 +109,10 @@ function App() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<AdminProductsPage />} />
+         
+          {/* <Route path="orders" element={<OrdersPage />} /> */}
+          {/* <Route path="support" element={<SupportPage />} /> */}
+          {/* <Route path="reports" element={<ReportsPage />} /> */}
           <Route path="orders" element={<OrdersPage />} />
           <Route path="profile" element={<MyProfile />} />
           <Route path="settings" element={<Settings />} />
