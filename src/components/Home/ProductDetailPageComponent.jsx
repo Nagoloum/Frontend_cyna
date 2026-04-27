@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { buildImageUrl, getProductImage, productsAPI } from "@/services/api";
+import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Shield, ShoppingBag, Star, Users, XCircle, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 const FEATURES = [
   { icon: Shield, label: "Advanced Protection", desc: "Real-time multi-vector detection" },
@@ -14,7 +14,10 @@ const FEATURES = [
 
 const ImageGallery = ({ images }) => {
   const [idx, setIdx] = useState(0);
-  const urls = images?.map(i => buildImageUrl(i?.path ?? i)).filter(Boolean) ?? [];
+  const [errored, setErrored] = useState({});
+  // Backend stores image subdocs as { _id, url } — buildImageUrl already handles
+  // path/url/src plus raw strings, so just pass each entry through directly.
+  const urls = (images ?? []).map((i) => buildImageUrl(i)).filter(Boolean);
 
   if (!urls.length) {
     return (
@@ -25,11 +28,18 @@ const ImageGallery = ({ images }) => {
     );
   }
 
+  const mainSrc = errored[idx] ? DEFAULT_PRODUCT_IMAGE : urls[idx];
+
   return (
     <div>
       <div className="relative rounded-2xl overflow-hidden border border-[var(--border)] mb-3"
         style={{ aspectRatio: "4/3", background: "var(--bg-muted)" }}>
-        <img src={urls[idx]} alt="" className="w-full h-full object-cover" />
+        <img
+          src={mainSrc}
+          alt=""
+          className="w-full h-full object-cover"
+          onError={() => setErrored((prev) => ({ ...prev, [idx]: true }))}
+        />
         {urls.length > 1 && (
           <>
             <button 
@@ -68,7 +78,6 @@ const ImageGallery = ({ images }) => {
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
-  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
