@@ -26,6 +26,7 @@ import CheckoutPage from "./pages/User/CheckoutPage";
 import OrderConfirmationPage from "./pages/User/OrderConfirmationPage";
 import SearchPage from "./pages/User/SearchPage";
 import AccountPage from "./pages/User/AccountPage";
+import ContactPage from "./pages/User/ContactPage";
 
 // Pages admin
 import Dashboard from "./pages/Admin/Dashboard";
@@ -37,6 +38,7 @@ import TwoFactor from "./pages/Auth/TwoFactor";
 // import SupportPage from "./pages/Admin/SupportPage";
 // import ReportsPage from "./pages/Admin/ReportsPage";
 
+import OrdersPage from "./pages/Admin/OrdersPage";
 import MyProfile from "./pages/Admin/MyProfilePage";
 import Settings from "./pages/Admin/SettingsPage";
 
@@ -63,6 +65,7 @@ function App() {
         <Route path="/products/:slug" element={<PublicPage><ProductDetailPage /></PublicPage>} />
         <Route path="/cart" element={<PublicPage><CartPage /></PublicPage>} />
         <Route path="/search" element={<PublicPage><SearchPage /></PublicPage>} />
+        <Route path="/contact" element={<PublicPage><ContactPage /></PublicPage>} />
 
         {/* ── Routes privées utilisateur ── */}
         <Route path="/checkout" element={
@@ -110,6 +113,7 @@ function App() {
           {/* <Route path="orders" element={<OrdersPage />} /> */}
           {/* <Route path="support" element={<SupportPage />} /> */}
           {/* <Route path="reports" element={<ReportsPage />} /> */}
+          <Route path="orders" element={<OrdersPage />} />
           <Route path="profile" element={<MyProfile />} />
           <Route path="settings" element={<Settings />} />
         </Route>

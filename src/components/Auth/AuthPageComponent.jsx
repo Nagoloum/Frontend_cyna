@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { authAPI, login as loginAPI } from '@/services/api';
 
 export default function AuthPageComponent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -10,7 +11,6 @@ export default function AuthPageComponent() {
     lastName: '',
     email: '',
     password: '',
-    role: 'CUSTOMER',
   });
 
   const navigate = useNavigate();
@@ -18,34 +18,7 @@ export default function AuthPageComponent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const url = isLogin
-      ? 'http://localhost:3000/api/auth/login'
-      : 'http://localhost:3000/api/auth/register';
-
-    const body = isLogin
-      ? { email: formData.email, password: formData.password }
-      : {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-      };
-
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert(data.message || 'Erreur lors de la tentative');
-        return;
-      }
-
       if (isLogin) {
          const { token, user } = data.data; // structure de ta réponse ApiResponse
         localStorage.setItem('token', token);
@@ -55,28 +28,33 @@ export default function AuthPageComponent() {
           //navigate('/2FA', { replace: true })
           navigate('/admin', { replace: true });
         } else {
-          // CUSTOMER ou autre rôle par défaut
           navigate('/home', { replace: true });
 
         }
 
-        // Optionnel : message pour les non-confirmés
-        if (!user.confirmed) {
+        if (user && !user.confirmed) {
           setTimeout(() => {
             alert("Votre compte n'est pas encore confirmé.\nVeuillez vérifier votre boîte mail (et vos spams).");
           }, 800);
         }
-      }
-
-      // ── REGISTER ────────────────────────────────────
-      else {
+      } else {
+        const res = await authAPI.register({
+          firstName: formData.firstName,
+          lastName:  formData.lastName,
+          email:     formData.email,
+          password:  formData.password,
+        });
+        const data = res.data;
+        if (!data.success) {
+          alert(data.message || 'Erreur lors de la tentative');
+          return;
+        }
         alert(data.message || "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
-        setIsLogin(true); // on repasse en mode login après inscription
+        setIsLogin(true);
       }
-
     } catch (err) {
-      console.error('Erreur fetch:', err);
-      alert('Erreur connexion - voir console');
+      const msg = err.response?.data?.message ?? err.message ?? 'Erreur connexion';
+      alert(msg);
     }
   };
 
@@ -158,51 +136,6 @@ export default function AuthPageComponent() {
                 </div>
               </div>
             )}
-
-            {!isLogin && (
-              <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-12 rounded-full overflow-hidden pl-6 pr-4 gap-3 mt-4 transition-all duration-500 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 dark:focus-within:border-indigo-400">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400" />
-                  <path d="M18 20a6 6 0 0 0-12 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400" />
-                </svg>
-                <div className="flex-1">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      id="role-customer"
-                      type="radio"
-                      name="role"
-                      value="CUSTOMER"
-                      checked={formData.role === 'CUSTOMER'}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="sr-only peer/roleCustomer"
-                    />
-                    <label
-                      htmlFor="role-customer"
-                      className="h-9 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer select-none border border-gray-200 dark:border-gray-600 bg-white/70 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 transition-all duration-300 peer-checked/roleCustomer:bg-indigo-600 peer-checked/roleCustomer:text-white peer-checked/roleCustomer:border-indigo-600"
-                    >
-                      Utilisateur
-                    </label>
-
-                    <input
-                      id="role-admin"
-                      type="radio"
-                      name="role"
-                      value="ADMIN"
-                      checked={formData.role === 'ADMIN'}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="sr-only peer/roleAdmin"
-                    />
-                    <label
-                      htmlFor="role-admin"
-                      className="h-9 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer select-none border border-gray-200 dark:border-gray-600 bg-white/70 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 transition-all duration-300 peer-checked/roleAdmin:bg-indigo-600 peer-checked/roleAdmin:text-white peer-checked/roleAdmin:border-indigo-600"
-                    >
-                      Administrateur
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
 
             {/* Email */}
             <div className="flex items-center w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 h-12 rounded-full overflow-hidden pl-6 gap-3 mt-4 transition-all duration-500 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 dark:focus-within:border-indigo-400">
