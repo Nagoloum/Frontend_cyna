@@ -21,16 +21,16 @@ export default function AuthPageComponent() {
 
     try {
       if (isLogin) {
-        const data = await loginAPI({
-          email: formData.email,
-          password: formData.password,
-        });
-        const user = data?.user ?? data;
-
-        if (user?.role === 'ADMIN') {
+         const { token, user } = data.data; // structure de ta réponse ApiResponse
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        // Redirection selon le rôle
+        if (user.role === 'ADMIN') {
+          //navigate('/2FA', { replace: true })
           navigate('/admin', { replace: true });
         } else {
           navigate('/home', { replace: true });
+
         }
 
         if (user && !user.confirmed) {
