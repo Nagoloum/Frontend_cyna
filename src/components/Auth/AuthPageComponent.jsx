@@ -47,17 +47,17 @@ export default function AuthPageComponent() {
       }
 
       if (isLogin) {
-        const { token, user } = data.data; // structure de ta réponse ApiResponse
-
+         const { token, user } = data.data; // structure de ta réponse ApiResponse
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-
         // Redirection selon le rôle
         if (user.role === 'ADMIN') {
+          //navigate('/2FA', { replace: true })
           navigate('/admin', { replace: true });
         } else {
           // CUSTOMER ou autre rôle par défaut
           navigate('/home', { replace: true });
+
         }
 
         // Optionnel : message pour les non-confirmés
