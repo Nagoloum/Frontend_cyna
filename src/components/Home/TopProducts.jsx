@@ -1,5 +1,6 @@
-import { buildImageUrl, productsAPI } from "@/services/api";
-import { ArrowRight, CheckCircle2, Package, ShoppingBag, Star, XCircle } from "lucide-react";
+import { DEFAULT_PRODUCT_IMAGE, getProductImage, productsAPI } from "@/services/api";
+import { notify } from "@/components/ui/feedback";
+import { ArrowRight, CheckCircle2, ShoppingBag, Star, XCircle } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
 
@@ -19,9 +20,7 @@ const SkeletonCard = () => (
 
 const ProductCard = ({ product, onAddToCart }) => {
   const [imgErr, setImgErr] = React.useState(false);
-  const images = product.images ?? [];
-  const firstImg = images[0];
-  const imageUrl = !imgErr ? buildImageUrl(firstImg?.path ?? firstImg) : null;
+  const imageUrl = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
   const isOut = product.stock === 0;
   const priceMonth = product.priceMonth ?? product.price;
   const priceYear = product.priceYear;
@@ -33,18 +32,12 @@ const ProductCard = ({ product, onAddToCart }) => {
         className="relative overflow-hidden flex-shrink-0"
         style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}
       >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={product.name}
-            onError={() => setImgErr(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package size={36} style={{ color: "var(--text-muted)" }} />
-          </div>
-        )}
+        <img
+          src={imageUrl}
+          alt={product.name}
+          onError={() => setImgErr(true)}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         {/* Selected badge */}
         {product.is_selected && (
           <div className="absolute top-2.5 left-2.5">
@@ -146,7 +139,10 @@ export default function TopProducts() {
       }
       localStorage.setItem("cart", JSON.stringify(cart));
       window.dispatchEvent(new Event("cart-updated"));
-    } catch { /* empty */ }
+      notify.success("Added to cart", product.name);
+    } catch {
+      notify.error("Cart error", "Could not add this product to your cart.");
+    }
   };
 
   return (

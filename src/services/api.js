@@ -16,6 +16,16 @@ export const buildImageUrl = (path) => {
   return `${BASE_URL}/${clean}`;
 };
 
+/** Default product placeholder image — served from /public */
+export const DEFAULT_PRODUCT_IMAGE = '/images/img.jpg';
+
+/** Resolve the first usable image URL for a product, or fall back to the default. */
+export const getProductImage = (product) => {
+  const images = product?.images ?? [];
+  const first = images[0];
+  return buildImageUrl(first?.path ?? first) ?? DEFAULT_PRODUCT_IMAGE;
+};
+
 /** Unwrap any NestJS ApiResponse shape → plain array */
 export const extractList = (responseData) => {
   const d   = responseData;
