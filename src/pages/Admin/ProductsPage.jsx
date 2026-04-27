@@ -15,8 +15,17 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import {
   productsAPI, categoriesAPI, servicesAPI,
-  slidersAPI, buildImageUrl, extractList,
+  slidersAPI, buildImageUrl, extractList, getImagePath,
 } from '../../services/api';
+import { notify } from '@/components/ui/feedback';
+
+/**
+ * Cross-tab signal so any list that depends on a shared resource
+ * (categories, services) refetches after a CRUD elsewhere.
+ */
+const ADMIN_DATA_EVENT = 'admin-data-changed';
+const emitAdminChange = (kind) =>
+  window.dispatchEvent(new CustomEvent(ADMIN_DATA_EVENT, { detail: { kind } }));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
@@ -190,11 +199,16 @@ function SliderFormModal({ slider, onClose, onSaved }) {
       if (form.linkUrl.trim()) fd.append('linkUrl', form.linkUrl.trim());
       if (imageFile) fd.append('newImage', imageFile);
 
-      isEdit ? await slidersAPI.update(slider._id, fd) : await slidersAPI.create(fd);
+      if (isEdit) await slidersAPI.update(slider._id, fd);
+      else        await slidersAPI.create(fd);
+      notify.success(isEdit ? 'Slide updated' : 'Slide created', form.title.trim());
+      emitAdminChange('slider');
       onSaved();
     } catch (err) {
       const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
-      setError(Array.isArray(m) ? m.join(' · ') : m);
+      const msg = Array.isArray(m) ? m.join(' · ') : m;
+      setError(msg);
+      notify.error('Save failed', msg);
     } finally { setLoading(false); }
   };
 
@@ -302,8 +316,16 @@ function SlidersTab() {
 
   const onSaved  = () => { setModal(null); fetchSliders(); };
   const onDelete = async () => {
-    await slidersAPI.delete(modal.data._id);
-    setModal(null); fetchSliders();
+    const title = modal.data.title;
+    try {
+      await slidersAPI.delete(modal.data._id);
+      notify.success('Slide deleted', title);
+      emitAdminChange('slider');
+    } catch (err) {
+      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+    }
+    setModal(null);
+    fetchSliders();
   };
 
   return (
@@ -408,12 +430,29 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState(null);
   const [imageFiles, setImageFiles]     = useState([]);
-  const [existingImages, setExistingImages] = useState(product?.images ?? []);
-  const [previews, setPreviews]         = useState(product?.images?.map(buildImageUrl).filter(Boolean) ?? []);
+
+  // Store the original stored paths (strings) so they can be re-sent to the
+  // backend during PATCH; previews are derived URLs for display.
+  const initialPaths = (product?.images ?? [])
+    .map(getImagePath)
+    .filter(Boolean);
+  const [existingImages, setExistingImages] = useState(initialPaths);
+  const [previews, setPreviews] = useState(
+    initialPaths.map(buildImageUrl).filter(Boolean)
+  );
+
+  // Try every possible service identifier shape returned by the API so the
+  // <select> finds a matching <option>.
+  const resolveServiceId = (p) => {
+    const raw = p?.service ?? p?.serviceId;
+    if (!raw) return '';
+    if (typeof raw === 'string') return raw;
+    return raw._id ?? raw.id ?? raw.slug ?? '';
+  };
 
   const [form, setForm] = useState({
     name:        product?.name        ?? '',
-    serviceId:   product?.service?._id ?? product?.serviceId ?? '',
+    serviceId:   resolveServiceId(product),
     priceMonth:  product?.priceMonth  ?? product?.price ?? '',
     priceYear:   product?.priceYear   ?? '',
     stock:       product?.stock       ?? '',
@@ -475,11 +514,19 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
           stock: Number(form.stock) || 0, is_selected: form.is_selected, priority: form.priority,
         };
       }
-      isEdit ? await productsAPI.update(product.slug, payload) : await productsAPI.create(payload);
+      if (isEdit) await productsAPI.update(product.slug, payload);
+      else        await productsAPI.create(payload);
+      notify.success(
+        isEdit ? 'Product updated' : 'Product created',
+        form.name.trim()
+      );
+      emitAdminChange('product');
       onSaved();
     } catch (err) {
       const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
-      setError(Array.isArray(m) ? m.join(' · ') : m);
+      const msg = Array.isArray(m) ? m.join(' · ') : m;
+      setError(msg);
+      notify.error('Save failed', msg);
     } finally { setLoading(false); }
   };
 
@@ -601,10 +648,32 @@ function ProductsTab({ categories, services }) {
   useEffect(() => { fetch(); }, [fetch]);
   useEffect(() => { if (searchParams.get('action') === 'create') setModal({ type: 'create' }); }, [searchParams]);
 
+  // Refetch whenever a related entity changes elsewhere in the dashboard.
+  useEffect(() => {
+    const onChange = (e) => {
+      if (!e?.detail?.kind || ['product', 'category', 'service'].includes(e.detail.kind)) {
+        fetch();
+      }
+    };
+    window.addEventListener(ADMIN_DATA_EVENT, onChange);
+    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+  }, [fetch]);
+
   const onSearch = v => { setSearch(v); clearTimeout(searchRef.current); searchRef.current = setTimeout(() => fetch({ search: v, page: 1 }), 400); };
   const onSort = f => { const o = sortBy === f && sortOrder === 'asc' ? 'desc' : 'asc'; setSortBy(f); setSortOrder(o); fetch({ sortBy: f, sortOrder: o, page: 1 }); };
   const onSaved  = () => { setModal(null); fetch({ page: 1 }); };
-  const onDelete = async () => { await productsAPI.delete(modal.data.slug); setModal(null); fetch({ page: pagination.page }); };
+  const onDelete = async () => {
+    const name = modal.data.name;
+    try {
+      await productsAPI.delete(modal.data.slug);
+      notify.success('Product deleted', name);
+      emitAdminChange('product');
+    } catch (err) {
+      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+    }
+    setModal(null);
+    fetch({ page: pagination.page });
+  };
 
   return (
     <div className="space-y-4">
@@ -697,9 +766,17 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
     setLoading(true);
     try {
       const payload = { name: form.name.trim(), categoryId: form.categoryId, description: form.description.trim(), available: form.available };
-      isEdit ? await servicesAPI.update(service.slug, payload) : await servicesAPI.create(payload);
+      if (isEdit) await servicesAPI.update(service.slug, payload);
+      else        await servicesAPI.create(payload);
+      notify.success(isEdit ? 'Service updated' : 'Service created', form.name.trim());
+      emitAdminChange('service');
       onSaved();
-    } catch (err) { const m = err.response?.data?.message ?? err.message ?? 'An error occurred.'; setError(Array.isArray(m) ? m.join(' · ') : m); }
+    } catch (err) {
+      const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const msg = Array.isArray(m) ? m.join(' · ') : m;
+      setError(msg);
+      notify.error('Save failed', msg);
+    }
     finally { setLoading(false); }
   };
   const inp = 'w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all';
@@ -745,8 +822,28 @@ function ServicesTab({ categories }) {
   useEffect(() => { fetch(); }, [fetch]);
 
   const filtered = services.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()));
-  const onDelete = async () => { await servicesAPI.delete(modal.data.slug); setModal(null); fetch(); };
+  const onDelete = async () => {
+    const name = modal.data.name;
+    try {
+      await servicesAPI.delete(modal.data.slug);
+      notify.success('Service deleted', name);
+      emitAdminChange('service');
+    } catch (err) {
+      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+    }
+    setModal(null);
+    fetch();
+  };
   const onSaved  = () => { setModal(null); fetch(); };
+
+  // Refetch when other tabs change services or categories.
+  useEffect(() => {
+    const onChange = (e) => {
+      if (!e?.detail?.kind || ['service', 'category'].includes(e.detail.kind)) fetch();
+    };
+    window.addEventListener(ADMIN_DATA_EVENT, onChange);
+    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+  }, [fetch]);
 
   return (
     <div className="space-y-4">
@@ -816,9 +913,17 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
       fd.append('order', String(Number(form.order) || 1));
       if (form.description.trim()) fd.append('description', form.description.trim());
       if (imageFile) fd.append('newImage', imageFile);
-      isEdit ? await categoriesAPI.update(category.slug, fd) : await categoriesAPI.create(fd);
+      if (isEdit) await categoriesAPI.update(category.slug, fd);
+      else        await categoriesAPI.create(fd);
+      notify.success(isEdit ? 'Category updated' : 'Category created', form.name.trim());
+      emitAdminChange('category');
       onSaved();
-    } catch (err) { const m = err.response?.data?.message ?? err.message ?? 'An error occurred.'; setError(Array.isArray(m) ? m.join(' · ') : m); }
+    } catch (err) {
+      const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const msg = Array.isArray(m) ? m.join(' · ') : m;
+      setError(msg);
+      notify.error('Save failed', msg);
+    }
     finally { setLoading(false); }
   };
   const inp = 'w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all';
@@ -870,8 +975,28 @@ function CategoriesTab() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const onDelete = async () => { await categoriesAPI.delete(modal.data.slug); setModal(null); fetch(); };
+  const onDelete = async () => {
+    const name = modal.data.name;
+    try {
+      await categoriesAPI.delete(modal.data.slug);
+      notify.success('Category deleted', name);
+      emitAdminChange('category');
+    } catch (err) {
+      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+    }
+    setModal(null);
+    fetch();
+  };
   const onSaved  = () => { setModal(null); fetch(); };
+
+  // Refetch when categories change elsewhere in the dashboard.
+  useEffect(() => {
+    const onChange = (e) => {
+      if (!e?.detail?.kind || e.detail.kind === 'category') fetch();
+    };
+    window.addEventListener(ADMIN_DATA_EVENT, onChange);
+    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+  }, [fetch]);
 
   return (
     <div className="space-y-4">
@@ -922,10 +1047,23 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState([]);
   const [services, setServices]     = useState([]);
 
-  useEffect(() => {
+  const reloadShared = useCallback(() => {
     categoriesAPI.getAll().then(r => setCategories(extractList(r.data))).catch(() => {});
     servicesAPI.getAll().then(r => setServices(extractList(r.data))).catch(() => {});
   }, []);
+
+  useEffect(() => { reloadShared(); }, [reloadShared]);
+
+  // Keep the shared dropdowns in sync after any CRUD on categories/services.
+  useEffect(() => {
+    const onChange = (e) => {
+      if (!e?.detail?.kind || ['category', 'service'].includes(e.detail.kind)) {
+        reloadShared();
+      }
+    };
+    window.addEventListener(ADMIN_DATA_EVENT, onChange);
+    return () => window.removeEventListener(ADMIN_DATA_EVENT, onChange);
+  }, [reloadShared]);
 
   return (
     <div className="p-4 sm:p-6 space-y-5">

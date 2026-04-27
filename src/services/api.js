@@ -8,12 +8,28 @@ export const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Build absolute URL for stored images (storage/*) */
-export const buildImageUrl = (path) => {
+/**
+ * Build absolute URL for stored images (storage/*).
+ * Accepts either a path string or an image object ({ path | url | src }).
+ */
+export const buildImageUrl = (input) => {
+  if (!input) return null;
+  const path =
+    typeof input === 'string'
+      ? input
+      : input?.path ?? input?.url ?? input?.src ?? null;
   if (!path || typeof path !== 'string') return null;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('blob:') || path.startsWith('data:')) return path;
   const clean = path.startsWith('/') ? path.slice(1) : path;
   return `${BASE_URL}/${clean}`;
+};
+
+/** Extract the raw stored path from an image object/string (for resending to backend). */
+export const getImagePath = (input) => {
+  if (!input) return null;
+  if (typeof input === 'string') return input;
+  return input?.path ?? input?.url ?? input?.src ?? null;
 };
 
 /** Default product placeholder image — served from /public */
@@ -22,8 +38,7 @@ export const DEFAULT_PRODUCT_IMAGE = '/images/img.jpg';
 /** Resolve the first usable image URL for a product, or fall back to the default. */
 export const getProductImage = (product) => {
   const images = product?.images ?? [];
-  const first = images[0];
-  return buildImageUrl(first?.path ?? first) ?? DEFAULT_PRODUCT_IMAGE;
+  return buildImageUrl(images[0]) ?? DEFAULT_PRODUCT_IMAGE;
 };
 
 /** Unwrap any NestJS ApiResponse shape → plain array */
