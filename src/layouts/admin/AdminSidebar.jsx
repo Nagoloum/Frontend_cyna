@@ -5,8 +5,6 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  HeadphonesIcon,
-  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -51,16 +49,6 @@ const NAV_ITEMS = [
     label: 'Orders',
     to: '/admin/orders',
     icon: ShoppingCart,
-  },
-  {
-    label: 'Support',
-    to: '/admin/support',
-    icon: HeadphonesIcon,
-  },
-  {
-    label: 'Reports',
-    to: '/admin/reports',
-    icon: BarChart3,
   },
   {
     label: 'Settings',
