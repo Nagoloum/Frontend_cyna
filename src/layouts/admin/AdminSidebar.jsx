@@ -41,7 +41,7 @@ const NAV_ITEMS = [
     icon: LayoutDashboard,
   },
   {
-    label: 'SaaS Products',
+    label: 'Products',
     to: '/admin/products',
     icon: Package,
   },

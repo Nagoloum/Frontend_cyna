@@ -1,6 +1,6 @@
 import { DEFAULT_PRODUCT_IMAGE, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
-import { ArrowRight, CheckCircle2, ShoppingBag, Star, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Package, ShoppingBag, Star, XCircle } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
 

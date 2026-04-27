@@ -1,8 +1,9 @@
 import { DEFAULT_PRODUCT_IMAGE, categoriesAPI, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
-import { CheckCircle2, ChevronDown, Package, Search, ShoppingBag, SlidersHorizontal, Star, X, XCircle } from "lucide-react";
+import { CheckCircle2, Package, Search, ShoppingBag, SlidersHorizontal, Star, X, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import Select from "@/components/ui/Select";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -194,39 +195,23 @@ export default function ProductsPage() {
                 {/* Category filter */}
                 <div className="flex-1 min-w-[180px]">
                   <label className="block text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>CATEGORY</label>
-                  <div className="relative">
-                    <select 
-                      value={selCat} 
-                      onChange={e => setSelCat(e.target.value)}
-                      className="w-full appearance-none pl-3 pr-8 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      <option value="">All Categories</option>
-                      {categories.map(c => (
-                        <option key={c._id} value={c.slug}>{c.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
-                  </div>
+                  <Select size="sm" value={selCat} onChange={e => setSelCat(e.target.value)}>
+                    <option value="">All Categories</option>
+                    {categories.map(c => (
+                      <option key={c._id} value={c.slug}>{c.name}</option>
+                    ))}
+                  </Select>
                 </div>
 
                 {/* Sort */}
                 <div className="flex-1 min-w-[160px]">
                   <label className="block text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>SORT BY</label>
-                  <div className="relative">
-                    <select 
-                      value={sort} 
-                      onChange={e => setSort(e.target.value)}
-                      className="w-full appearance-none pl-3 pr-8 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      <option value="priority">Priority</option>
-                      <option value="price-asc">Price: Low to High</option>
-                      <option value="price-desc">Price: High to Low</option>
-                      <option value="name">Name A-Z</option>
-                    </select>
-                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
-                  </div>
+                  <Select size="sm" value={sort} onChange={e => setSort(e.target.value)}>
+                    <option value="priority">Priority</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="name">Name A-Z</option>
+                  </Select>
                 </div>
 
                 {/* Availability toggle */}

@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import Select from "@/components/ui/Select";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -306,31 +307,31 @@ export default function SearchPage() {
                 {/* Category */}
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Category</label>
-                  <select
+                  <Select
+                    size="sm"
                     value={selectedCategory}
                     onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-                    className="w-full h-9 px-3 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
                   >
                     <option value="">All categories</option>
                     {categories.map((c) => (
                       <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 {/* Service */}
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Service type</label>
-                  <select
+                  <Select
+                    size="sm"
                     value={selectedService}
                     onChange={(e) => { setSelectedService(e.target.value); setPage(1); }}
-                    className="w-full h-9 px-3 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
                   >
                     <option value="">All services</option>
                     {services.map((s) => (
                       <option key={s._id ?? s.slug} value={s._id ?? s.slug}>{s.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 {/* Price range */}
@@ -361,24 +362,28 @@ export default function SearchPage() {
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Sort by</label>
                   <div className="flex gap-2">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-                      className="flex-1 h-9 px-2 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
-                    >
-                      <option value="">Default</option>
-                      <option value="prix">Price</option>
-                      <option value="nouveauté">Newest</option>
-                      <option value="disponibilité">Availability</option>
-                    </select>
-                    <select
-                      value={sortOrder}
-                      onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
-                      className="w-20 h-9 px-2 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
-                    >
-                      <option value="asc">↑ Asc</option>
-                      <option value="desc">↓ Desc</option>
-                    </select>
+                    <div className="flex-1">
+                      <Select
+                        size="sm"
+                        value={sortBy}
+                        onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                      >
+                        <option value="">Default</option>
+                        <option value="prix">Price</option>
+                        <option value="nouveauté">Newest</option>
+                        <option value="disponibilité">Availability</option>
+                      </Select>
+                    </div>
+                    <div className="w-24">
+                      <Select
+                        size="sm"
+                        value={sortOrder}
+                        onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
+                      >
+                        <option value="asc">↑ Asc</option>
+                        <option value="desc">↓ Desc</option>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>

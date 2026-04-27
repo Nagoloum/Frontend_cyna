@@ -456,12 +456,13 @@ export const searchAPI = {
 
 export const dashboardAPI = {
   fetchAll: async () => {
-    const [pR, cR, uR, sR, slR] = await Promise.allSettled([
+    const [pR, cR, uR, sR, slR, oR] = await Promise.allSettled([
       api.get('/products',   { params: { limit: 1000 } }),
       api.get('/categories'),
       api.get('/users'),
       api.get('/services'),
       api.get('/sliders'),
+      api.get('/commandes',  { params: { limit: 1000, sortBy: 'createdAt', sortOrder: 'desc' } }),
     ]);
     const extract = (res) =>
       res.status === 'rejected' ? [] : extractList(res.value.data);
@@ -471,6 +472,7 @@ export const dashboardAPI = {
       users:      extract(uR),
       services:   extract(sR),
       sliders:    extract(slR),
+      commandes:  extract(oR),
     };
   },
 };

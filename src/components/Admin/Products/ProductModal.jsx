@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { productsAPI, buildImageUrl, getImagePath } from '../../../services/api';
+import AdminSelect from '../Shared/AdminSelect';
 
 export default function ProductModal({ product = null, services = [], onClose, onSaved }) {
   const isEdit       = !!product;
@@ -20,8 +21,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
     priceMonth:  '',
     priceYear:   '',
     stock:       '',
-    is_selected: true,
-    priority:    false,
+    is_selected: false,
   });
 
   useEffect(() => {
@@ -39,8 +39,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
       priceMonth:  product.priceMonth  ?? '',
       priceYear:   product.priceYear   ?? '',
       stock:       product.stock       ?? '',
-      is_selected: product.is_selected ?? true,
-      priority:    product.priority    ?? false,
+      is_selected: product.is_selected ?? false,
     });
   }, [product]);
 
@@ -89,6 +88,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
     if (!form.serviceId)                              { setError('Please select a service.'); return; }
     if (form.priceMonth === '' || isNaN(Number(form.priceMonth))) { setError('Monthly price is required.'); return; }
     if (form.priceYear  === '' || isNaN(Number(form.priceYear)))  { setError('Yearly price is required.'); return; }
+    if (!isEdit && imageFiles.length === 0)           { setError('At least one image is required.'); return; }
 
     setLoading(true);
     try {
@@ -101,7 +101,6 @@ export default function ProductModal({ product = null, services = [], onClose, o
         payload.append('priceYear',   String(Number(form.priceYear)  || 0));
         payload.append('stock',       String(Number(form.stock)      || 0));
         payload.append('is_selected', String(form.is_selected));
-        payload.append('priority',    String(form.priority));
         imageFiles.forEach((f) => payload.append('images', f));
         existingImages.forEach((u) => payload.append('existingImages', u));
       } else {
@@ -112,7 +111,6 @@ export default function ProductModal({ product = null, services = [], onClose, o
           priceYear:   Number(form.priceYear)  || 0,
           stock:       Number(form.stock)      || 0,
           is_selected: form.is_selected,
-          priority:    form.priority,
         };
       }
 
@@ -179,7 +177,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
               Service <span className="text-red-500">*</span>
             </label>
-            <select name="serviceId" value={form.serviceId} onChange={handleChange} className={inputCls}>
+            <AdminSelect name="serviceId" value={form.serviceId} onChange={handleChange}>
               <option value="">Select a service…</option>
               {services.length === 0 && (
                 <option value="" disabled>No services available</option>
@@ -189,7 +187,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
                   {service.name}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
             {services.length === 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 ⚠ No services found. Create a service first.
@@ -245,28 +243,24 @@ export default function ProductModal({ product = null, services = [], onClose, o
             </div>
           </div>
 
-          {/* Toggles */}
-          <div className="flex items-center gap-6">
+          {/* Top product toggle */}
+          <div>
             <label className="flex items-center gap-2.5 cursor-pointer">
               <div className="relative">
                 <input type="checkbox" name="is_selected" checked={form.is_selected} onChange={handleChange} className="sr-only peer" />
                 <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
               </div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Active / Visible</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Top product</span>
             </label>
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <div className="relative">
-                <input type="checkbox" name="priority" checked={form.priority} onChange={handleChange} className="sr-only peer" />
-                <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
-              </div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Featured</span>
-            </label>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 ml-12">
+              Featured in the homepage <strong>Top Products</strong> section.
+            </p>
           </div>
 
           {/* Images */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Product images
+              Product images {!isEdit && <span className="text-red-500">*</span>}
             </label>
             {previews.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">

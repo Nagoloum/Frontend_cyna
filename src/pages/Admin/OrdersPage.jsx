@@ -2,12 +2,13 @@
 // src/pages/admin/OrdersPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Search, RefreshCw, AlertCircle, ShoppingCart,
+  Search, AlertCircle, ShoppingCart,
   ChevronLeft, ChevronRight, Eye, CheckCircle,
   XCircle, Clock, X, Package,
   User, Calendar, Hash, CreditCard,
 } from 'lucide-react';
 import { commandesAPI } from '../../services/api';
+import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 
 // Backend statuses: PENDING, PAID, CANCEL
 const STATUS_CONFIG = {
@@ -150,6 +151,12 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  useEffect(() => {
+    const onRefresh = () => fetchOrders();
+    window.addEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+  }, [fetchOrders]);
+
   const handleSearch = (value) => {
     setSearch(value);
     clearTimeout(searchTimeout.current);
@@ -161,21 +168,11 @@ export default function OrdersPage() {
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {pagination.total > 0 ? `${pagination.total} orders total` : 'View customer orders'}
-          </p>
-        </div>
-        <button
-          onClick={() => fetchOrders()}
-          disabled={loading}
-          className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 disabled:opacity-50 transition-all shadow-sm"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          {pagination.total > 0 ? `${pagination.total} orders total` : 'View customer orders'}
+        </p>
       </div>
 
       {error && (
