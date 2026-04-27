@@ -26,10 +26,21 @@ const NavLink = ({ to, children, active }) => (
   </Link>
 );
 
+const readCartCount = () => {
+  try {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    if (!Array.isArray(cart)) return 0;
+    return cart.reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+  } catch {
+    return 0;
+  }
+};
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [scrolled, setScrolled] = useState(false);
+  const [cartCount, setCartCount] = useState(readCartCount);
   const navigate = useNavigate();
   const location = useLocation();
   const user = getUser();
@@ -39,6 +50,16 @@ export default function Navbar() {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setCartCount(readCartCount());
+    window.addEventListener("cart-updated", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("cart-updated", refresh);
+      window.removeEventListener("storage", refresh);
+    };
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
@@ -127,8 +148,18 @@ export default function Navbar() {
                   to="/cart"
                   className="relative p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
                   style={{ color: "var(--text-secondary)" }}
+                  title="Cart"
                 >
                   <ShoppingBag size={20} strokeWidth={1.75} />
+                  {cartCount > 0 && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-[Kumbh Sans] font-700 text-white shadow-[var(--shadow-md)]"
+                      style={{ background: "var(--accent)" }}
+                      aria-label={`${cartCount} item${cartCount > 1 ? "s" : ""} in cart`}
+                    >
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
                 </Link>
                 <button
                   onClick={handleLogout}

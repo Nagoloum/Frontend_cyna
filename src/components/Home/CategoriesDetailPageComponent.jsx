@@ -1,4 +1,5 @@
-import { buildImageUrl, categoriesAPI, productsAPI } from "@/services/api";
+import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, categoriesAPI, getProductImage, productsAPI } from "@/services/api";
+import { notify } from "@/components/ui/feedback";
 import { ArrowLeft, CheckCircle2, ChevronDown, Filter, Package, ShoppingBag, Star, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -19,26 +20,19 @@ const SkeletonProduct = () => (
 
 const ProductCard = ({ product, onAddToCart }) => {
   const [imgErr, setImgErr] = useState(false);
-  const images = product.images ?? [];
-  const img = !imgErr ? buildImageUrl(images[0]?.path ?? images[0]) : null;
+  const img = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
   const isOut = product.stock === 0;
 
   return (
     <div className={`cyna-card overflow-hidden group flex flex-col ${isOut ? "opacity-55" : ""}`}>
       {/* Image */}
       <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}>
-        {img ? (
-          <img
-            src={img}
-            alt={product.name}
-            onError={() => setImgErr(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package size={32} style={{ color: "var(--text-muted)" }} />
-          </div>
-        )}
+        <img
+          src={img}
+          alt={product.name}
+          onError={() => setImgErr(true)}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         {product.is_selected && (
           <div className="absolute top-2.5 left-2.5">
             <span className="badge badge-accent gap-1 text-[10px]">
@@ -116,23 +110,32 @@ export default function CategoryDetailPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      categoriesAPI.getBySlug(slug),
-      productsAPI.getAll({ limit: 100 })
-    ]).then(([catRes, prodRes]) => {
-      const cat = catRes.data?.data ?? catRes.data;
-      setCategory(cat);
-      const allProds = prodRes.data?.data?.items ?? prodRes.data?.data ?? prodRes.data ?? [];
-      const arr = Array.isArray(allProds) ? allProds : [];
+    categoriesAPI.getBySlugForUser(slug)
+      .then((catRes) => {
+        const payload = catRes.data?.data ?? catRes.data ?? {};
+        const cat = payload.category ?? payload;
+        setCategory(cat);
 
-      // Filter products that belong to this category
-      const catProds = arr.filter(p =>
-        p.service?.category?.slug === slug ||
-        p.service?.category === cat?._id ||
-        p.categorySlug === slug
-      );
-      setProducts(catProds.length > 0 ? catProds : arr);
-    }).catch(() => { }).finally(() => setLoading(false));
+        // Endpoint may return products embedded; otherwise derive them from
+        // the public ordered list and filter by category.
+        const embedded = payload.products ?? cat?.products ?? null;
+        if (Array.isArray(embedded) && embedded.length > 0) {
+          setProducts(embedded);
+          return;
+        }
+        return productsAPI.getAllByOrder().then((prodRes) => {
+          const all = prodRes.data?.data?.items ?? prodRes.data?.data ?? prodRes.data ?? [];
+          const arr = Array.isArray(all) ? all : [];
+          const catProds = arr.filter(p =>
+            p.service?.category?.slug === slug ||
+            p.service?.category === cat?._id ||
+            p.categorySlug === slug
+          );
+          setProducts(catProds);
+        });
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false));
   }, [slug]);
 
   const handleAddToCart = (product) => {
@@ -143,7 +146,10 @@ export default function CategoryDetailPage() {
       else cart.push({ ...product, qty: 1, billingPeriod: "monthly" });
       localStorage.setItem("cart", JSON.stringify(cart));
       window.dispatchEvent(new Event("cart-updated"));
-    } catch { /* empty */ }
+      notify.success("Added to cart", product.name);
+    } catch {
+      notify.error("Cart error", "Could not add this product to your cart.");
+    }
   };
 
   // Sort & Filter logic

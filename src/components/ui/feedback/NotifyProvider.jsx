@@ -257,7 +257,7 @@ function NotifyStyles() {
       .cyna-toast-stack {
         position: fixed;
         z-index: 9999;
-        bottom: 1rem;
+        top: 1rem;
         right: 1rem;
         left: 1rem;
         display: flex;
@@ -270,7 +270,7 @@ function NotifyStyles() {
         .cyna-toast-stack {
           left: auto;
           align-items: flex-end;
-          bottom: 1.5rem;
+          top: 1.5rem;
           right: 1.5rem;
           max-width: 380px;
         }
@@ -295,8 +295,8 @@ function NotifyStyles() {
         animation: cyna-toast-in 240ms cubic-bezier(.2,.8,.2,1);
       }
       @keyframes cyna-toast-in {
-        from { opacity: 0; transform: translateY(8px) scale(0.98); }
-        to   { opacity: 1; transform: translateY(0)   scale(1); }
+        from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+        to   { opacity: 1; transform: translateY(0)    scale(1); }
       }
 
       .cyna-toast-icon {

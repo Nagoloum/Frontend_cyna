@@ -1,4 +1,5 @@
-import { buildImageUrl, categoriesAPI, productsAPI } from "@/services/api";
+import { DEFAULT_PRODUCT_IMAGE, categoriesAPI, getProductImage, productsAPI } from "@/services/api";
+import { notify } from "@/components/ui/feedback";
 import { CheckCircle2, ChevronDown, Package, Search, ShoppingBag, SlidersHorizontal, Star, X, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -19,16 +20,18 @@ const SkeletonCard = () => (
 
 const ProductCard = ({ product, onAddToCart }) => {
   const [imgErr, setImgErr] = useState(false);
-  const img = !imgErr ? buildImageUrl(product.images?.[0]?.path ?? product.images?.[0]) : null;
+  const img = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
   const isOut = product.stock === 0;
 
   return (
     <div className={`cyna-card overflow-hidden group flex flex-col ${isOut ? "opacity-55" : ""}`}>
       <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}>
-        {img
-          ? <img src={img} alt={product.name} onError={() => setImgErr(true)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          : <div className="w-full h-full flex items-center justify-center"><Package size={32} style={{ color: "var(--text-muted)" }} /></div>
-        }
+        <img
+          src={img}
+          alt={product.name}
+          onError={() => setImgErr(true)}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         {product.is_selected && (
           <div className="absolute top-2 left-2">
             <span className="badge badge-accent gap-1 text-[10px]">
@@ -102,8 +105,8 @@ export default function ProductsPage() {
 
   useEffect(() => {
     Promise.all([
-      productsAPI.getAll({ limit: 200 }),
-      categoriesAPI.getAll()
+      productsAPI.getAllByOrder(),
+      categoriesAPI.getAllByOrder()
     ]).then(([pRes, cRes]) => {
       const pd = pRes.data?.data?.items ?? pRes.data?.data ?? pRes.data ?? [];
       const cd = cRes.data?.data?.items ?? cRes.data?.data ?? cRes.data ?? [];
@@ -120,7 +123,10 @@ export default function ProductsPage() {
       else cart.push({ ...product, qty: 1, billingPeriod: "monthly" });
       localStorage.setItem("cart", JSON.stringify(cart));
       window.dispatchEvent(new Event("cart-updated"));
-    } catch { /* empty */ }
+      notify.success("Added to cart", product.name);
+    } catch {
+      notify.error("Cart error", "Could not add this product to your cart.");
+    }
   };
 
   const filtered = products

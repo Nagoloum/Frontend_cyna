@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { buildImageUrl, productsAPI } from "@/services/api";
+import { buildImageUrl, getProductImage, productsAPI } from "@/services/api";
+import { notify } from "@/components/ui/feedback";
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Shield, ShoppingBag, Star, Users, XCircle, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -81,8 +82,8 @@ export default function ProductDetailPage() {
       .then(res => {
         const p = res.data?.data ?? res.data;
         setProduct(p);
-        // Load related products
-        return productsAPI.getAll({ limit: 6 });
+        // Load related products from the public ordered list
+        return productsAPI.getAllByOrder();
       })
       .then(res => {
         const all = res.data?.data?.items ?? res.data?.data ?? res.data ?? [];
@@ -103,7 +104,10 @@ export default function ProductDetailPage() {
       window.dispatchEvent(new Event("cart-updated"));
       setAdded(true);
       setTimeout(() => setAdded(false), 2500);
-    } catch { /* empty */ }
+      notify.success("Added to cart", `${product.name} × ${qty}`);
+    } catch {
+      notify.error("Cart error", "Could not add this product to your cart.");
+    }
   };
 
   if (loading) return (
@@ -299,19 +303,20 @@ export default function ProductDetailPage() {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {related.map(p => {
-                const img = buildImageUrl(p.images?.[0]?.path ?? p.images?.[0]);
+                const img = getProductImage(p);
                 return (
-                  <Link 
-                    key={p._id} 
+                  <Link
+                    key={p._id}
                     to={`/products/${p.slug}`}
-                    className="cyna-card overflow-hidden group block" 
+                    className="cyna-card overflow-hidden group block"
                     style={{ textDecoration: "none" }}
                   >
                     <div className="overflow-hidden" style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}>
-                      {img
-                        ? <img src={img} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        : <div className="w-full h-full flex items-center justify-center"><ShoppingBag size={24} style={{ color: "var(--text-muted)" }} /></div>
-                      }
+                      <img
+                        src={img}
+                        alt={p.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
                     </div>
                     <div className="p-3">
                       <p className="text-xs font-[Kumbh Sans] font-700 line-clamp-2 mb-1" style={{ color: "var(--text-primary)" }}>
