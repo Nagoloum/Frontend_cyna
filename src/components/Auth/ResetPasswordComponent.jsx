@@ -1,8 +1,9 @@
-/* eslint-disable no-unused-vars */
 // src/pages/ResetPassword.jsx
 import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import PasswordInput from './PasswordInput.jsx';
+import { authAPI } from '@/services/api';
+import { notify } from '@/components/ui/feedback';
 
 export default function ResetPasswordComponent() {
   const [searchParams] = useSearchParams();
@@ -19,39 +20,35 @@ export default function ResetPasswordComponent() {
     e.preventDefault();
 
     if (!token) {
-      alert('Reset token is missing.');
+      notify.error('Lien invalide', 'Le jeton de réinitialisation est manquant.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert('The passwords do not match. Please try again.');
+      notify.warning('Mots de passe différents', 'Veuillez vérifier la confirmation.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword }),
-      });
+      const res = await authAPI.resetPassword(token, newPassword);
+      const data = res.data;
 
-      const data = await res.json();
-
-      if (!res.ok || !data?.success) {
-        alert(data?.message || 'Error resetting password. Please try again.');
+      if (!data?.success) {
+        notify.error(
+          'Réinitialisation échouée',
+          data?.message || 'Une erreur est survenue. Veuillez réessayer.'
+        );
         return;
       }
 
       setIsSuccess(true);
-
-      // Redirection automatique vers login après 3 secondes
-      setTimeout(() => {
-        navigate('/auth');
-      }, 3000);
+      notify.success('Mot de passe mis à jour', 'Redirection vers la connexion…');
+      setTimeout(() => navigate('/auth'), 3000);
     } catch (err) {
-      alert('Error resetting password. Please try again.');
+      const msg = err.response?.data?.message ?? 'Une erreur est survenue. Veuillez réessayer.';
+      notify.error('Réinitialisation échouée', msg);
     } finally {
       setLoading(false);
     }

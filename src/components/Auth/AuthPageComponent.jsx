@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { authAPI, login as loginAPI } from '@/services/api';
+import { notify } from '@/components/ui/feedback';
 
 export default function AuthPageComponent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -34,7 +35,11 @@ export default function AuthPageComponent() {
 
         if (user && !user.confirmed) {
           setTimeout(() => {
-            alert("Votre compte n'est pas encore confirmé.\nVeuillez vérifier votre boîte mail (et vos spams).");
+            notify.warning(
+              'Compte non confirmé',
+              "Veuillez vérifier votre boîte mail (et vos spams) pour activer votre compte.",
+              { duration: 7000 }
+            );
           }, 800);
         }
       } else {
@@ -46,15 +51,18 @@ export default function AuthPageComponent() {
         });
         const data = res.data;
         if (!data.success) {
-          alert(data.message || 'Erreur lors de la tentative');
+          notify.error('Inscription échouée', data.message || 'Erreur lors de la tentative.');
           return;
         }
-        alert(data.message || "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
+        notify.success(
+          'Inscription réussie',
+          data.message || 'Vérifiez votre email pour confirmer votre compte.'
+        );
         setIsLogin(true);
       }
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? 'Erreur connexion';
-      alert(msg);
+      const msg = err.response?.data?.message ?? err.message ?? 'Erreur de connexion.';
+      notify.error(isLogin ? 'Connexion échouée' : 'Inscription échouée', msg);
     }
   };
 
