@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { authAPI } from '@/services/api';
 
 export default function EmailConfirmationComponent() {
   const [searchParams] = useSearchParams();
@@ -19,13 +20,11 @@ export default function EmailConfirmationComponent() {
       }
 
       try {
-        const res = await fetch(
-          `http://localhost:3000/api/auth/email-confirmation?token=${encodeURIComponent(token)}`,
-          { method: 'GET' },
-        );
-        const data = await res.json();
+        // GET /auth/email-confirmation?token=...
+        const res = await authAPI.emailConfirmation(token);
+        const data = res.data;
 
-        if (!res.ok || !data?.success) {
+        if (!data?.success) {
           setSuccess(false);
           setMessage(data?.message || 'Confirmation impossible.');
           setLoading(false);
@@ -34,9 +33,10 @@ export default function EmailConfirmationComponent() {
 
         setSuccess(true);
         setMessage(data?.message || 'Email confirmé, vous pouvez vous connecter.');
-      } catch {
+      } catch (err) {
         setSuccess(false);
-        setMessage('Erreur réseau lors de la confirmation.');
+        const msg = err.response?.data?.message ?? 'Erreur réseau lors de la confirmation.';
+        setMessage(msg);
       } finally {
         setLoading(false);
       }
