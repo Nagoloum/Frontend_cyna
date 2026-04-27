@@ -1,4 +1,4 @@
-import { adressesAPI, authAPI, cartesAPI, usersAPI } from "@/services/api";
+import { adressesAPI, authAPI, cartesAPI, commandesAPI, usersAPI } from "@/services/api";
 import {
   AlertCircle, CheckCircle2, ChevronRight, CreditCard,
   Edit2, Eye, EyeOff, Lock, LogOut, MapPin, Package,
@@ -285,6 +285,107 @@ function AddressesTab() {
   );
 }
 
+// ── Orders tab ────────────────────────────────────────────────────────────────
+function OrdersTab() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    commandesAPI.getByUser({ limit: 50 })
+      .then(r => {
+        const payload = r.data?.data ?? r.data ?? {};
+        const list = payload?.data ?? payload;
+        setOrders(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const statusBadge = (statut) => {
+    const map = {
+      PAID:   { label: "Paid",     cls: "bg-green-50 text-green-600 border-green-200" },
+      PENDING:{ label: "Pending",  cls: "bg-amber-50 text-amber-600 border-amber-200" },
+      CANCEL: { label: "Cancelled",cls: "bg-red-50 text-red-600 border-red-200"       },
+    };
+    const m = map[statut] ?? { label: statut, cls: "bg-gray-50 text-gray-600 border-gray-200" };
+    return (
+      <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}>
+        {m.label}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return <div className="space-y-3">{[0, 1, 2].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}</div>;
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className="cyna-card p-6">
+        <h2 className="font-semibold text-[var(--text-primary)] mb-4">Order history</h2>
+        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
+          <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
+          <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>No orders yet</p>
+          <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+            Your orders will appear here once you have made a purchase.
+          </p>
+          <Link to="/categories" className="btn-primary gap-2 inline-flex items-center">
+            <Star size={14} /> Explore our solutions
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cyna-card p-6">
+      <h2 className="font-semibold text-[var(--text-primary)] mb-4">Order history</h2>
+      <div className="space-y-3">
+        {orders.map(order => (
+          <div key={order._id ?? order.reference} className="rounded-2xl border border-[var(--border)] p-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-medium text-sm text-[var(--text-primary)]">
+                  Order #{order.reference}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
+                  {order.nbreProducts ? ` · ${order.nbreProducts} item${order.nbreProducts > 1 ? "s" : ""}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {statusBadge(order.statut)}
+                <span className="font-[Kumbh Sans] font-700 text-sm text-[var(--accent)]">
+                  {Number(order.totalPrice ?? 0).toFixed(2)} €
+                </span>
+              </div>
+            </div>
+
+            {Array.isArray(order.abonnements) && order.abonnements.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-1.5">
+                {order.abonnements.map((ab, idx) => {
+                  const pname = ab.product?.name ?? "Product";
+                  return (
+                    <div key={idx} className="flex justify-between text-xs">
+                      <span className="text-[var(--text-secondary)]">
+                        {pname} ×{ab.quantity ?? 1}
+                        <span className="text-[var(--text-muted)] ml-1">({ab.periode === "ANNEE" ? "yearly" : "monthly"})</span>
+                      </span>
+                      <span className="text-[var(--text-primary)] font-medium">
+                        {Number(ab.price ?? 0).toFixed(2)} €
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Payment cards tab ─────────────────────────────────────────────────────────
 function CardsTab() {
   const [cards, setCards]     = useState([]);
@@ -369,7 +470,7 @@ export default function AccountPage() {
   const navigate   = useNavigate();
   const tokenUser  = getUser();
   const [tab, setTab]       = useState("profile");
-  const [profile, setProfile] = useState({ firstName: "", lastName: "", email: "", phone: "" });
+  const [profile, setProfile] = useState({ firstName: "", lastName: "", email: "" });
   const [pwd, setPwd]       = useState({ current: "", new: "", confirm: "" });
   const [showPwd, setShowPwd] = useState(false);
   const [msg, setMsg]       = useState(null);
@@ -382,7 +483,6 @@ export default function AccountPage() {
         firstName: u.firstName || "",
         lastName:  u.lastName  || "",
         email:     u.email     || "",
-        phone:     u.phone     || "",
       }))
       .catch(() => {});
   }, [navigate, tokenUser]);
@@ -399,7 +499,6 @@ export default function AccountPage() {
       await usersAPI.updateProfile(tokenUser.id, {
         firstName: profile.firstName,
         lastName:  profile.lastName,
-        phone:     profile.phone,
       });
       notify("success", "Profile updated successfully!");
     } catch {
@@ -480,7 +579,6 @@ export default function AccountPage() {
                   <Field label="Last name"  value={profile.lastName}  onChange={v => setProfile(p => ({ ...p, lastName:  v }))} />
                 </div>
                 <Field label="Email (read-only)" value={profile.email} onChange={() => {}} disabled />
-                <Field label="Phone" value={profile.phone} onChange={v => setProfile(p => ({ ...p, phone: v }))} placeholder="+33 6 00 00 00 00" />
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   To change your email, please contact support.
                 </p>
@@ -534,21 +632,7 @@ export default function AccountPage() {
             {tab === "cards" && <CardsTab />}
 
             {/* ── Orders ── */}
-            {tab === "orders" && (
-              <div className="cyna-card p-6">
-                <h2 className="font-semibold text-[var(--text-primary)] mb-4">Order history</h2>
-                <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
-                  <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-                  <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>No orders yet</p>
-                  <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-                    Your orders will appear here once you have made a purchase.
-                  </p>
-                  <Link to="/categories" className="btn-primary gap-2 inline-flex items-center">
-                    <Star size={14} /> Explore our solutions
-                  </Link>
-                </div>
-              </div>
-            )}
+            {tab === "orders" && <OrdersTab />}
           </div>
         </div>
       </div>
