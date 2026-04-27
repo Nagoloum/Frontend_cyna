@@ -36,6 +36,8 @@ export default function CheckoutPage() {
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [newAddress, setNewAddress] = useState(false);
+  const [saveNewAddress, setSaveNewAddress] = useState(true);
+  const [setAsDefaultAddress, setSetAsDefaultAddress] = useState(false);
   const [addr, setAddr] = useState({
     firstName: "", lastName: "", adresse: "", complementAdresse: "",
     city: "", region: "", country: "France", codePostal: "", phone: "",
@@ -46,6 +48,8 @@ export default function CheckoutPage() {
   const [loadingCards, setLoadingCards] = useState(true);
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [newCard, setNewCard] = useState(false);
+  const [saveNewCard, setSaveNewCard] = useState(true);
+  const [setAsDefaultCard, setSetAsDefaultCard] = useState(false);
   const [pay, setPay] = useState({ carteName: "", carteNumber: "", carteDate: "", carteCVV: "" });
 
   // ── Submission ────────────────────────────────────────────────────────────
@@ -102,11 +106,54 @@ export default function CheckoutPage() {
     return null;
   };
 
-  const goNext = () => {
-    const err = step === 0 ? validateAddress() : validatePayment();
-    if (err) { setError(err); return; }
+  const goNext = async () => {
     setError(null);
-    setStep(s => s + 1);
+    
+    if (step === 0) {
+      const err = validateAddress();
+      if (err) { setError(err); return; }
+      
+      if (newAddress && saveNewAddress) {
+        setSubmitting(true);
+        try {
+          const res = await adressesAPI.create({ ...addr, isDefault: setAsDefaultAddress });
+          const created = res.data?.data ?? res.data;
+          if (created?._id) {
+            setSavedAddresses(prev => [...prev, created]);
+            setSelectedAddressId(created._id);
+            setNewAddress(false);
+          }
+        } catch (e) {
+          setError(e.response?.data?.message || "Erreur lors de la sauvegarde de l'adresse.");
+          setSubmitting(false);
+          return;
+        }
+        setSubmitting(false);
+      }
+      setStep(1);
+    } else if (step === 1) {
+      const err = validatePayment();
+      if (err) { setError(err); return; }
+
+      if (newCard && saveNewCard) {
+        setSubmitting(true);
+        try {
+          const res = await cartesAPI.create({ ...pay, isDefault: setAsDefaultCard });
+          const created = res.data?.data ?? res.data;
+          if (created?._id) {
+            setSavedCards(prev => [...prev, created]);
+            setSelectedCardId(created._id);
+            setNewCard(false);
+          }
+        } catch (e) {
+          setError(e.response?.data?.message || "Erreur lors de la sauvegarde de la carte bancaire.");
+          setSubmitting(false);
+          return;
+        }
+        setSubmitting(false);
+      }
+      setStep(2);
+    }
   };
 
   // ── Confirm purchase ──────────────────────────────────────────────────────
@@ -118,14 +165,15 @@ export default function CheckoutPage() {
     try {
       // 1. Resolve address (create if new) — backend doesn't actually consume it
       //    on commande creation, but the user expects it to be saved in their account.
-      if (newAddress) {
-        try { await adressesAPI.create(addr); } catch { /* ignore — non-blocking */ }
+      if (newAddress && saveNewAddress) {
+        try { await adressesAPI.create({ ...addr, isDefault: setAsDefaultAddress }); } catch { /* ignore — non-blocking */ }
       }
 
       // 2. Resolve card → cbId is required by the backend
       let cbId = selectedCardId;
       if (newCard || !cbId) {
-        const res = await cartesAPI.create(pay);
+        // Backend commands require a cbId so if not saving, we shouldn't save, but API forces it currently. We pass isDefault anyway.
+        const res = await cartesAPI.create({ ...pay, isDefault: setAsDefaultCard });
         const created = res.data?.data ?? res.data;
         cbId = created?._id;
         if (!cbId) throw new Error("Failed to save payment card.");
@@ -254,22 +302,47 @@ export default function CheckoutPage() {
                     )}
 
                     {(newAddress || savedAddresses.length === 0) && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InputField label="First Name" value={addr.firstName} onChange={v => setAddr({ ...addr, firstName: v })} placeholder="John" required half />
-                        <InputField label="Last Name" value={addr.lastName} onChange={v => setAddr({ ...addr, lastName: v })} placeholder="Doe" required half />
-                        <InputField label="Address" value={addr.adresse} onChange={v => setAddr({ ...addr, adresse: v })} placeholder="12 rue de la Paix" required />
-                        <InputField label="Complement" value={addr.complementAdresse} onChange={v => setAddr({ ...addr, complementAdresse: v })} placeholder="Apt, office…" />
-                        <InputField label="City" value={addr.city} onChange={v => setAddr({ ...addr, city: v })} placeholder="Paris" required half />
-                        <InputField label="Postal Code" value={addr.codePostal} onChange={v => setAddr({ ...addr, codePostal: v })} placeholder="75001" required half />
-                        <InputField label="Region" value={addr.region} onChange={v => setAddr({ ...addr, region: v })} placeholder="Île-de-France" required half />
-                        <InputField label="Country" value={addr.country} onChange={v => setAddr({ ...addr, country: v })} placeholder="France" required half />
-                        <InputField label="Phone" type="tel" value={addr.phone} onChange={v => setAddr({ ...addr, phone: v })} placeholder="+33 6 12 34 56 78" required />
-                      </div>
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <InputField label="First Name" value={addr.firstName} onChange={v => setAddr({ ...addr, firstName: v })} placeholder="John" required half />
+                          <InputField label="Last Name" value={addr.lastName} onChange={v => setAddr({ ...addr, lastName: v })} placeholder="Doe" required half />
+                          <InputField label="Address" value={addr.adresse} onChange={v => setAddr({ ...addr, adresse: v })} placeholder="12 rue de la Paix" required />
+                          <InputField label="Complement" value={addr.complementAdresse} onChange={v => setAddr({ ...addr, complementAdresse: v })} placeholder="Apt, office…" />
+                          <InputField label="City" value={addr.city} onChange={v => setAddr({ ...addr, city: v })} placeholder="Paris" required half />
+                          <InputField label="Postal Code" value={addr.codePostal} onChange={v => setAddr({ ...addr, codePostal: v })} placeholder="75001" required half />
+                          <InputField label="Region" value={addr.region} onChange={v => setAddr({ ...addr, region: v })} placeholder="Île-de-France" required half />
+                          <InputField label="Country" value={addr.country} onChange={v => setAddr({ ...addr, country: v })} placeholder="France" required half />
+                          <InputField label="Phone" type="tel" value={addr.phone} onChange={v => setAddr({ ...addr, phone: v })} placeholder="+33 6 12 34 56 78" required />
+                        </div>
+                        <div className="flex flex-col gap-2 mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={saveNewAddress} 
+                              onChange={(e) => setSaveNewAddress(e.target.checked)} 
+                              className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]" 
+                            />
+                            Sauvegarder cette nouvelle adresse
+                          </label>
+                          {saveNewAddress && (
+                            <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer select-none ml-6">
+                              <input 
+                                type="checkbox" 
+                                checked={setAsDefaultAddress} 
+                                onChange={(e) => setSetAsDefaultAddress(e.target.checked)} 
+                                className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]" 
+                              />
+                              Utiliser comme adresse par défaut
+                            </label>
+                          )}
+                        </div>
+                      </>
                     )}
                   </>
                 )}
 
-                <button onClick={goNext} className="btn-primary mt-6 gap-2 w-full sm:w-auto justify-center py-3">
+                <button onClick={goNext} disabled={submitting} className="btn-primary mt-6 gap-2 w-full sm:w-auto justify-center py-3 disabled:opacity-50">
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
                   Continue to Payment <ChevronRight size={16} />
                 </button>
               </div>
@@ -325,12 +398,36 @@ export default function CheckoutPage() {
                     )}
 
                     {(newCard || savedCards.length === 0) && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InputField label="Cardholder Name" value={pay.carteName} onChange={v => setPay({ ...pay, carteName: v })} placeholder="John Doe" required />
-                        <InputField label="Card Number" value={pay.carteNumber} onChange={v => setPay({ ...pay, carteNumber: v })} placeholder="1234 5678 9012 3456" required />
-                        <InputField label="Expiry (MM/YY)" value={pay.carteDate} onChange={v => setPay({ ...pay, carteDate: v })} placeholder="MM/YY" required half />
-                        <InputField label="CVV" type="password" value={pay.carteCVV} onChange={v => setPay({ ...pay, carteCVV: v })} placeholder="123" required half />
-                      </div>
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <InputField label="Cardholder Name" value={pay.carteName} onChange={v => setPay({ ...pay, carteName: v })} placeholder="John Doe" required />
+                          <InputField label="Card Number" value={pay.carteNumber} onChange={v => setPay({ ...pay, carteNumber: v })} placeholder="1234 5678 9012 3456" required />
+                          <InputField label="Expiry (MM/YY)" value={pay.carteDate} onChange={v => setPay({ ...pay, carteDate: v })} placeholder="MM/YY" required half />
+                          <InputField label="CVV" type="password" value={pay.carteCVV} onChange={v => setPay({ ...pay, carteCVV: v })} placeholder="123" required half />
+                        </div>
+                        <div className="flex flex-col gap-2 mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={saveNewCard} 
+                              onChange={(e) => setSaveNewCard(e.target.checked)} 
+                              className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]" 
+                            />
+                            Sauvegarder cette nouvelle carte bancaire
+                          </label>
+                          {saveNewCard && (
+                            <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer select-none ml-6">
+                              <input 
+                                type="checkbox" 
+                                checked={setAsDefaultCard} 
+                                onChange={(e) => setSetAsDefaultCard(e.target.checked)} 
+                                className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]" 
+                              />
+                              Utiliser comme carte bancaire par défaut
+                            </label>
+                          )}
+                        </div>
+                      </>
                     )}
                   </>
                 )}
@@ -346,7 +443,8 @@ export default function CheckoutPage() {
                   <button onClick={() => { setError(null); setStep(0); }} className="btn-ghost py-3 gap-1.5">
                     <ArrowLeft size={16} /> Back
                   </button>
-                  <button onClick={goNext} className="btn-primary py-3 gap-2 flex-1 justify-center">
+                  <button onClick={goNext} disabled={submitting} className="btn-primary py-3 gap-2 flex-1 justify-center disabled:opacity-50">
+                    {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
                     Review Order <ChevronRight size={16} />
                   </button>
                 </div>
