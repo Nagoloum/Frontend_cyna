@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { authAPI, login as loginAPI } from '@/services/api';
+import { TWO_FA_ENABLED } from '@/config/auth';
 import { notify } from '@/components/ui/feedback';
 
 export default function AuthPageComponent() {
@@ -21,19 +22,30 @@ export default function AuthPageComponent() {
 
     try {
       if (isLogin) {
-         const { token, user } = data.data; // structure de ta réponse ApiResponse
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        // Redirection selon le rôle
-        if (user.role === 'ADMIN') {
-          //navigate('/2FA', { replace: true })
-          navigate('/admin', { replace: true });
+        // loginAPI calls POST /auth/login, persists token+user in localStorage,
+        // decodes the JWT to derive role/email, and clears any prior 2FA state.
+        const { user } = await loginAPI({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (user?.role === 'ADMIN') {
+          if (TWO_FA_ENABLED) {
+            // Backend emails a 6-digit code — admin must enter it on /2FA.
+            localStorage.setItem('twoFARequired', '1');
+            navigate('/2FA', { replace: true });
+          } else {
+            // 2FA disabled: mark as already verified so RouteLayout lets the
+            // admin into /admin/* without going through the /2FA step.
+            localStorage.setItem('twoFAVerified', '1');
+            localStorage.removeItem('twoFARequired');
+            navigate('/admin', { replace: true });
+          }
         } else {
           navigate('/home', { replace: true });
-
         }
 
-        if (user && !user.confirmed) {
+        if (user && user.confirmed === false) {
           setTimeout(() => {
             notify.warning(
               'Compte non confirmé',
@@ -51,13 +63,10 @@ export default function AuthPageComponent() {
         });
         const data = res.data;
         if (!data.success) {
-          notify.error('Inscription échouée', data.message || 'Erreur lors de la tentative.');
+          alert(data.message || 'Erreur lors de la tentative');
           return;
         }
-        notify.success(
-          'Inscription réussie',
-          data.message || 'Vérifiez votre email pour confirmer votre compte.'
-        );
+        alert(data.message || "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
         setIsLogin(true);
       }
     } catch (err) {

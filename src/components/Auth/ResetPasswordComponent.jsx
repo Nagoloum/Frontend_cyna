@@ -32,6 +32,7 @@ export default function ResetPasswordComponent() {
     setLoading(true);
 
     try {
+      // Backend endpoint: POST /auth/change-password?token=TOKEN with body { password }
       const res = await authAPI.resetPassword(token, newPassword);
       const data = res.data;
 

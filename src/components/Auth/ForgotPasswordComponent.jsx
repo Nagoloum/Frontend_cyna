@@ -14,6 +14,7 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
+      // POST /auth/forgot-password { email }
       const res = await authAPI.forgotPassword(email);
       const data = res.data;
 
