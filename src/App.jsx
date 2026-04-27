@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 // Layouts
 import Layout from "./layouts/Layout";
@@ -46,6 +46,17 @@ import { NotifyProvider } from "./components/ui/feedback";
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>
 );
+
+// Auth pages have no Navbar/Sidebar, so we keep the floating bottom-right
+// theme toggle only on those routes. On every other page the toggle lives
+// inside the Navbar (public) or AdminHeader (admin).
+const AUTH_PATHS = ['/auth', '/forgot-password', '/reset-password', '/email-confirmation', '/2FA'];
+const AuthOnlyThemeToggle = () => {
+  const { pathname } = useLocation();
+  const onAuthPage = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (!onAuthPage) return null;
+  return <ThemeToggle variant="fixed" />;
+};
 
 function App() {
   return (
@@ -116,7 +127,7 @@ function App() {
         <Route path="*" element={<ErrorPage />} />
         </Routes>
 
-        <ThemeToggle />
+        <AuthOnlyThemeToggle />
       </BrowserRouter>
     </NotifyProvider>
   );

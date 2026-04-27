@@ -73,6 +73,12 @@ export default function CategoryManager({ categories: initialCategories = [], on
       if (newImageFile) formData.append('newImage', newImageFile);
 
       const res = await categoriesAPI.create(formData);
+      // Backend returns 200 with { success: false, message } on validation errors.
+      if (res.data && res.data.success === false) {
+        setError(res.data.message ?? 'Error while creating.');
+        notify.error('Create failed', res.data.message ?? 'Error while creating.');
+        return;
+      }
       const created = res.data?.data ?? res.data;
       setCategories((prev) => [...prev, created]);
       setNewName('');
@@ -80,7 +86,9 @@ export default function CategoryManager({ categories: initialCategories = [], on
       setNewImageFile(null);
       onSaved?.();
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Error while creating.');
+      const msg = err.response?.data?.message ?? 'Error while creating.';
+      setError(msg);
+      notify.error('Create failed', msg);
     } finally {
       setLoadingSlug(null);
     }
@@ -96,12 +104,19 @@ export default function CategoryManager({ categories: initialCategories = [], on
       const payload = { name: editingCat.name.trim() };
       if (editingCat.order !== undefined) payload.order = editingCat.order;
       const res = await categoriesAPI.update(editingCat.slug, payload);
+      if (res.data && res.data.success === false) {
+        setError(res.data.message ?? 'Error updating category.');
+        notify.error('Update failed', res.data.message ?? 'Error updating category.');
+        return;
+      }
       const updated = res.data?.data ?? res.data;
       setCategories((prev) => prev.map((c) => (c.slug === editingCat.slug ? updated : c)));
       setEditingCat(null);
       onSaved?.();
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Error updating category.');
+      const msg = err.response?.data?.message ?? 'Error updating category.';
+      setError(msg);
+      notify.error('Update failed', msg);
     } finally {
       setLoadingSlug(null);
     }

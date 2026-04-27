@@ -1,56 +1,49 @@
 // src/components/admin/products/ProductModal.jsx
 import { createPortal } from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Trash2, AlertCircle, Loader2, Package } from 'lucide-react';
-import { productsAPI } from '../../../services/api';
+import { X, Upload, Trash2, AlertCircle, Loader2 } from 'lucide-react';
+import { productsAPI, buildImageUrl, getImagePath } from '../../../services/api';
 
-const BILLING_PERIODS = ['monthly', 'annual', 'one-time'];
-
-export default function ProductModal({ product = null, categories = [], services = [], onClose, onSaved }) {
-  const isEdit      = !!product;
+export default function ProductModal({ product = null, services = [], onClose, onSaved }) {
+  const isEdit       = !!product;
   const fileInputRef = useRef(null);
 
-  const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState(null);
-  const [previews, setPreviews]         = useState([]);
-  const [imageFiles, setImageFiles]     = useState([]);
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState(null);
+  const [previews, setPreviews]             = useState([]);
+  const [imageFiles, setImageFiles]         = useState([]);
   const [existingImages, setExistingImages] = useState([]);
 
   const [form, setForm] = useState({
-    name:          '',
-    description:   '',
-    price:         '',
-    billingPeriod: 'monthly',
-    categorySlug:  '',
-    serviceId:     '',
-    isActive:      true,
-    quantity:      '',
+    name:        '',
+    serviceId:   '',
+    priceMonth:  '',
+    priceYear:   '',
+    stock:       '',
+    is_selected: true,
+    priority:    false,
   });
 
-  // Pre-fill when editing
   useEffect(() => {
-    if (product) {
-      const rawService = product.service;
-      const serviceId =
-        typeof rawService === 'string' ? rawService : rawService?._id ?? '';
+    if (!product) return;
+    const rawService = product.service ?? product.serviceId;
+    const serviceId  = typeof rawService === 'string' ? rawService : rawService?._id ?? '';
 
-      setForm({
-        name:          product.name ?? '',
-        description:   product.description ?? '',
-        price:         product.price ?? product.priceMonth ?? '',
-        billingPeriod: product.billingPeriod ?? 'monthly',
-        categorySlug:  product.category?.slug ?? product.categorySlug ?? '',
-        serviceId,
-        isActive:      product.isActive !== false,
-        quantity:      product.quantity ?? product.stock ?? '',
-      });
-      const imgs = product.images ?? [];
-      setExistingImages(imgs);
-      setPreviews(imgs);
-    }
+    const paths = (product.images ?? []).map(getImagePath).filter(Boolean);
+    setExistingImages(paths);
+    setPreviews(paths.map(buildImageUrl).filter(Boolean));
+
+    setForm({
+      name:        product.name        ?? '',
+      serviceId,
+      priceMonth:  product.priceMonth  ?? '',
+      priceYear:   product.priceYear   ?? '',
+      stock:       product.stock       ?? '',
+      is_selected: product.is_selected ?? true,
+      priority:    product.priority    ?? false,
+    });
   }, [product]);
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       previews.forEach((url) => {
@@ -92,47 +85,35 @@ export default function ProductModal({ product = null, categories = [], services
     e.preventDefault();
     setError(null);
 
-    if (!form.name.trim())                         { setError('Product name is required.'); return; }
-    if (!form.price || isNaN(Number(form.price))) { setError('Price must be a valid number.'); return; }
-    if (!form.serviceId)                           { setError('Please select a service.'); return; }
+    if (!form.name.trim())                            { setError('Product name is required.'); return; }
+    if (!form.serviceId)                              { setError('Please select a service.'); return; }
+    if (form.priceMonth === '' || isNaN(Number(form.priceMonth))) { setError('Monthly price is required.'); return; }
+    if (form.priceYear  === '' || isNaN(Number(form.priceYear)))  { setError('Yearly price is required.'); return; }
 
     setLoading(true);
     try {
-      const priceValue = Number(form.price);
-      let priceMonth = priceValue;
-      let priceYear  = Math.round(priceValue * 12 * 100) / 100;
-
-      if (form.billingPeriod === 'annual') {
-        priceYear  = priceValue;
-        priceMonth = Math.round((priceValue / 12) * 100) / 100;
-      } else if (form.billingPeriod === 'one-time') {
-        priceMonth = priceValue;
-        priceYear  = priceValue;
-      }
-
-      const stock = form.quantity ? Number(form.quantity) : 0;
-
-      const basePayload = {
-        serviceId:   form.serviceId,
-        name:        form.name.trim(),
-        description: form.description.trim(),
-        priceMonth,
-        priceYear,
-        stock,
-        is_selected: form.isActive,
-        priority:    false,
-        ...(form.categorySlug ? { categorySlug: form.categorySlug } : {}),
-      };
-
       let payload;
       if (imageFiles.length > 0) {
         payload = new FormData();
-        Object.entries(basePayload).forEach(([k, v]) => payload.append(k, String(v)));
+        payload.append('serviceId',   form.serviceId);
+        payload.append('name',        form.name.trim());
+        payload.append('priceMonth',  String(Number(form.priceMonth) || 0));
+        payload.append('priceYear',   String(Number(form.priceYear)  || 0));
+        payload.append('stock',       String(Number(form.stock)      || 0));
+        payload.append('is_selected', String(form.is_selected));
+        payload.append('priority',    String(form.priority));
         imageFiles.forEach((f) => payload.append('images', f));
-        // Send existing image URLs so backend knows which to keep
-        existingImages.forEach((url) => payload.append('existingImages', url));
+        existingImages.forEach((u) => payload.append('existingImages', u));
       } else {
-        payload = basePayload;
+        payload = {
+          serviceId:   form.serviceId,
+          name:        form.name.trim(),
+          priceMonth:  Number(form.priceMonth) || 0,
+          priceYear:   Number(form.priceYear)  || 0,
+          stock:       Number(form.stock)      || 0,
+          is_selected: form.is_selected,
+          priority:    form.priority,
+        };
       }
 
       if (isEdit) {
@@ -157,14 +138,13 @@ export default function ProductModal({ product = null, categories = [], services
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-        {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               {isEdit ? 'Edit Product' : 'Add Product'}
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {isEdit ? `Editing: ${product.name}` : 'Fill in the details for the new service'}
+              {isEdit ? `Editing: ${product.name}` : 'Fill in the details for the new product'}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -173,7 +153,6 @@ export default function ProductModal({ product = null, categories = [], services
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Error */}
           {error && (
             <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
               <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
@@ -195,33 +174,41 @@ export default function ProductModal({ product = null, categories = [], services
             />
           </div>
 
-          {/* Description */}
+          {/* Service */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Description
+              Service <span className="text-red-500">*</span>
             </label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Service description, key features…"
-              className="w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all resize-none"
-            />
+            <select name="serviceId" value={form.serviceId} onChange={handleChange} className={inputCls}>
+              <option value="">Select a service…</option>
+              {services.length === 0 && (
+                <option value="" disabled>No services available</option>
+              )}
+              {services.map((service) => (
+                <option key={service._id ?? service.slug} value={service._id ?? service.slug}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+            {services.length === 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                ⚠ No services found. Create a service first.
+              </p>
+            )}
           </div>
 
-          {/* Price + Billing + Quantity */}
+          {/* Prices + Stock */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Price (€) <span className="text-red-500">*</span>
+                Monthly (€) <span className="text-red-500">*</span>
               </label>
               <input
-                name="price"
+                name="priceMonth"
                 type="number"
                 min="0"
                 step="0.01"
-                value={form.price}
+                value={form.priceMonth}
                 onChange={handleChange}
                 placeholder="0.00"
                 className={inputCls}
@@ -229,86 +216,51 @@ export default function ProductModal({ product = null, categories = [], services
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Billing
+                Yearly (€) <span className="text-red-500">*</span>
               </label>
-              <select name="billingPeriod" value={form.billingPeriod} onChange={handleChange}
-                className="w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
-              >
-                {BILLING_PERIODS.map((p) => (
-                  <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
-                ))}
-              </select>
+              <input
+                name="priceYear"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.priceYear}
+                onChange={handleChange}
+                placeholder="0.00"
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Stock / Qty
+                Stock
               </label>
               <input
-                name="quantity"
+                name="stock"
                 type="number"
                 min="0"
-                value={form.quantity}
+                value={form.stock}
                 onChange={handleChange}
-                placeholder="Unlimited"
+                placeholder="0"
                 className={inputCls}
               />
             </div>
           </div>
 
-          {/* Service + Category */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Service <span className="text-red-500">*</span>
-              </label>
-              <select name="serviceId" value={form.serviceId} onChange={handleChange}
-                className="w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
-              >
-                <option value="">Select a service…</option>
-                {services.length === 0 && (
-                  <option value="" disabled>No services available</option>
-                )}
-                {services.map((service) => (
-                  <option key={service._id ?? service.slug} value={service._id ?? service.slug}>
-                    {service.name}
-                  </option>
-                ))}
-              </select>
-              {services.length === 0 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  ⚠ No services found. Create a service first.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Category
-              </label>
-              <select name="categorySlug" value={form.categorySlug} onChange={handleChange}
-                className="w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
-              >
-                <option value="">No category</option>
-                {categories.map((cat) => (
-                  <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Status
+          {/* Toggles */}
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <div className="relative">
+                <input type="checkbox" name="is_selected" checked={form.is_selected} onChange={handleChange} className="sr-only peer" />
+                <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
+              </div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Active / Visible</span>
             </label>
-            <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" name="isActive" checked={form.isActive} onChange={handleChange} className="sr-only peer" />
-                <div className="w-10 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-5 transition-colors duration-200" />
-              </label>
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {form.isActive ? 'Active — visible on site' : 'Inactive — hidden from catalog'}
-              </span>
-            </div>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <div className="relative">
+                <input type="checkbox" name="priority" checked={form.priority} onChange={handleChange} className="sr-only peer" />
+                <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
+              </div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Featured</span>
+            </label>
           </div>
 
           {/* Images */}
@@ -341,7 +293,6 @@ export default function ProductModal({ product = null, categories = [], services
             <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageAdd} className="hidden" />
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
             <button type="button" onClick={onClose} disabled={loading}
               className="h-10 px-5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-all"

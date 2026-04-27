@@ -27,6 +27,27 @@ const ADMIN_DATA_EVENT = 'admin-data-changed';
 const emitAdminChange = (kind) =>
   window.dispatchEvent(new CustomEvent(ADMIN_DATA_EVENT, { detail: { kind } }));
 
+/**
+ * The backend uses an ApiResponse pattern that returns HTTP 200 even on
+ * business errors, with `{ success: false, message }`. Throw so that callers'
+ * try/catch path takes over and surfaces the message to the user.
+ */
+const ensureOk = (res) => {
+  if (res?.data && res.data.success === false) {
+    const err = new Error(res.data.message ?? 'Operation failed');
+    err.response = { data: res.data };
+    throw err;
+  }
+  return res;
+};
+
+/** Resolve an id-or-populated-doc reference to a plain string id/slug. */
+const refToValue = (raw) => {
+  if (!raw) return '';
+  if (typeof raw === 'string') return raw;
+  return raw._id ?? raw.id ?? raw.slug ?? '';
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,8 +220,8 @@ function SliderFormModal({ slider, onClose, onSaved }) {
       if (form.linkUrl.trim()) fd.append('linkUrl', form.linkUrl.trim());
       if (imageFile) fd.append('newImage', imageFile);
 
-      if (isEdit) await slidersAPI.update(slider._id, fd);
-      else        await slidersAPI.create(fd);
+      if (isEdit) ensureOk(await slidersAPI.update(slider._id, fd));
+      else        ensureOk(await slidersAPI.create(fd));
       notify.success(isEdit ? 'Slide updated' : 'Slide created', form.title.trim());
       emitAdminChange('slider');
       onSaved();
@@ -433,32 +454,39 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
 
   // Store the original stored paths (strings) so they can be re-sent to the
   // backend during PATCH; previews are derived URLs for display.
-  const initialPaths = (product?.images ?? [])
-    .map(getImagePath)
-    .filter(Boolean);
-  const [existingImages, setExistingImages] = useState(initialPaths);
-  const [previews, setPreviews] = useState(
-    initialPaths.map(buildImageUrl).filter(Boolean)
-  );
-
-  // Try every possible service identifier shape returned by the API so the
-  // <select> finds a matching <option>.
-  const resolveServiceId = (p) => {
-    const raw = p?.service ?? p?.serviceId;
-    if (!raw) return '';
-    if (typeof raw === 'string') return raw;
-    return raw._id ?? raw.id ?? raw.slug ?? '';
-  };
+  const [existingImages, setExistingImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
 
   const [form, setForm] = useState({
-    name:        product?.name        ?? '',
-    serviceId:   resolveServiceId(product),
-    priceMonth:  product?.priceMonth  ?? product?.price ?? '',
-    priceYear:   product?.priceYear   ?? '',
-    stock:       product?.stock       ?? '',
-    is_selected: product?.is_selected ?? product?.isActive ?? true,
-    priority:    product?.priority    ?? false,
+    name:        '',
+    serviceId:   '',
+    priceMonth:  '',
+    priceYear:   '',
+    stock:       '',
+    is_selected: true,
+    priority:    false,
   });
+
+  // Pre-fill / reset whenever the edited product changes (modal can be reused).
+  useEffect(() => {
+    const paths = (product?.images ?? []).map(getImagePath).filter(Boolean);
+    setExistingImages(paths);
+    setPreviews(paths.map(buildImageUrl).filter(Boolean));
+    setImageFiles([]);
+    setError(null);
+    setForm({
+      name:        product?.name        ?? '',
+      serviceId:   refToValue(product?.service ?? product?.serviceId),
+      priceMonth:  product?.priceMonth  ?? product?.price ?? '',
+      priceYear:   product?.priceYear   ?? '',
+      stock:       product?.stock       ?? '',
+      is_selected: product?.is_selected ?? product?.isActive ?? true,
+      priority:    product?.priority    ?? false,
+    });
+    // We intentionally do not include `previews` in the dep array — the previews
+    // we just set will trigger the cleanup effect below when the modal unmounts.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
 
   useEffect(() => () => previews.forEach(u => u.startsWith('blob:') && URL.revokeObjectURL(u)), [previews]);
 
@@ -514,8 +542,8 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
           stock: Number(form.stock) || 0, is_selected: form.is_selected, priority: form.priority,
         };
       }
-      if (isEdit) await productsAPI.update(product.slug, payload);
-      else        await productsAPI.create(payload);
+      if (isEdit) ensureOk(await productsAPI.update(product.slug, payload));
+      else        ensureOk(await productsAPI.create(payload));
       notify.success(
         isEdit ? 'Product updated' : 'Product created',
         form.name.trim()
@@ -566,10 +594,6 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
             ))}
           </div>
           <div className="flex items-center gap-6">
-            {[['is_selected','Active / Visible'],['priority','Featured']].map(({ name, label } = { name: arguments?.[0], label: arguments?.[1] }) => {
-              const [n, l] = arguments ? [arguments[0], arguments[1]] : ['', ''];
-              return null;
-            })}
             {[['is_selected','Active / Visible'],['priority','Featured']].map(([name, label]) => (
               <label key={name} className="flex items-center gap-2.5 cursor-pointer">
                 <div className="relative">
@@ -753,11 +777,24 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
   const [form, setForm] = useState({
-    name:        service?.name        ?? '',
-    categoryId:  service?.category?._id ?? service?.categoryId ?? '',
-    description: service?.description ?? '',
-    available:   service?.available   ?? true,
+    name:        '',
+    categoryId:  '',
+    description: '',
+    available:   true,
   });
+
+  // Pre-fill / reset on prop change. `category` may be a populated doc, an
+  // ObjectId string, or absent (with `categoryId` instead) — handle all cases.
+  useEffect(() => {
+    setError(null);
+    setForm({
+      name:        service?.name        ?? '',
+      categoryId:  refToValue(service?.category ?? service?.categoryId),
+      description: service?.description ?? '',
+      available:   service?.available   ?? true,
+    });
+  }, [service]);
+
   const handleChange = e => { const { name, value, type, checked } = e.target; setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value })); };
   const handleSubmit = async e => {
     e.preventDefault(); setError(null);
@@ -766,8 +803,8 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
     setLoading(true);
     try {
       const payload = { name: form.name.trim(), categoryId: form.categoryId, description: form.description.trim(), available: form.available };
-      if (isEdit) await servicesAPI.update(service.slug, payload);
-      else        await servicesAPI.create(payload);
+      if (isEdit) ensureOk(await servicesAPI.update(service.slug, payload));
+      else        ensureOk(await servicesAPI.create(payload));
       notify.success(isEdit ? 'Service updated' : 'Service created', form.name.trim());
       emitAdminChange('service');
       onSaved();
@@ -809,8 +846,8 @@ function ServicesTab({ categories }) {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
   const [search, setSearch]     = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
   const [modal, setModal]       = useState(null);
-  const searchRef = useRef(null);
 
   const fetch = useCallback(async (opts = {}) => {
     setLoading(true); setError(null);
@@ -821,7 +858,17 @@ function ServicesTab({ categories }) {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const filtered = services.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = services.filter(s => {
+    if (search && !s.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterCategory) {
+      const catRef = s.category;
+      const catId   = typeof catRef === 'object' ? catRef?._id  : null;
+      const catSlug = typeof catRef === 'object' ? catRef?.slug : null;
+      const catStr  = typeof catRef === 'string' ? catRef       : null;
+      if (filterCategory !== catId && filterCategory !== catSlug && filterCategory !== catStr) return false;
+    }
+    return true;
+  });
   const onDelete = async () => {
     const name = modal.data.name;
     try {
@@ -853,6 +900,11 @@ function ServicesTab({ categories }) {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services…"
             className="w-full h-9 pl-8 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all" />
         </div>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+          className="h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all">
+          <option value="">All categories</option>
+          {categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}
+        </select>
         <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{filtered.length} service{filtered.length !== 1 ? 's' : ''}</span>
         <button onClick={() => fetch()} disabled={loading} className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-indigo-400 disabled:opacity-50 transition-all"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />Add Service</button>
@@ -893,12 +945,25 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
   const [imageFile, setImageFile] = useState(null);
-  const [preview, setPreview]     = useState(buildImageUrl(category?.image) ?? null);
+  const [preview, setPreview]     = useState(null);
   const [form, setForm] = useState({
-    name:        category?.name        ?? '',
-    description: category?.description ?? '',
-    order:       category?.order       ?? nextOrder ?? 1,
+    name:        '',
+    description: '',
+    order:       nextOrder ?? 1,
   });
+
+  // Pre-fill / reset on prop change.
+  useEffect(() => {
+    setError(null);
+    setImageFile(null);
+    setPreview(buildImageUrl(category?.image) ?? null);
+    setForm({
+      name:        category?.name        ?? '',
+      description: category?.description ?? '',
+      order:       category?.order       ?? nextOrder ?? 1,
+    });
+  }, [category, nextOrder]);
+
   useEffect(() => () => { if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview); }, [preview]);
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   const handleFile = e => { const file = e.target.files?.[0]; if (!file) return; if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview); setImageFile(file); setPreview(URL.createObjectURL(file)); e.target.value = ''; };
@@ -913,8 +978,8 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
       fd.append('order', String(Number(form.order) || 1));
       if (form.description.trim()) fd.append('description', form.description.trim());
       if (imageFile) fd.append('newImage', imageFile);
-      if (isEdit) await categoriesAPI.update(category.slug, fd);
-      else        await categoriesAPI.create(fd);
+      if (isEdit) ensureOk(await categoriesAPI.update(category.slug, fd));
+      else        ensureOk(await categoriesAPI.create(fd));
       notify.success(isEdit ? 'Category updated' : 'Category created', form.name.trim());
       emitAdminChange('category');
       onSaved();

@@ -85,8 +85,8 @@ export default function AuthPageComponent() {
       {/* Card principale */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full flex flex-col md:flex-row transition-all duration-700">
 
-        {/* Image à gauche (desktop) ou en haut (mobile) */}
-        <div className="md:w-1/2 w-full">
+        {/* Image à gauche (desktop) et invisible (mobile) */}
+        <div className="md:w-1/2 w-full h-64 md:h-auto hidden md:block">
           <img
             src="./images/img.jpg"
             alt="Illustration"
@@ -226,7 +226,6 @@ export default function AuthPageComponent() {
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>
             </p>
-
 
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-4 text-center transition-colors duration-700">
               By continuing, you agree to the <a href="/terms-of-use" className="text-indigo-600 dark:text-indigo-400">Terms of Use</a> and the <a href="/privacy-policy" className="text-indigo-600 dark:text-indigo-400">Privacy Policy</a> of <span className="text-indigo-600 dark:text-indigo-400">Cyna</span>.

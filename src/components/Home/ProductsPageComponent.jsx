@@ -104,11 +104,13 @@ export default function ProductsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
+    // Use the full paginated catalog (not the priority-filtered "by-order" list)
+    // so every published product is visible on the public catalog page.
     Promise.all([
-      productsAPI.getAllByOrder(),
+      productsAPI.getAll({ limit: 1000 }),
       categoriesAPI.getAllByOrder()
     ]).then(([pRes, cRes]) => {
-      const pd = pRes.data?.data?.items ?? pRes.data?.data ?? pRes.data ?? [];
+      const pd = pRes.data?.data?.data ?? pRes.data?.data?.items ?? pRes.data?.data ?? pRes.data ?? [];
       const cd = cRes.data?.data?.items ?? cRes.data?.data ?? cRes.data ?? [];
       setProducts(Array.isArray(pd) ? pd : []);
       setCategories(Array.isArray(cd) ? cd : []);
