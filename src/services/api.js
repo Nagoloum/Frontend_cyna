@@ -135,8 +135,8 @@ export const usersAPI = {
 
   /**
    * PATCH /users/profil/:id
-   * Accepts any subset of { firstName, lastName, email, password, phone }.
-   * Password is hashed server-side when provided.
+   * Backend DTO accepts only { firstName, lastName, email, password } (whitelisted).
+   * Any other field (phone, timezone, language…) is silently dropped server-side.
    */
   updateProfile: (id, data) => api.patch(`/users/profil/${id}`, data),
 
@@ -305,6 +305,46 @@ export const cartesAPI = {
   update: (id, data) => api.patch(`/carte-bancaires/${id}`, data),
 
   delete: (id) => api.delete(`/carte-bancaires/${id}`),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMMANDES   (auth required)
+//   POST /commandes/create               → creates order + Stripe Checkout session
+//   GET  /commandes/by-user              → current user's orders
+//   GET  /commandes/:reference           → single order by reference
+//   GET  /commandes/payment/success?orderId=&session_id=
+//   GET  /commandes/payment/cancel?orderId=
+//   Admin: GET /commandes (paginated)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const commandesAPI = {
+  /**
+   * Body: { cbId: string, abonnements: [{ productId, quantity, periode: 'MOIS'|'ANNEE', dateDebut?, dateFin?, price? }] }
+   * Returns: { commande, url, sessionId }  → redirect window to `url`
+   */
+  create: (data) => api.post('/commandes/create', data),
+
+  /** Current user's orders */
+  getByUser: (params = {}) => api.get('/commandes/by-user', { params }),
+
+  /** Single order by reference (owner or admin) */
+  getByReference: (reference) => api.get(`/commandes/${reference}`),
+
+  /** Confirm Stripe payment success */
+  paymentSuccess: (orderId, sessionId) =>
+    api.get('/commandes/payment/success', { params: { orderId, session_id: sessionId } }),
+
+  /** Admin only — paginated list of all orders */
+  getAll: (params = {}) => api.get('/commandes', { params }),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTACT   POST /contact (public)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const contactAPI = {
+  /** Body: { email, subject, message } */
+  create: (data) => api.post('/contact', data),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ export default function OrderConfirmationPage() {
       </p>
       
       <div className="flex flex-col sm:flex-row gap-3">
-        <Link to="/account/orders" className="btn-primary gap-2">
+        <Link to="/account" className="btn-primary gap-2">
           <ShoppingBag size={16} /> My Orders
         </Link>
         <Link to="/products" className="btn-ghost gap-2">
