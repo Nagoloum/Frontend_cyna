@@ -3,8 +3,16 @@ import {
   Loader2, Lock, MapPin, Plus, Shield,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { adressesAPI, cartesAPI, commandesAPI } from "@/services/api";
+
+const getUser = () => {
+  try {
+    const t = localStorage.getItem("token");
+    if (!t) return null;
+    return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+  } catch { return null; }
+};
 
 const STEPS = ["Address", "Payment", "Confirmation"];
 
@@ -29,6 +37,15 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
 );
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
+  const user = getUser();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
   const [step, setStep] = useState(0);
 
   // ── Address ───────────────────────────────────────────────────────────────
