@@ -375,7 +375,10 @@ export default function CartPage() {
                 )}
 
                 <button
-                  onClick={() => (user ? navigate("/checkout") : navigate("/auth"))}
+                  onClick={() => user
+                    ? navigate("/checkout")
+                    : navigate(`/auth?next=${encodeURIComponent("/checkout")}`)
+                  }
                   disabled={hasUnavailable}
                   className="w-full btn-primary py-3 gap-2 text-sm justify-center disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
                 >
