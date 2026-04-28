@@ -2,6 +2,7 @@ import { ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "../Kit/ThemeToggle";
+import { authAPI } from "@/services/api";
 
 const getUser = () => {
   try {
@@ -66,9 +67,9 @@ export default function Navbar() {
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/home");
+    // Routes through authAPI.logout so the user's cart is archived under
+    // their user id (and the active anonymous cart is cleared).
+    authAPI.logout();
   };
 
   const handleSearch = (e) => {
@@ -135,10 +136,29 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-1 ml-auto lg:ml-0 shrink-0">
-            {/* Theme toggle (visible on all public pages) */}
+            <ThemeToggle variant="inline" />
+
+            {/* Cart — visible whether or not the user is logged in */}
+            <Link
+              to="/cart"
+              className="relative p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
+              style={{ color: "var(--text-secondary)" }}
+              title="Cart"
+            >
+              <ShoppingBag size={20} strokeWidth={1.75} />
+              {cartCount > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-[Kumbh Sans] font-700 text-white shadow-[var(--shadow-md)]"
+                  style={{ background: "var(--accent)" }}
+                  aria-label={`${cartCount} item${cartCount > 1 ? "s" : ""} in cart`}
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </Link>
+
             {isLoggedIn ? (
               <>
-                <ThemeToggle variant="inline" />
                 <Link
                   to={user?.role === "ADMIN" ? "/admin/dashboard" : "/account"}
                   className="p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
@@ -146,23 +166,6 @@ export default function Navbar() {
                   title="My Account"
                 >
                   <User size={20} strokeWidth={1.75} />
-                </Link>
-                <Link
-                  to="/cart"
-                  className="relative p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
-                  style={{ color: "var(--text-secondary)" }}
-                  title="Cart"
-                >
-                  <ShoppingBag size={20} strokeWidth={1.75} />
-                  {cartCount > 0 && (
-                    <span
-                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-[Kumbh Sans] font-700 text-white shadow-[var(--shadow-md)]"
-                      style={{ background: "var(--accent)" }}
-                      aria-label={`${cartCount} item${cartCount > 1 ? "s" : ""} in cart`}
-                    >
-                      {cartCount > 99 ? "99+" : cartCount}
-                    </span>
-                  )}
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -172,7 +175,6 @@ export default function Navbar() {
                 >
                   <LogOut size={20} strokeWidth={1.75} />
                 </button>
-                
               </>
             ) : (
               <>
@@ -182,7 +184,6 @@ export default function Navbar() {
                 <Link to="/auth" className="btn-primary py-2 px-4 text-sm">
                   Sign Up
                 </Link>
-                <ThemeToggle variant="inline" />
               </>
             )}
 

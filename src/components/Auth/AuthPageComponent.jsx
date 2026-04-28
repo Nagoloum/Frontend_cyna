@@ -1,6 +1,6 @@
 // src/pages/AuthPage.jsx (ou AuthPageComponent.jsx)
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { authAPI, login as loginAPI } from '@/services/api';
 import { TWO_FA_ENABLED } from '@/config/auth';
@@ -16,6 +16,11 @@ export default function AuthPageComponent() {
   });
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Allow the caller (e.g. cart "Sign in to order") to specify where the user
+  // should land after a successful customer login: /auth?next=/checkout
+  const nextPath = searchParams.get('next');
+  const safeNext = nextPath && nextPath.startsWith('/') ? nextPath : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,7 +47,8 @@ export default function AuthPageComponent() {
             navigate('/admin', { replace: true });
           }
         } else {
-          navigate('/home', { replace: true });
+          // Customer: honour ?next= (e.g. cart → checkout) or default to /home.
+          navigate(safeNext ?? '/home', { replace: true });
         }
 
         if (user && user.confirmed === false) {

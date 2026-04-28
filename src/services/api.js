@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { notify } from '@/components/ui/feedback';
+import { mergeOnLogin, archiveOnLogout } from './cart';
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 export const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
@@ -143,6 +144,10 @@ export const login = async (credentials) => {
   localStorage.removeItem('twoFARequired');
   setAuthToken(token);
 
+  // Merge any items the user added while anonymous with their previously
+  // archived cart (kept across sessions in localStorage under cart:<userId>).
+  if (user?._id) mergeOnLogin(user._id);
+
   return { token, user };
 };
 
@@ -150,6 +155,15 @@ export const authAPI = {
   login,
 
   logout: () => {
+    // Archive the current cart under this user's slot before clearing the
+    // active cart, so they find their items again at next login.
+    let archivedFor = null;
+    try {
+      const stored = JSON.parse(localStorage.getItem('user') || 'null');
+      archivedFor = stored?._id ?? stored?.id ?? null;
+    } catch { /* ignore */ }
+    archiveOnLogout(archivedFor);
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('twoFAVerified');
