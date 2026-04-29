@@ -2,6 +2,7 @@ import { ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "../Kit/ThemeToggle";
+import { authAPI } from "@/services/api";
 
 const getUser = () => {
   try {
@@ -66,9 +67,9 @@ export default function Navbar() {
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/home");
+    // Routes through authAPI.logout so the user's cart is archived under
+    // their user id (and the active anonymous cart is cleared).
+    authAPI.logout();
   };
 
   const handleSearch = (e) => {
@@ -136,8 +137,8 @@ export default function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-1 ml-auto lg:ml-0 shrink-0">
             <ThemeToggle variant="inline" />
-            
-            {/* Bouton Panier toujours visible */}
+
+            {/* Cart — visible whether or not the user is logged in */}
             <Link
               to="/cart"
               className="relative p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"

@@ -1,16 +1,23 @@
 // src/pages/admin/DashboardPage.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Package, Tag, Users, TrendingUp, Layers,
-  BarChart3, RefreshCw, AlertCircle,
+  BarChart3, AlertCircle, ShoppingBag,
 } from 'lucide-react';
 import KPICard from '../../components/admin/dashboard/KPICard';
 import PeriodSelector from '../../components/admin/dashboard/PeriodSelector';
-import SalesBarChart from '../../components/admin/dashboard/SalesBarChart';
+import RevenueLineChart from '../../components/admin/dashboard/RevenueLineChart';
 import SalesPieChart from '../../components/admin/dashboard/SalesPieChart';
-import AvgCartStackedChart from '../../components/admin/dashboard/AvgCartStackedChart';
+import TopProductsChart from '../../components/admin/dashboard/TopProductsChart';
 import QuickActions from '../../components/admin/dashboard/QuickActions';
 import { dashboardAPI, buildImageUrl } from '../../services/api';
+import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
+import {
+  buildRevenueSeries,
+  revenueByCategory,
+  topProductsByRevenue,
+  totalPaidRevenue,
+} from '../../components/admin/dashboard/analytics';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -21,37 +28,6 @@ function fmt(n, opts = {}) {
 function fmtEur(n) {
   if (n === null || n === undefined) return '—';
   return `${fmt(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-}
-
-function buildLabels(period) {
-  const now = new Date();
-  const out = [];
-  if (period === '7d') {
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      out.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
-    }
-  } else if (period === '5w') {
-    for (let i = 4; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i * 7);
-      out.push(`W${getWeekNumber(d)}`);
-    }
-  } else if (period === '30d') {
-    for (let i = 29; i >= 0; i -= 3) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      out.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    }
-  } else {
-    for (let i = 0; i < 4; i++) out.push(`Week ${i + 1}`);
-  }
-  return out;
-}
-function getWeekNumber(d) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day  = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
 }
 
 function EmptyChart({ message, icon: Icon }) {
@@ -88,6 +64,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState([]);
   const [users,      setUsers]      = useState([]);
   const [services,   setServices]   = useState([]);
+  const [commandes,  setCommandes]  = useState([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
@@ -97,6 +74,7 @@ export default function DashboardPage() {
       setCategories(Array.isArray(data.categories) ? data.categories : []);
       setUsers(     Array.isArray(data.users)      ? data.users      : []);
       setServices(  Array.isArray(data.services)   ? data.services   : []);
+      setCommandes( Array.isArray(data.commandes)  ? data.commandes  : []);
       setLastRefresh(new Date());
     } catch (err) {
       setError(err.response?.data?.message ?? err.message ?? 'Failed to load dashboard data.');
@@ -105,52 +83,26 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Listen for the global refresh event triggered from AdminHeader.
+  useEffect(() => {
+    const onRefresh = () => fetchData();
+    window.addEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
+  }, [fetchData]);
+
   // ── KPIs ──────────────────────────────────────────────────────────────────
-  const activeProducts   = products.filter(p => p.is_selected !== false && p.isActive !== false);
-  const inactiveProducts = products.filter(p => p.is_selected === false  || p.isActive === false);
+  // `is_selected` désigne les "Top products" (mis en avant sur la home page).
+  const topProducts      = products.filter(p => p.is_selected);
   const avgPrice = products.length
     ? products.reduce((s, p) => s + Number(p.priceMonth ?? p.price ?? 0), 0) / products.length
     : 0;
   const availableServices = services.filter(s => s.available !== false);
 
-  // ── Chart data ─────────────────────────────────────────────────────────────
-  const labels     = buildLabels(period);
-  const salesBarData = labels.map((label, i) => {
-    const base   = activeProducts.reduce((s, p) => s + Number(p.priceMonth ?? p.price ?? 0), 0);
-    const factor = 0.7 + Math.sin(i * 1.2) * 0.3 + Math.cos(i * 0.7) * 0.15;
-    return { label, value: Math.round(base * factor * 100) / 100 };
-  });
-
-  // Pie: revenue by category (products linked via service → category)
-  const salesPieData = categories
-    .map(cat => {
-      const catProds = products.filter(p =>
-        p.category?.slug === cat.slug ||
-        p.service?.category?.slug === cat.slug ||
-        p.category === cat.slug
-      );
-      const value = catProds.reduce((s, p) => s + Number(p.priceMonth ?? p.price ?? 0), 0);
-      return { label: cat.name, value };
-    })
-    .filter(d => d.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
-
-  const stackedCategories = salesPieData.map(d => d.label);
-  const stackedDatasets   = stackedCategories.map((catLabel, ci) => {
-    const cat      = categories.find(c => c.name === catLabel);
-    const catProds = products.filter(p =>
-      p.category?.slug === cat?.slug || p.service?.category?.slug === cat?.slug
-    );
-    const avgCat = catProds.length
-      ? catProds.reduce((s, p) => s + Number(p.priceMonth ?? p.price ?? 0), 0) / catProds.length
-      : 0;
-    return labels.map((_, i) => Math.round(avgCat * (0.6 + Math.sin(i * 0.9 + ci) * 0.4) * 100) / 100);
-  });
-
-  const avgCartData = stackedCategories.length > 0
-    ? { labels, categories: stackedCategories, datasets: stackedDatasets }
-    : null;
+  // ── Chart data — computed from real PAID commandes ────────────────────────
+  const revenueSeries  = useMemo(() => buildRevenueSeries(commandes, period),     [commandes, period]);
+  const periodRevenue  = useMemo(() => totalPaidRevenue(commandes, period),       [commandes, period]);
+  const salesPieData   = useMemo(() => revenueByCategory(commandes, products).slice(0, 5), [commandes, products]);
+  const topProductData = useMemo(() => topProductsByRevenue(commandes, products, 6),       [commandes, products]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -170,27 +122,9 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Controls — stack on mobile, inline on sm+ */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex-1 sm:flex-none">
-            <PeriodSelector value={period} onChange={({ type }) => setPeriod(type)} />
-          </div>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="
-              flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm
-              text-gray-600 dark:text-gray-300
-              bg-white dark:bg-gray-800
-              border border-gray-200 dark:border-gray-700
-              hover:border-indigo-400 dark:hover:border-indigo-500
-              disabled:opacity-50 transition-all shadow-sm
-              flex-shrink-0
-            "
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
+        {/* Controls */}
+        <div className="flex items-center gap-2">
+          <PeriodSelector value={period} onChange={({ type }) => setPeriod(type)} />
         </div>
       </div>
 
@@ -214,7 +148,7 @@ export default function DashboardPage() {
         <KPICard
           title="Total Products"
           value={loading ? '…' : fmt(products.length)}
-          subtitle={loading ? '' : `${activeProducts.length} active · ${inactiveProducts.length} inactive`}
+          subtitle={loading ? '' : `${topProducts.length} top product${topProducts.length !== 1 ? 's' : ''}`}
           icon={Package}
           iconBg="bg-indigo-50 dark:bg-indigo-500/10"
           iconColor="text-indigo-600 dark:text-indigo-400"
@@ -249,7 +183,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Users KPI row (separate so it doesn't overlap) ── */}
+      {/* ── Users + Catalog summary ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <KPICard
           title="Registered Users"
@@ -260,15 +194,14 @@ export default function DashboardPage() {
           iconColor="text-blue-600 dark:text-blue-400"
           loading={loading}
         />
-        {/* Product activity summary */}
         <div className="sm:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-4 flex flex-col gap-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catalog Summary</p>
           <div className="flex flex-wrap gap-3">
             {[
-              { label: 'Active products',   value: activeProducts.length,   color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-500/10'  },
-              { label: 'Inactive products', value: inactiveProducts.length, color: 'text-gray-500 dark:text-gray-400',    bg: 'bg-gray-100 dark:bg-gray-700'       },
-              { label: 'Services',          value: services.length,          color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-500/10' },
-              { label: 'Categories',        value: categories.length,        color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10' },
+              { label: 'Top products',  value: topProducts.length,            color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-500/10'   },
+              { label: 'Services',      value: availableServices.length,       color: 'text-violet-600 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-500/10'   },
+              { label: 'Categories',    value: categories.length,              color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10' },
+              { label: 'Paid orders',   value: commandes.filter(c => String(c?.statut ?? '').toUpperCase() === 'PAID').length, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10' },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${bg}`}>
                 <span className={`text-lg font-bold tabular-nums ${color}`}>{loading ? '…' : value}</span>
@@ -285,22 +218,22 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">Revenue Overview</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Estimated from catalog pricing</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Sum of paid orders · {fmtEur(periodRevenue)} this period
+              </p>
             </div>
-            <BarChart3 size={15} className="text-gray-300 dark:text-gray-600" />
+            <TrendingUp size={15} className="text-gray-300 dark:text-gray-600" />
           </div>
-          {!loading && products.length === 0
-            ? <EmptyChart message="Add products to see revenue data" icon={Package} />
-            : <SalesBarChart data={salesBarData} period={period} loading={loading} />}
+          <RevenueLineChart data={revenueSeries} period={period} loading={loading} />
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
           <div className="mb-4">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">Sales by Category</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Distribution of catalog value</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid orders attributed to product categories</p>
           </div>
           {!loading && salesPieData.length === 0
-            ? <EmptyChart message="Assign products to categories to see the breakdown" icon={Tag} />
+            ? <EmptyChart message="No paid orders attributed to a category yet" icon={Tag} />
             : <SalesPieChart data={salesPieData} loading={loading} />}
         </div>
       </div>
@@ -308,13 +241,14 @@ export default function DashboardPage() {
       {/* ── Charts row 2 ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
-          <div className="mb-4">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Avg. Cart by Category</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Stacked average price per period</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Top Products by Revenue</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Best-selling products from paid orders</p>
+            </div>
+            <BarChart3 size={15} className="text-gray-300 dark:text-gray-600" />
           </div>
-          {!loading && (!avgCartData || avgCartData.categories.length === 0)
-            ? <EmptyChart message="No category data available yet" icon={BarChart3} />
-            : <AvgCartStackedChart data={avgCartData} loading={loading} />}
+          <TopProductsChart data={topProductData} loading={loading} />
         </div>
 
         {/* ── Recent Products ── */}
@@ -353,13 +287,13 @@ export default function DashboardPage() {
                         {p.priceYear  ? ` · ${Number(p.priceYear).toFixed(2)} €/yr` : ''}
                       </p>
                     </div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
-                      p.is_selected !== false && p.isActive !== false
-                        ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {p.is_selected !== false && p.isActive !== false ? 'Active' : 'Off'}
-                    </span>
+                    {p.is_selected ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        Top
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">—</span>
+                    )}
                   </div>
                 ))}
               {products.length > 6 && (

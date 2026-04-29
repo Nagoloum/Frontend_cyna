@@ -1,19 +1,27 @@
-// src/components/admin/dashboard/SalesBarChart.jsx
+// src/components/admin/dashboard/RevenueLineChart.jsx
 import { useEffect, useRef } from 'react';
 import {
-  Chart, BarController, BarElement,
-  CategoryScale, LinearScale, Tooltip, Legend, Filler,
+  Chart, LineController, LineElement, PointElement,
+  CategoryScale, LinearScale, Tooltip, Filler,
 } from 'chart.js';
 
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend, Filler);
+Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Filler);
 
-export default function SalesBarChart({ data = [], period = '7d', loading = false }) {
+/**
+ * Revenue line chart with gradient fill.
+ *
+ * Props:
+ *   data    Array<{ label: string, value: number }>  (already aggregated upstream)
+ *   period  string  (forces redraw on period change)
+ *   loading boolean
+ */
+export default function RevenueLineChart({ data = [], period = '7d', loading = false }) {
   const canvasRef = useRef(null);
   const chartRef  = useRef(null);
   const isDark    = document.documentElement.classList.contains('dark');
 
   useEffect(() => {
-    if (!canvasRef.current || loading || !data.length) return;
+    if (!canvasRef.current || loading) return;
 
     chartRef.current?.destroy();
 
@@ -21,26 +29,30 @@ export default function SalesBarChart({ data = [], period = '7d', loading = fals
     const values = data.map((d) => d.value);
     const ctx = canvasRef.current.getContext('2d');
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 350);
-    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.9)');
-    gradient.addColorStop(1, 'rgba(139, 92, 246, 0.6)');
+    const fill = ctx.createLinearGradient(0, 0, 0, 320);
+    fill.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+    fill.addColorStop(1, 'rgba(139, 92, 246, 0.02)');
 
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     const textColor = isDark ? 'rgba(156,163,175,1)' : 'rgba(107,114,128,1)';
 
     chartRef.current = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
         labels,
         datasets: [{
           label: 'Revenue (€)',
           data: values,
-          backgroundColor: gradient,
           borderColor: 'rgba(99, 102, 241, 1)',
-          borderWidth: 0,
-          borderRadius: 8,
-          borderSkipped: false,
-          hoverBackgroundColor: 'rgba(99, 102, 241, 1)',
+          backgroundColor: fill,
+          borderWidth: 2.5,
+          tension: 0.4,                 // smooth curve
+          fill: true,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: 'rgba(99, 102, 241, 1)',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
         }],
       },
       options: {
@@ -57,8 +69,10 @@ export default function SalesBarChart({ data = [], period = '7d', loading = fals
             borderWidth: 1,
             cornerRadius: 12,
             padding: 12,
+            displayColors: false,
             callbacks: {
-              label: (ctx) => `  ${ctx.dataset.label} : ${Number(ctx.raw).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`,
+              label: (ctx) =>
+                `${Number(ctx.raw).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`,
             },
           },
         },
@@ -69,6 +83,7 @@ export default function SalesBarChart({ data = [], period = '7d', loading = fals
             border: { display: false },
           },
           y: {
+            beginAtZero: true,
             grid: { color: gridColor },
             ticks: {
               color: textColor,
@@ -84,12 +99,18 @@ export default function SalesBarChart({ data = [], period = '7d', loading = fals
     return () => chartRef.current?.destroy();
   }, [data, period, loading, isDark]);
 
-  if (loading) return <div className="w-full h-[320px] bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />;
-  if (!data.length) return (
-    <div className="w-full h-[320px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-      No data for this period
-    </div>
-  );
+  if (loading) {
+    return <div className="w-full h-[320px] bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />;
+  }
+
+  const empty = !data.length || data.every((d) => !d.value);
+  if (empty) {
+    return (
+      <div className="w-full h-[320px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
+        No paid orders for this period
+      </div>
+    );
+  }
 
   return <div className="w-full h-[320px]"><canvas ref={canvasRef} /></div>;
 }
