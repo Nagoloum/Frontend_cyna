@@ -1,8 +1,11 @@
 import { DEFAULT_PRODUCT_IMAGE, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
+import { addToCart } from "@/store/slices/cartSlice";
+import { useAppDispatch } from "@/store/hooks";
 import { ArrowRight, CheckCircle2, Package, ShoppingBag, Star, XCircle } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -19,6 +22,7 @@ const SkeletonCard = () => (
 );
 
 const ProductCard = ({ product, onAddToCart }) => {
+  const { t } = useTranslation();
   const [imgErr, setImgErr] = React.useState(false);
   const imageUrl = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
   const isOut = product.stock === 0;
@@ -27,7 +31,6 @@ const ProductCard = ({ product, onAddToCart }) => {
 
   return (
     <div className={`cyna-card overflow-hidden group flex flex-col ${isOut ? "opacity-60" : ""}`}>
-      {/* Image */}
       <div
         className="relative overflow-hidden flex-shrink-0"
         style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}
@@ -38,7 +41,6 @@ const ProductCard = ({ product, onAddToCart }) => {
           onError={() => setImgErr(true)}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {/* Selected badge */}
         {product.is_selected && (
           <div className="absolute top-2.5 left-2.5">
             <span className="badge badge-accent gap-1 text-[10px]">
@@ -47,56 +49,43 @@ const ProductCard = ({ product, onAddToCart }) => {
           </div>
         )}
         {isOut && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,.45)" }}
-          >
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }}>
             <span className="badge badge-danger gap-1">
-              <XCircle size={12} /> Out of Stock
+              <XCircle size={12} /> {t("topProducts.out_of_stock")}
             </span>
           </div>
         )}
       </div>
 
-      {/* Info */}
       <div className="p-4 flex flex-col flex-1 gap-3">
         <div>
-          <h3
-            className="font-[Kumbh Sans] font-700 text-sm leading-tight line-clamp-2 mb-1"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <h3 className="font-[Kumbh Sans] font-700 text-sm leading-tight line-clamp-2 mb-1" style={{ color: "var(--text-primary)" }}>
             {product.name}
           </h3>
           {product.service?.name && (
-            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {product.service.name}
-            </p>
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{product.service.name}</p>
           )}
         </div>
 
-        {/* Availability */}
         <div className="flex items-center gap-1.5 text-xs" style={{ fontFamily: "'Kumbh Sans', sans-serif" }}>
           {isOut ? (
-            <><XCircle size={13} style={{ color: "var(--danger)" }} />
-            <span style={{ color: "var(--danger)" }}>Out of stock</span></>
+            <><XCircle size={13} style={{ color: "var(--danger)" }} /><span style={{ color: "var(--danger)" }}>{t("topProducts.out_of_stock_label")}</span></>
           ) : (
-            <><CheckCircle2 size={13} style={{ color: "var(--success)" }} />
-            <span style={{ color: "var(--success)" }}>Available immediately</span></>
+            <><CheckCircle2 size={13} style={{ color: "var(--success)" }} /><span style={{ color: "var(--success)" }}>{t("topProducts.available")}</span></>
           )}
         </div>
 
-        {/* Price + CTA */}
         <div className="mt-auto flex items-center justify-between gap-2">
           <div>
             {priceMonth != null && (
               <p className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--text-primary)" }}>
                 {Number(priceMonth).toFixed(2)} €
-                <span className="text-xs font-normal ml-1" style={{ color: "var(--text-muted)" }}>/month</span>
+                <span className="text-xs font-normal ml-1" style={{ color: "var(--text-muted)" }}>{t("topProducts.per_month")}</span>
               </p>
             )}
             {priceYear != null && (
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                or {Number(priceYear).toFixed(2)} €/year
+                {t("topProducts.or_per_year", { price: Number(priceYear).toFixed(2) })}
               </p>
             )}
           </div>
@@ -106,7 +95,7 @@ const ProductCard = ({ product, onAddToCart }) => {
             className="btn-primary py-2 px-3 text-xs gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
           >
             <ShoppingBag size={13} />
-            <span className="hidden sm:inline">Add to Cart</span>
+            <span className="hidden sm:inline">{t("topProducts.add_to_cart")}</span>
           </button>
         </div>
       </div>
@@ -115,6 +104,8 @@ const ProductCard = ({ product, onAddToCart }) => {
 };
 
 export default function TopProducts() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const [products, setProducts] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -130,52 +121,37 @@ export default function TopProducts() {
 
   const handleAddToCart = (product) => {
     try {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const existing = cart.find((i) => i._id === product._id);
-      if (existing) {
-        existing.qty = (existing.qty || 1) + 1;
-      } else {
-        cart.push({ ...product, qty: 1, billingPeriod: "monthly" });
-      }
-      localStorage.setItem("cart", JSON.stringify(cart));
-      window.dispatchEvent(new Event("cart-updated"));
-      notify.success("Added to cart", product.name);
+      dispatch(addToCart({ ...product, qty: 1, billingPeriod: "monthly" }));
+      notify.success(t("topProducts.added_to_cart"), product.name);
     } catch {
-      notify.error("Cart error", "Could not add this product to your cart.");
+      notify.error(t("topProducts.cart_error"), t("topProducts.cart_error_msg"));
     }
   };
 
   return (
     <section className="py-14 sm:py-16" style={{ background: "var(--bg-subtle)" }}>
       <div className="cyna-container">
-        {/* Header */}
         <div className="flex items-end justify-between mb-8">
           <div>
-            <p className="section-label">Selection</p>
-            <h2 className="section-title">Top Products Right Now</h2>
+            <p className="section-label">{t("topProducts.badge")}</p>
+            <h2 className="section-title">{t("topProducts.title")}</h2>
             <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-              The most popular solutions among our customers
+              {t("topProducts.popular")}
             </p>
           </div>
           <Link to="/products" className="btn-ghost py-2 px-4 text-sm hidden sm:inline-flex gap-2">
-            All Products <ArrowRight size={15} />
+            {t("topProducts.all_products")} <ArrowRight size={15} />
           </Link>
         </div>
 
-        {/* Grid */}
         {loading ? (
           <div className="products-grid">
             {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : products.length === 0 ? (
-          <div
-            className="rounded-2xl border border-dashed border-[var(--border)] p-12 text-center"
-            style={{ background: "var(--bg-base)" }}
-          >
+          <div className="rounded-2xl border border-dashed border-[var(--border)] p-12 text-center" style={{ background: "var(--bg-base)" }}>
             <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
-            <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
-              No products available
-            </p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>{t("topProducts.empty")}</p>
           </div>
         ) : (
           <div className="products-grid">
@@ -187,7 +163,7 @@ export default function TopProducts() {
 
         <div className="mt-6 text-center sm:hidden">
           <Link to="/products" className="btn-ghost gap-2 w-full justify-center">
-            All Products <ArrowRight size={15} />
+            {t("topProducts.all_products")} <ArrowRight size={15} />
           </Link>
         </div>
       </div>

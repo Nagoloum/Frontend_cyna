@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Mail, MessageSquare, Send } from "lucide-react";
 import { contactAPI } from "@/services/api";
+import { useTranslation } from "react-i18next";
 
 export default function ContactPage() {
+  const { t } = useTranslation();
   const [form, setForm]       = useState({ email: "", subject: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus]   = useState(null); // { type: 'success'|'error', text }
+  const [status, setStatus]   = useState(null);
 
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -14,11 +16,11 @@ export default function ContactPage() {
     setStatus(null);
 
     if (!form.email.trim() || !form.subject.trim() || !form.message.trim()) {
-      setStatus({ type: "error", text: "All fields are required." });
+      setStatus({ type: "error", text: t("contact.error_required") });
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-      setStatus({ type: "error", text: "Please enter a valid email." });
+      setStatus({ type: "error", text: t("contact.error_email") });
       return;
     }
 
@@ -26,11 +28,11 @@ export default function ContactPage() {
     try {
       const res = await contactAPI.create(form);
       const ok  = res.data?.success !== false;
-      if (!ok) throw new Error(res.data?.message || "Failed to send message.");
-      setStatus({ type: "success", text: "Your message has been sent. We'll get back to you soon." });
+      if (!ok) throw new Error(res.data?.message || t("contact.error_send"));
+      setStatus({ type: "success", text: t("contact.success") });
       setForm({ email: "", subject: "", message: "" });
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? "Failed to send message.";
+      const msg = err.response?.data?.message ?? err.message ?? t("contact.error_send");
       setStatus({ type: "error", text: msg });
     } finally {
       setSubmitting(false);
@@ -41,10 +43,10 @@ export default function ContactPage() {
     <div className="page-enter" style={{ background: "var(--bg-base)", minHeight: "70vh" }}>
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
         <div className="cyna-container py-10 sm:py-14">
-          <p className="section-label">Get in touch</p>
-          <h1 className="section-title mb-2">Contact Us</h1>
+          <p className="section-label">{t("contact.badge")}</p>
+          <h1 className="section-title mb-2">{t("contact.title")}</h1>
           <p className="text-sm max-w-xl" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-            Questions about our solutions, pricing or partnership opportunities? Send us a message — we typically reply within 24 hours.
+            {t("contact.subtitle")}
           </p>
         </div>
       </div>
@@ -66,7 +68,7 @@ export default function ContactPage() {
 
           <div>
             <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>
-              Email *
+              {t("contact.email_label")}
             </label>
             <div className="relative">
               <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -74,7 +76,7 @@ export default function ContactPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => set("email")(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t("contact.email_placeholder")}
                 required
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
               />
@@ -83,13 +85,13 @@ export default function ContactPage() {
 
           <div>
             <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>
-              Subject *
+              {t("contact.subject_label")}
             </label>
             <input
               type="text"
               value={form.subject}
               onChange={(e) => set("subject")(e.target.value)}
-              placeholder="How can we help?"
+              placeholder={t("contact.subject_placeholder")}
               required
               className="w-full px-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
             />
@@ -97,7 +99,7 @@ export default function ContactPage() {
 
           <div>
             <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>
-              Message *
+              {t("contact.message_label")}
             </label>
             <div className="relative">
               <MessageSquare size={14} className="absolute left-3 top-3 text-[var(--text-muted)]" />
@@ -105,7 +107,7 @@ export default function ContactPage() {
                 rows={6}
                 value={form.message}
                 onChange={(e) => set("message")(e.target.value)}
-                placeholder="Tell us about your project, question or feedback…"
+                placeholder={t("contact.message_placeholder")}
                 required
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all resize-none"
               />
@@ -119,7 +121,7 @@ export default function ContactPage() {
               className="btn-primary py-3 px-6 gap-2 disabled:opacity-50"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              {submitting ? "Sending…" : "Send message"}
+              {submitting ? t("contact.sending") : t("contact.send")}
             </button>
           </div>
         </form>

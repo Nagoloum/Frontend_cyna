@@ -5,8 +5,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adressesAPI, cartesAPI, commandesAPI } from "@/services/api";
-
-const STEPS = ["Address", "Payment", "Confirmation"];
+import { useTranslation } from "react-i18next";
 
 const billingPeriodToPeriode = (bp) =>
   String(bp).toLowerCase() === "yearly" ? "ANNEE" : "MOIS";
@@ -29,6 +28,10 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
 );
 
 export default function CheckoutPage() {
+  const { t } = useTranslation();
+
+  const STEPS = [t("checkout.step_address"), t("checkout.step_payment"), t("checkout.step_confirmation")];
+
   const [step, setStep] = useState(0);
 
   // ── Address ───────────────────────────────────────────────────────────────
@@ -90,15 +93,15 @@ export default function CheckoutPage() {
     if (selectedAddressId && !newAddress) return null;
     const required = ["firstName", "lastName", "adresse", "city", "region", "country", "codePostal", "phone"];
     const missing = required.find(k => !addr[k]?.trim());
-    return missing ? `Field "${missing}" is required.` : null;
+    return missing ? t("checkout.error_field_required", { field: missing }) : null;
   };
 
   const validatePayment = () => {
     if (selectedCardId && !newCard) return null;
-    if (!pay.carteName.trim()) return "Cardholder name is required.";
-    if (!pay.carteNumber.trim()) return "Card number is required.";
-    if (!pay.carteDate.trim()) return "Expiry date is required.";
-    if (!pay.carteCVV.trim()) return "CVV is required.";
+    if (!pay.carteName.trim()) return t("checkout.error_cardholder");
+    if (!pay.carteNumber.trim()) return t("checkout.error_card_number");
+    if (!pay.carteDate.trim()) return t("checkout.error_expiry");
+    if (!pay.carteCVV.trim()) return t("checkout.error_cvv");
     return null;
   };
 
@@ -111,29 +114,23 @@ export default function CheckoutPage() {
 
   // ── Confirm purchase ──────────────────────────────────────────────────────
   const handleConfirm = async () => {
-    if (!cart.length) { setError("Your cart is empty."); return; }
+    if (!cart.length) { setError(t("checkout.empty_cart")); return; }
     setSubmitting(true);
     setError(null);
 
     try {
-      // 1. Resolve address (create if new) — backend doesn't actually consume it
-      //    on commande creation, but the user expects it to be saved in their account.
       if (newAddress) {
         try { await adressesAPI.create(addr); } catch { /* ignore — non-blocking */ }
       }
 
-      // 2. Resolve card → cbId is required by the backend
       let cbId = selectedCardId;
       if (newCard || !cbId) {
         const res = await cartesAPI.create(pay);
         const created = res.data?.data ?? res.data;
         cbId = created?._id;
-        if (!cbId) throw new Error("Failed to save payment card.");
+        if (!cbId) throw new Error(t("checkout.error_save_card"));
       }
 
-      // 3. Build abonnements from cart
-      //    Backend only supports a single periode per Stripe session — we send
-      //    them all but if the cart mixes monthly + yearly the backend will reject.
       const abonnements = cart.map(item => ({
         productId: item._id,
         quantity: Number(item.qty || 1),
@@ -142,23 +139,21 @@ export default function CheckoutPage() {
 
       const intervals = new Set(abonnements.map(a => a.periode));
       if (intervals.size > 1) {
-        throw new Error("Your cart mixes monthly and yearly subscriptions. Please checkout them separately.");
+        throw new Error(t("checkout.mixed_billing"));
       }
 
-      // 4. Create commande + Stripe session
       const orderRes = await commandesAPI.create({ cbId, abonnements });
       const payload = orderRes.data?.data ?? orderRes.data;
 
       if (!orderRes.data?.success || !payload?.url) {
-        throw new Error(orderRes.data?.message || "Failed to create order.");
+        throw new Error(orderRes.data?.message || t("checkout.error_create_order"));
       }
 
-      // 5. Clear cart and redirect to Stripe Checkout
       localStorage.removeItem("cart");
       window.dispatchEvent(new Event("cart-updated"));
       window.location.href = payload.url;
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? "Error creating order.";
+      const msg = err.response?.data?.message ?? err.message ?? t("checkout.error_order_generic");
       setError(msg);
       setSubmitting(false);
     }
@@ -179,9 +174,9 @@ export default function CheckoutPage() {
           className="inline-flex items-center gap-1.5 text-sm mb-8 hover:text-[var(--accent)] transition-colors"
           style={{ color: "var(--text-muted)" }}
         >
-          <ArrowLeft size={15} /> Back to Cart
+          <ArrowLeft size={15} /> {t("checkout.back_to_cart")}
         </Link>
-        <h1 className="section-title mb-8">Complete Your Order</h1>
+        <h1 className="section-title mb-8">{t("checkout.complete_order")}</h1>
 
         {/* Stepper */}
         <div className="flex items-center mb-10">
@@ -215,7 +210,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-2 mb-6">
                   <MapPin size={18} style={{ color: "var(--accent)" }} />
                   <h2 className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--text-primary)" }}>
-                    Billing Address
+                    {t("checkout.billing_address")}
                   </h2>
                 </div>
 
@@ -248,29 +243,29 @@ export default function CheckoutPage() {
                             : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)]/50"
                             }`}
                         >
-                          <Plus size={14} /> Use a new address
+                          <Plus size={14} /> {t("checkout.use_new_address")}
                         </button>
                       </div>
                     )}
 
                     {(newAddress || savedAddresses.length === 0) && (
                       <div className="grid grid-cols-2 gap-4">
-                        <InputField label="First Name" value={addr.firstName} onChange={v => setAddr({ ...addr, firstName: v })} placeholder="John" required half />
-                        <InputField label="Last Name" value={addr.lastName} onChange={v => setAddr({ ...addr, lastName: v })} placeholder="Doe" required half />
-                        <InputField label="Address" value={addr.adresse} onChange={v => setAddr({ ...addr, adresse: v })} placeholder="12 rue de la Paix" required />
-                        <InputField label="Complement" value={addr.complementAdresse} onChange={v => setAddr({ ...addr, complementAdresse: v })} placeholder="Apt, office…" />
-                        <InputField label="City" value={addr.city} onChange={v => setAddr({ ...addr, city: v })} placeholder="Paris" required half />
-                        <InputField label="Postal Code" value={addr.codePostal} onChange={v => setAddr({ ...addr, codePostal: v })} placeholder="75001" required half />
-                        <InputField label="Region" value={addr.region} onChange={v => setAddr({ ...addr, region: v })} placeholder="Île-de-France" required half />
-                        <InputField label="Country" value={addr.country} onChange={v => setAddr({ ...addr, country: v })} placeholder="France" required half />
-                        <InputField label="Phone" type="tel" value={addr.phone} onChange={v => setAddr({ ...addr, phone: v })} placeholder="+33 6 12 34 56 78" required />
+                        <InputField label={t("checkout.field_first_name")} value={addr.firstName} onChange={v => setAddr({ ...addr, firstName: v })} placeholder={t("checkout.placeholder_first_name")} required half />
+                        <InputField label={t("checkout.field_last_name")} value={addr.lastName} onChange={v => setAddr({ ...addr, lastName: v })} placeholder={t("checkout.placeholder_last_name")} required half />
+                        <InputField label={t("checkout.field_address")} value={addr.adresse} onChange={v => setAddr({ ...addr, adresse: v })} placeholder={t("checkout.placeholder_address")} required />
+                        <InputField label={t("checkout.field_complement")} value={addr.complementAdresse} onChange={v => setAddr({ ...addr, complementAdresse: v })} placeholder={t("checkout.placeholder_complement")} />
+                        <InputField label={t("checkout.field_city")} value={addr.city} onChange={v => setAddr({ ...addr, city: v })} placeholder={t("checkout.placeholder_city")} required half />
+                        <InputField label={t("checkout.field_postal_code")} value={addr.codePostal} onChange={v => setAddr({ ...addr, codePostal: v })} placeholder={t("checkout.placeholder_postal_code")} required half />
+                        <InputField label={t("checkout.field_region")} value={addr.region} onChange={v => setAddr({ ...addr, region: v })} placeholder={t("checkout.placeholder_region")} required half />
+                        <InputField label={t("checkout.field_country")} value={addr.country} onChange={v => setAddr({ ...addr, country: v })} placeholder={t("checkout.placeholder_country")} required half />
+                        <InputField label={t("checkout.field_phone")} type="tel" value={addr.phone} onChange={v => setAddr({ ...addr, phone: v })} placeholder={t("checkout.placeholder_phone")} required />
                       </div>
                     )}
                   </>
                 )}
 
                 <button onClick={goNext} className="btn-primary mt-6 gap-2 w-full sm:w-auto justify-center py-3">
-                  Continue to Payment <ChevronRight size={16} />
+                  {t("checkout.continue_to_payment")} <ChevronRight size={16} />
                 </button>
               </div>
             )}
@@ -281,10 +276,10 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-2 mb-6">
                   <CreditCard size={18} style={{ color: "var(--accent)" }} />
                   <h2 className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--text-primary)" }}>
-                    Payment Method
+                    {t("checkout.payment_method")}
                   </h2>
                   <div className="ml-auto flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                    <Lock size={12} /> SSL Secured
+                    <Lock size={12} /> {t("checkout.ssl_secured")}
                   </div>
                 </div>
 
@@ -319,17 +314,17 @@ export default function CheckoutPage() {
                             : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)]/50"
                             }`}
                         >
-                          <Plus size={14} /> Use a new card
+                          <Plus size={14} /> {t("checkout.use_new_card")}
                         </button>
                       </div>
                     )}
 
                     {(newCard || savedCards.length === 0) && (
                       <div className="grid grid-cols-2 gap-4">
-                        <InputField label="Cardholder Name" value={pay.carteName} onChange={v => setPay({ ...pay, carteName: v })} placeholder="John Doe" required />
-                        <InputField label="Card Number" value={pay.carteNumber} onChange={v => setPay({ ...pay, carteNumber: v })} placeholder="1234 5678 9012 3456" required />
-                        <InputField label="Expiry (MM/YY)" value={pay.carteDate} onChange={v => setPay({ ...pay, carteDate: v })} placeholder="MM/YY" required half />
-                        <InputField label="CVV" type="password" value={pay.carteCVV} onChange={v => setPay({ ...pay, carteCVV: v })} placeholder="123" required half />
+                        <InputField label={t("checkout.field_cardholder")} value={pay.carteName} onChange={v => setPay({ ...pay, carteName: v })} placeholder={t("checkout.placeholder_cardholder")} required />
+                        <InputField label={t("checkout.field_card_number")} value={pay.carteNumber} onChange={v => setPay({ ...pay, carteNumber: v })} placeholder={t("checkout.placeholder_card_number")} required />
+                        <InputField label={t("checkout.field_expiry")} value={pay.carteDate} onChange={v => setPay({ ...pay, carteDate: v })} placeholder={t("checkout.placeholder_expiry")} required half />
+                        <InputField label={t("checkout.field_cvv")} type="password" value={pay.carteCVV} onChange={v => setPay({ ...pay, carteCVV: v })} placeholder={t("checkout.placeholder_cvv")} required half />
                       </div>
                     )}
                   </>
@@ -338,16 +333,16 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-2 mt-4 p-3 rounded-xl text-xs" style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
                   <Shield size={14} style={{ color: "var(--success)" }} />
                   <span style={{ color: "var(--text-secondary)", fontFamily: "'DM Sans',sans-serif" }}>
-                    You will be redirected to Stripe to finalize your payment securely.
+                    {t("checkout.stripe_redirect")}
                   </span>
                 </div>
 
                 <div className="flex gap-3 mt-6">
                   <button onClick={() => { setError(null); setStep(0); }} className="btn-ghost py-3 gap-1.5">
-                    <ArrowLeft size={16} /> Back
+                    <ArrowLeft size={16} /> {t("checkout.back")}
                   </button>
                   <button onClick={goNext} className="btn-primary py-3 gap-2 flex-1 justify-center">
-                    Review Order <ChevronRight size={16} />
+                    {t("checkout.review_order")} <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
@@ -359,14 +354,14 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-2 mb-6">
                   <CheckCircle size={18} style={{ color: "var(--accent)" }} />
                   <h2 className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--text-primary)" }}>
-                    Order Confirmation
+                    {t("checkout.order_confirmation")}
                   </h2>
                 </div>
 
                 {/* Address recap */}
                 <div className="p-4 rounded-xl mb-4" style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
                   <p className="text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>
-                    BILLING ADDRESS
+                    {t("checkout.billing_address_header")}
                   </p>
                   <p className="text-sm" style={{ color: "var(--text-primary)", fontFamily: "'DM Sans',sans-serif" }}>
                     {selectedAddress && !newAddress ? (
@@ -388,7 +383,7 @@ export default function CheckoutPage() {
                 {/* Payment recap */}
                 <div className="p-4 rounded-xl mb-6" style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
                   <p className="text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>
-                    PAYMENT
+                    {t("checkout.payment_header")}
                   </p>
                   <p className="text-sm flex items-center gap-2" style={{ color: "var(--text-primary)", fontFamily: "'DM Sans',sans-serif" }}>
                     <CreditCard size={14} />
@@ -400,7 +395,7 @@ export default function CheckoutPage() {
 
                 <div className="flex gap-3">
                   <button onClick={() => setStep(1)} disabled={submitting} className="btn-ghost py-3 gap-1.5 disabled:opacity-50">
-                    <ArrowLeft size={16} /> Back
+                    <ArrowLeft size={16} /> {t("checkout.back")}
                   </button>
                   <button
                     onClick={handleConfirm}
@@ -408,7 +403,7 @@ export default function CheckoutPage() {
                     className="btn-primary py-3 gap-2 flex-1 justify-center text-base disabled:opacity-50"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Shield size={18} />}
-                    {submitting ? "Redirecting to Stripe…" : `Pay ${total.toFixed(2)} €`}
+                    {submitting ? t("checkout.redirecting_stripe") : t("checkout.pay_btn", { total: total.toFixed(2) })}
                   </button>
                 </div>
               </div>
@@ -418,7 +413,7 @@ export default function CheckoutPage() {
           {/* Order summary */}
           <div className="cyna-card p-5 h-fit sticky top-24">
             <h3 className="font-[Kumbh Sans] font-700 mb-4" style={{ color: "var(--text-primary)" }}>
-              Your Order
+              {t("checkout.your_order")}
             </h3>
             <div className="space-y-3 mb-4 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
               {cart.map((item, i) => {
@@ -428,7 +423,7 @@ export default function CheckoutPage() {
                     <span className="line-clamp-2 flex-1" style={{ color: "var(--text-secondary)" }}>
                       {item.name} ×{item.qty || 1}
                       <span className="block text-[10px] text-[var(--text-muted)]">
-                        {item.billingPeriod === "monthly" ? "Monthly" : "Yearly"}
+                        {item.billingPeriod === "monthly" ? t("checkout.monthly") : t("checkout.yearly")}
                       </span>
                     </span>
                     <span className="font-[Kumbh Sans] font-600 flex-shrink-0" style={{ color: "var(--text-primary)" }}>
@@ -439,7 +434,7 @@ export default function CheckoutPage() {
               })}
             </div>
             <div className="flex justify-between items-center">
-              <span className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>Total</span>
+              <span className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>{t("checkout.total")}</span>
               <span className="font-[Kumbh Sans] font-800 text-xl" style={{ color: "var(--accent)" }}>
                 {total.toFixed(2)} €
               </span>

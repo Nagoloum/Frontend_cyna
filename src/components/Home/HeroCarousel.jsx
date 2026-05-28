@@ -3,34 +3,8 @@ import Autoplay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { buildImageUrl, slidersAPI } from "@/services/api";
-
-const FALLBACK_SLIDES = [
-  {
-    title: "Next-Generation\nSOC Protection",
-    description: "Real-time monitoring, advanced threat detection, and incident response to secure your infrastructure.",
-    color: "#7c3aed",
-    cta: "Discover the SOC",
-    linkUrl: "/categories",
-    isFallback: true,
-  },
-  {
-    title: "Endpoint Detection\n& Response",
-    description: "Protect every endpoint in your IT environment with our AI-powered EDR solution.",
-    color: "#6d28d9",
-    cta: "Explore EDR",
-    linkUrl: "/categories",
-    isFallback: true,
-  },
-  {
-    title: "Extended Detection\n& Response",
-    description: "A unified view of all your threats. Intelligent correlation across endpoints, network, and cloud.",
-    color: "#5b21b6",
-    cta: "See XDR",
-    linkUrl: "/categories",
-    isFallback: true,
-  },
-];
 
 const COLORS_CYCLE = ["#7c3aed", "#6d28d9", "#5b21b6", "#4c1d95", "#7e22ce"];
 
@@ -75,7 +49,6 @@ function DbSlide({ slide }) {
           zIndex: 2,
         }}
       />
-
       <div className="cyna-container relative py-16 sm:py-20" style={{ zIndex: 3 }}>
         <div className="max-w-xl">
           <h1
@@ -84,7 +57,6 @@ function DbSlide({ slide }) {
           >
             {slide.title}
           </h1>
-
           {slide.linkUrl && (
             <Link to={slide.linkUrl} className="btn-primary inline-flex items-center mt-2">
               {slide.nameUrl}
@@ -113,7 +85,6 @@ function FallbackSlide({ slide }) {
           backgroundSize: "48px 48px",
         }}
       />
-
       <div className="cyna-container relative z-10 py-16 sm:py-20">
         <div className="max-w-xl">
           <h1
@@ -122,14 +93,12 @@ function FallbackSlide({ slide }) {
           >
             {slide.title}
           </h1>
-
           <p
             className="text-base sm:text-lg mb-8 leading-relaxed"
             style={{ color: "var(--text-secondary)", maxWidth: "480px" }}
           >
             {slide.description}
           </p>
-
           <Link to={slide.linkUrl} className="btn-primary inline-flex items-center">
             {slide.cta}
           </Link>
@@ -140,11 +109,18 @@ function FallbackSlide({ slide }) {
 }
 
 export function HeroCarousel() {
+  const { t } = useTranslation();
   const [api, setApi]         = React.useState();
   const [current, setCurrent] = React.useState(0);
   const [slides, setSlides]   = React.useState([]);
   const [useFallback, setUseFallback] = React.useState(false);
   const plugin = React.useRef(Autoplay({ delay: 5500, stopOnInteraction: true }));
+
+  const buildFallback = React.useCallback(() => [
+    { title: t("hero.slide0_title"), description: t("hero.slide0_desc"), color: "#7c3aed", cta: t("hero.slide0_cta"), linkUrl: "/categories", isFallback: true },
+    { title: t("hero.slide1_title"), description: t("hero.slide1_desc"), color: "#6d28d9", cta: t("hero.slide1_cta"), linkUrl: "/categories", isFallback: true },
+    { title: t("hero.slide2_title"), description: t("hero.slide2_desc"), color: "#5b21b6", cta: t("hero.slide2_cta"), linkUrl: "/categories", isFallback: true },
+  ], [t]);
 
   React.useEffect(() => {
     slidersAPI
@@ -154,7 +130,7 @@ export function HeroCarousel() {
         const arr = Array.isArray(raw) ? raw : [];
         if (arr.length === 0) {
           setUseFallback(true);
-          setSlides(FALLBACK_SLIDES);
+          setSlides(buildFallback());
         } else {
           setUseFallback(false);
           setSlides(arr.map(normaliseSlider));
@@ -162,9 +138,14 @@ export function HeroCarousel() {
       })
       .catch(() => {
         setUseFallback(true);
-        setSlides(FALLBACK_SLIDES);
+        setSlides(buildFallback());
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  React.useEffect(() => {
+    if (useFallback) setSlides(buildFallback());
+  }, [buildFallback, useFallback]);
 
   React.useEffect(() => {
     if (!api) return;
@@ -185,11 +166,7 @@ export function HeroCarousel() {
         <CarouselContent>
           {slides.map((slide, i) => (
             <CarouselItem key={slide._id ?? i}>
-              {useFallback ? (
-                <FallbackSlide slide={slide} />
-              ) : (
-                <DbSlide slide={slide} />
-              )}
+              {useFallback ? <FallbackSlide slide={slide} /> : <DbSlide slide={slide} />}
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -202,20 +179,16 @@ export function HeroCarousel() {
           >
             <ChevronLeft size={16} />
           </button>
-
           <div className="flex items-center gap-2">
             {slides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
-                className={`rounded-full transition-all duration-300 ${
-                  i === current ? "w-6 h-2" : "w-2 h-2 hover:opacity-70"
-                }`}
+                className={`rounded-full transition-all duration-300 ${i === current ? "w-6 h-2" : "w-2 h-2 hover:opacity-70"}`}
                 style={{ background: i === current ? "var(--accent)" : "var(--border)" }}
               />
             ))}
           </div>
-
           <button
             onClick={() => api?.scrollNext()}
             className="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"

@@ -1,187 +1,152 @@
-import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 export default function PrivacyPolicyComponent() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
         <button
-          onClick={handleGoBack}
+          onClick={() => navigate(-1)}
           className="mb-10 flex items-center gap-3 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors duration-200 group"
         >
           <ArrowLeft className="w-6 h-6 transition-transform group-hover:-translate-x-1" />
-          Back
+          {t('privacy.back')}
         </button>
 
-        {/* Main Title */}
         <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white text-center mb-12">
-          Privacy Policy
+          {t('privacy.title')}
         </h1>
 
-        {/* Main Content */}
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-10 lg:p-14 space-y-12">
+
+          {/* 1 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              1. Introduction
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              CYNA takes your privacy seriously. This Privacy Policy explains how we collect, use, disclose, store, and protect your personal data when you use our website, mobile application, and SaaS cybersecurity services (SOC, EDR, XDR, etc.).
-            </p>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              This policy complies with the General Data Protection Regulation (GDPR – Regulation (EU) 2016/679) and other applicable data protection laws.
-            </p>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s1_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{t('privacy.s1_body')}</p>
           </section>
 
+          {/* 2 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              2. Data Controller
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              The data controller is:<br />
-              <strong>CYNA-IT</strong><br />
-              10 rue de Penthievre, 75008 Paris, France<br />
-              SIRET: 913 711 032 00015<br />
-              Email: <a href="mailto:contact@cyna-it.fr" className="text-indigo-400 hover:underline">contact@cyna-it.fr</a>
-            </p>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              Data Protection Officer (DPO): <a href="mailto:dpo@cyna-it.fr" className="text-indigo-400 hover:underline">dpo@cyna-it.fr</a>
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              3. Personal Data Collected
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              We collect the following categories of personal data:
-            </p>
-            <ul className="list-disc list-inside mt-4 space-y-2 text-gray-700 dark:text-gray-300">
-              <li><strong>Identity & contact data</strong>: name, email, phone, company name</li>
-              <li><strong>Billing & payment data</strong>: billing address, payment method details (tokenized via our payment provider – we do not store full card numbers)</li>
-              <li><strong>Account data</strong>: login credentials (hashed), subscription details</li>
-              <li><strong>Usage & technical data</strong>: IP address, browser type, device information, connection logs, pages visited</li>
-              <li><strong>Transaction data</strong>: order history, purchased SaaS plans, invoices</li>
-              <li><strong>Cookies & trackers</strong>: strictly necessary cookies, functional cookies, analytics cookies (with consent)</li>
-            </ul>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              We do not collect sensitive data (health, political opinions, religion, etc.) unless you voluntarily provide it (e.g. in support messages).
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              4. Purposes and Legal Bases
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              Your data is processed for the following purposes and legal bases:
-            </p>
-            <ul className="list-disc list-inside mt-4 space-y-3 text-gray-700 dark:text-gray-300">
-              <li><strong>Performance of the contract</strong>: account creation, order processing, subscription management, service delivery (SaaS access)</li>
-              <li><strong>Legitimate interest</strong>: fraud prevention, security (cybersecurity logs), service improvement (anonymized analytics)</li>
-              <li><strong>Legal obligation</strong>: invoicing, accounting, tax compliance</li>
-              <li><strong>Consent</strong>: marketing communications (newsletter), non-essential cookies</li>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s2_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{t('privacy.s2_body')}</p>
+            <ul className="mt-3 space-y-1 text-gray-700 dark:text-gray-300">
+              <li><strong>{t('privacy.s2_company')}</strong></li>
+              <li>{t('privacy.s2_address')}</li>
+              <li>{t('privacy.s2_siret')}</li>
+              <li>{t('privacy.s2_email_label')} <a href="mailto:support@cyna-it.fr" className="text-indigo-600 dark:text-indigo-400 underline">support@cyna-it.fr</a></li>
+              <li>{t('privacy.s2_dpo_label')} <a href="mailto:dpo@cyna-it.fr" className="text-indigo-600 dark:text-indigo-400 underline">dpo@cyna-it.fr</a></li>
             </ul>
           </section>
 
+          {/* 3 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              5. Data Recipients
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              Your data may be shared with:
-            </p>
-            <ul className="list-disc list-inside mt-4 space-y-2 text-gray-700 dark:text-gray-300">
-              <li>Internal CYNA teams (sales, support, billing)</li>
-              <li>Payment processor (Stripe)</li>
-              <li>Cloud hosting provider (EU-based or with GDPR safeguards)</li>
-              <li>Email & analytics service providers (with DPA – Data Processing Agreements)</li>
-              <li>Competent authorities when required by law</li>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s3_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">{t('privacy.s3_intro')}</p>
+            <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+              <li>{t('privacy.s3_identity')}</li>
+              <li>{t('privacy.s3_billing')}</li>
+              <li>{t('privacy.s3_account')}</li>
+              <li>{t('privacy.s3_usage')}</li>
+              <li>{t('privacy.s3_transaction')}</li>
+              <li>{t('privacy.s3_cookies')}</li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              We never sell your personal data.
-            </p>
+            <p className="mt-3 text-gray-700 dark:text-gray-300">{t('privacy.s3_sensitive')}</p>
           </section>
 
+          {/* 4 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              6. Data Retention
-            </h2>
-            <ul className="list-disc list-inside mt-4 space-y-2 text-gray-700 dark:text-gray-300">
-              <li>Active account & transaction data: duration of the contractual relationship + 5 years (legal prescription)</li>
-              <li>Invoicing & accounting data: 10 years (legal obligation)</li>
-              <li>Technical logs: up to 6 months</li>
-              <li>Deleted account: data permanently erased within 30 days (except legal retention obligations)</li>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s4_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">{t('privacy.s4_intro')}</p>
+            <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+              <li>{t('privacy.s4_contract')}</li>
+              <li>{t('privacy.s4_legitimate')}</li>
+              <li>{t('privacy.s4_legal')}</li>
+              <li>{t('privacy.s4_consent')}</li>
             </ul>
           </section>
 
+          {/* 5 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              7. Your Rights (GDPR)
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              You have the right to:
-            </p>
-            <ul className="list-disc list-inside mt-4 space-y-2 text-gray-700 dark:text-gray-300">
-              <li>Access your data</li>
-              <li>Rectify inaccurate data</li>
-              <li>Erase your data (“right to be forgotten”)</li>
-              <li>Restrict processing</li>
-              <li>Data portability</li>
-              <li>Object to processing (including marketing)</li>
-              <li>Withdraw consent at any time</li>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s5_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">{t('privacy.s5_intro')}</p>
+            <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+              <li>{t('privacy.s5_internal')}</li>
+              <li>{t('privacy.s5_payment')}</li>
+              <li>{t('privacy.s5_hosting')}</li>
+              <li>{t('privacy.s5_providers')}</li>
+              <li>{t('privacy.s5_authorities')}</li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              To exercise these rights, contact us at <a href="mailto:dpo@cyna-it.fr" className="text-indigo-600 dark:text-indigo-400 underline">dpo@cyna-it.fr</a>. We will respond within one month.
+            <p className="mt-3 font-medium text-gray-700 dark:text-gray-300">{t('privacy.s5_no_sell')}</p>
+          </section>
+
+          {/* 6 */}
+          <section>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s6_title')}</h2>
+            <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+              <li>{t('privacy.s6_active')}</li>
+              <li>{t('privacy.s6_invoicing')}</li>
+              <li>{t('privacy.s6_logs')}</li>
+              <li>{t('privacy.s6_deleted')}</li>
+            </ul>
+          </section>
+
+          {/* 7 */}
+          <section>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s7_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">{t('privacy.s7_intro')}</p>
+            <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+              <li>{t('privacy.s7_access')}</li>
+              <li>{t('privacy.s7_rectify')}</li>
+              <li>{t('privacy.s7_erase')}</li>
+              <li>{t('privacy.s7_restrict')}</li>
+              <li>{t('privacy.s7_portability')}</li>
+              <li>{t('privacy.s7_object')}</li>
+              <li>{t('privacy.s7_withdraw')}</li>
+            </ul>
+            <p className="mt-3 text-gray-700 dark:text-gray-300">
+              {t('privacy.s7_contact')}{' '}
+              <a href="mailto:dpo@cyna-it.fr" className="text-indigo-600 dark:text-indigo-400 underline">dpo@cyna-it.fr</a>
+              {t('privacy.s7_response')}
             </p>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              You can also lodge a complaint with the CNIL: <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline">www.cnil.fr</a>
+            <p className="mt-2 text-gray-700 dark:text-gray-300">
+              {t('privacy.s7_cnil')}{' '}
+              <a href="https://www.cnil.fr" target="_blank" rel="noreferrer" className="text-indigo-600 dark:text-indigo-400 underline">www.cnil.fr</a>
             </p>
           </section>
 
+          {/* 8 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              8. Data Security
-            </h2>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s8_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{t('privacy.s8_body')}</p>
+          </section>
+
+          {/* 9 */}
+          <section>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s9_title')}</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              We implement state-of-the-art security measures aligned with our cybersecurity expertise: TLS encryption in transit, encryption at rest, access controls, regular security audits, EDR/XDR monitoring, and incident response procedures.
-            </p>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              In case of a personal data breach, we will notify the competent supervisory authority and affected individuals within 72 hours when required.
+              {t('privacy.s9_body')}{' '}
+              {t('privacy.s9_see_more')}{' '}
+              <Link to="/cookie-policy" className="text-indigo-600 dark:text-indigo-400 underline">
+                {t('privacy.s9_cookie_link')}
+              </Link>{' '}
+              {t('privacy.s9_for_details')}
             </p>
           </section>
 
+          {/* 10 */}
           <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              9. Cookies and Trackers
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              We use strictly necessary cookies for authentication and site functionality. Analytics and marketing cookies are only placed with your explicit consent via our cookie banner. You can manage your preferences at any time.
-            </p>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-              See our <a href="/cookie-policy" className="text-indigo-600 dark:text-indigo-400 underline">Cookie Policy</a> for more details.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              10. Changes to this Policy
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              We may update this Privacy Policy. Material changes will be notified by email or prominent notice on the platform. Continued use after changes constitutes acceptance.
-            </p>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">{t('privacy.s10_title')}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{t('privacy.s10_body')}</p>
           </section>
 
           <div className="pt-12 border-t border-gray-200 dark:border-gray-700">
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Last updated: February 2026
+              {t('privacy.last_updated')}
             </p>
           </div>
         </div>
