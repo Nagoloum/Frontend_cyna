@@ -1,62 +1,56 @@
 // src/layouts/admin/AdminHeader.jsx
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, ChevronDown, User, LogOut, Settings, RefreshCw } from 'lucide-react';
 import ThemeToggle from '../../components/Kit/ThemeToggle';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { toggleAdminUserMenu, setAdminShowUserMenu, setAdminRefreshing } from '../../store/slices/uiSlice';
 
 // ── Global admin refresh bus ────────────────────────────────────────────────
-// All admin pages (Dashboard, ProductsPage tabs, OrdersPage, …) listen for
-// `admin-refresh` and call their own fetcher when the event fires. This lets
-// us keep a single Refresh control in the top header.
 export const ADMIN_REFRESH_EVENT = 'admin-refresh';
 export const triggerAdminRefresh = () =>
   window.dispatchEvent(new Event(ADMIN_REFRESH_EVENT));
 
-// ── Utilitaire : lire le user depuis le token JWT ─────────────────────────────
 const getUserFromToken = () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) return null;
     const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    // Adapte selon la structure de ton JWT (payload.name | payload.user?.name | payload.email)
     return {
-      name: payload?.name ?? payload?.user?.name ?? payload?.email ?? 'Admin',
+      name:  payload?.name ?? payload?.user?.name ?? payload?.email ?? 'Admin',
       email: payload?.email ?? payload?.user?.email ?? '',
-      role: payload?.role ?? payload?.user?.role ?? 'ADMIN',
+      role:  payload?.role ?? payload?.user?.role ?? 'ADMIN',
     };
   } catch {
     return { name: 'Admin', email: '', role: 'ADMIN' };
   }
 };
 
-// ── Composant ─────────────────────────────────────────────────────────────────
 export default function AdminHeader() {
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const userMenuRef = useRef(null);
-  const navigate = useNavigate();
+  const dispatch      = useAppDispatch();
+  const showUserMenu  = useAppSelector((s) => s.ui.adminShowUserMenu);
+  const refreshing    = useAppSelector((s) => s.ui.adminRefreshing);
+  const userMenuRef   = useRef(null);
+  const navigate      = useNavigate();
 
   const handleRefresh = () => {
     if (refreshing) return;
-    setRefreshing(true);
+    dispatch(setAdminRefreshing(true));
     triggerAdminRefresh();
-    // Visual feedback for ~900ms — pages are usually fast enough but the
-    // spinner shouldn't feel instantaneous (otherwise nothing visibly happens).
-    setTimeout(() => setRefreshing(false), 900);
+    setTimeout(() => dispatch(setAdminRefreshing(false)), 900);
   };
 
   const user = getUserFromToken();
 
-  // Close le menu si clic en dehors
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setShowUserMenu(false);
+        dispatch(setAdminShowUserMenu(false));
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [dispatch]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -64,21 +58,19 @@ export default function AdminHeader() {
     navigate('/auth');
   };
 
-
-  // Admin initials for avatar
   const initials = user?.name
     ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'AD';
 
   return (
     <header className="
-      h-16 flex-shrink-0 flex items-right justify-between 
+      h-16 flex-shrink-0 flex items-right justify-between
       px-6 gap-4
       bg-white dark:bg-gray-900
       border-b border-gray-200 dark:border-gray-700/60
     ">
       <div></div>
-      
+
       <div className="flex items-center gap-3">
 
         {/* Global refresh */}
@@ -114,19 +106,16 @@ export default function AdminHeader() {
           <span className="text-xs font-semibold text-green-600 dark:text-green-400">2FA</span>
         </div>
 
-        
-
         {/* Menu utilisateur */}
         <div className="relative" ref={userMenuRef}>
           <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
+            onClick={() => dispatch(toggleAdminUserMenu())}
             className="
               flex items-center gap-2.5 pl-1 pr-2.5 py-1
               rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800
               transition-all duration-200 group
             "
           >
-            {/* Avatar initials */}
             <div className="
               w-8 h-8 rounded-lg
               bg-gradient-to-br from-indigo-500 to-violet-600
@@ -136,7 +125,6 @@ export default function AdminHeader() {
               {initials}
             </div>
 
-            {/* Nom + rôle */}
             <div className="hidden md:flex flex-col items-start leading-none">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">
                 {user?.name}
@@ -162,23 +150,21 @@ export default function AdminHeader() {
               py-1.5 z-50
               animate-in fade-in slide-in-from-top-2 duration-150
             ">
-              {/* Info user */}
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
 
-              {/* Actions */}
               <div className="py-1">
                 <button
-                  onClick={() => { setShowUserMenu(false); navigate('/admin/profile'); }}
+                  onClick={() => { dispatch(setAdminShowUserMenu(false)); navigate('/admin/profile'); }}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <User size={15} className="text-gray-400" />
                   My Profile
                 </button>
                 <button
-                  onClick={() => { setShowUserMenu(false); navigate('/admin/settings'); }}
+                  onClick={() => { dispatch(setAdminShowUserMenu(false)); navigate('/admin/settings'); }}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <Settings size={15} className="text-gray-400" />
@@ -186,7 +172,6 @@ export default function AdminHeader() {
                 </button>
               </div>
 
-              {/* Logout */}
               <div className="border-t border-gray-100 dark:border-gray-700 py-1">
                 <button
                   onClick={handleLogout}
