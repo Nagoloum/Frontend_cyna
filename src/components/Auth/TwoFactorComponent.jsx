@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Mail, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authAPI } from '@/services/api';
 
-// ─── JWT helpers (no signature check — display-only) ────────────────────────
 const decodeJwt = (token) => {
     try {
         const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -17,45 +17,33 @@ const isExpired = (token) => {
 };
 
 export default function TwoFactorPageComponent() {
+    const { t } = useTranslation();
     const [otp, setOtp] = useState(new Array(6).fill(''));
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const inputRefs = useRef([]);
     const navigate = useNavigate();
 
-    // ── Access guards ────────────────────────────────────────────────────────
-    // Compute these synchronously so we can short-circuit with <Navigate /> on
-    // the very first render (no flash of the form for unauthorised users).
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const payload = token ? decodeJwt(token) : null;
     const role = payload?.role ?? payload?.user?.role ?? null;
     const tokenInvalid = !token || isExpired(token);
     const alreadyVerified = localStorage.getItem('twoFAVerified') === '1';
 
-    // Auto-focus first slot once the form is shown.
     useEffect(() => {
         if (!tokenInvalid && role === 'ADMIN' && !alreadyVerified) {
             inputRefs.current[0]?.focus();
         }
     }, [tokenInvalid, role, alreadyVerified]);
 
-    // 1. No token / expired token → back to /auth.
-    if (tokenInvalid) {
-        return <Navigate to="/auth" replace />;
-    }
-    // 2. Authenticated but not an admin → 2FA isn't for them.
-    if (role !== 'ADMIN') {
-        return <Navigate to="/home" replace />;
-    }
-    // 3. Already verified for this session → straight to the dashboard.
-    if (alreadyVerified) {
-        return <Navigate to="/admin/dashboard" replace />;
-    }
+    if (tokenInvalid) return <Navigate to="/auth" replace />;
+    if (role !== 'ADMIN') return <Navigate to="/home" replace />;
+    if (alreadyVerified) return <Navigate to="/admin/dashboard" replace />;
 
     const handleChange = (element, index) => {
         if (isNaN(element.value)) return false;
         const newOtp = [...otp];
-        newOtp[index] = element.value.slice(-1); // keep last typed char
+        newOtp[index] = element.value.slice(-1);
         setOtp(newOtp);
         if (element.value !== '' && index < 5) {
             inputRefs.current[index + 1]?.focus();
@@ -83,7 +71,7 @@ export default function TwoFactorPageComponent() {
         const finalCode = otp.join('');
 
         if (finalCode.length < 6) {
-            setError('Veuillez saisir les 6 chiffres.');
+            setError(t('twoFactor.enter_digits'));
             return;
         }
 
@@ -91,7 +79,6 @@ export default function TwoFactorPageComponent() {
         setError('');
 
         try {
-            // POST /auth/check-code  { code: "123456" }
             const res = await authAPI.verify2FA(finalCode);
             const result = res.data;
 
@@ -100,10 +87,10 @@ export default function TwoFactorPageComponent() {
                 localStorage.removeItem('twoFARequired');
                 navigate('/admin/dashboard', { replace: true });
             } else {
-                setError(result?.message || 'Code invalide. Réessayez.');
+                setError(result?.message || t('twoFactor.invalid_code'));
             }
         } catch (err) {
-            const msg = err.response?.data?.message ?? 'Erreur de connexion au serveur.';
+            const msg = err.response?.data?.message ?? t('twoFactor.invalid_code');
             setError(msg);
         } finally {
             setIsLoading(false);
@@ -111,7 +98,6 @@ export default function TwoFactorPageComponent() {
     };
 
     const handleCancel = () => {
-        // Cancel the in-flight admin login: clear everything and go back to /auth.
         authAPI.logout();
     };
 
@@ -123,17 +109,15 @@ export default function TwoFactorPageComponent() {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4 transition-colors duration-700">
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 sm:p-10 max-w-md w-full flex flex-col items-center">
-
-                {/* Icon */}
                 <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center mb-5">
                     <ShieldCheck size={26} className="text-indigo-500" />
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 text-center">
-                    Vérification administrateur
+                    {t('twoFactor.title')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-2">
-                    Saisissez le code à 6 chiffres reçu par email.
+                    {t('twoFactor.subtitle')}
                 </p>
                 {maskedEmail && (
                     <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mb-7">
@@ -178,7 +162,7 @@ export default function TwoFactorPageComponent() {
                             }`}
                     >
                         {isLoading && <Loader2 size={16} className="animate-spin" />}
-                        {isLoading ? 'Vérification…' : 'Vérifier le code'}
+                        {isLoading ? t('twoFactor.verifying') : t('twoFactor.verify_btn')}
                     </button>
                 </form>
 
@@ -187,11 +171,11 @@ export default function TwoFactorPageComponent() {
                     onClick={handleCancel}
                     className="mt-6 inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
-                    <ArrowLeft size={12} /> Annuler et revenir à la connexion
+                    <ArrowLeft size={12} /> {t('twoFactor.cancel')}
                 </button>
 
                 <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-500 text-center">
-                    Le code expire après 5 minutes. Vérifiez vos spams si besoin.
+                    {t('twoFactor.expiry_note')}
                 </p>
             </div>
         </div>

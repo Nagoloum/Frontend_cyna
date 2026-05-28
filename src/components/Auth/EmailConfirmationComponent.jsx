@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authAPI } from '@/services/api';
 
 export default function EmailConfirmationComponent() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -14,28 +16,27 @@ export default function EmailConfirmationComponent() {
     const run = async () => {
       if (!token) {
         setSuccess(false);
-        setMessage('Token de confirmation manquant.');
+        setMessage(t('emailConfirmation.missing_token'));
         setLoading(false);
         return;
       }
 
       try {
-        // GET /auth/email-confirmation?token=...
         const res = await authAPI.emailConfirmation(token);
         const data = res.data;
 
         if (!data?.success) {
           setSuccess(false);
-          setMessage(data?.message || 'Confirmation impossible.');
+          setMessage(data?.message || t('emailConfirmation.confirmation_failed'));
           setLoading(false);
           return;
         }
 
         setSuccess(true);
-        setMessage(data?.message || 'Email confirmé, vous pouvez vous connecter.');
+        setMessage(data?.message || t('emailConfirmation.confirmed'));
       } catch (err) {
         setSuccess(false);
-        const msg = err.response?.data?.message ?? 'Erreur réseau lors de la confirmation.';
+        const msg = err.response?.data?.message ?? t('emailConfirmation.network_error');
         setMessage(msg);
       } finally {
         setLoading(false);
@@ -43,6 +44,7 @@ export default function EmailConfirmationComponent() {
     };
 
     run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   return (
@@ -51,7 +53,7 @@ export default function EmailConfirmationComponent() {
         <div className="md:w-1/2 w-full">
           <img
             src="./images/img.jpg"
-            alt="Email confirmation"
+            alt={t('emailConfirmation.title')}
             className="w-full h-full object-cover md:rounded-l-3xl md:rounded-tr-none rounded-t-3xl"
           />
         </div>
@@ -59,11 +61,11 @@ export default function EmailConfirmationComponent() {
         <div className="md:w-1/2 w-full flex items-center justify-center p-10 md:p-12">
           <div className="w-full max-w-md flex flex-col">
             <h2 className="text-4xl font-semibold text-gray-900 dark:text-white text-center">
-              Confirmation email
+              {t('emailConfirmation.title')}
             </h2>
 
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-6">
-              {loading ? 'Vérification en cours…' : message}
+              {loading ? t('emailConfirmation.loading') : message}
             </p>
 
             {!loading && (
@@ -75,14 +77,14 @@ export default function EmailConfirmationComponent() {
                       : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
                   }`}
                 >
-                  {success ? 'Succès' : 'Erreur'}
+                  {success ? t('emailConfirmation.success_badge') : t('emailConfirmation.error_badge')}
                 </div>
 
                 <Link
                   to="/auth"
-                  className="mt-6 flex justify-center items-center w-full h-12 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-all duration-500 font-medium shadow-lg hover:shadow-xl "
+                  className="mt-6 flex justify-center items-center w-full h-12 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-all duration-500 font-medium shadow-lg hover:shadow-xl"
                 >
-                  Aller à la connexion
+                  {t('emailConfirmation.go_to_login')}
                 </Link>
               </div>
             )}

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 const getUser = () => {
@@ -17,22 +18,7 @@ const getUser = () => {
   } catch { return null; }
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-const TABS = [
-  { id: "profile",       label: "My Profile",      icon: User       },
-  { id: "password",      label: "Password",        icon: Lock       },
-  { id: "addresses",     label: "Addresses",       icon: MapPin     },
-  { id: "cards",         label: "Payment",         icon: CreditCard },
-  { id: "subscriptions", label: "Subscriptions",   icon: Sparkles   },
-  { id: "history",       label: "Billing history", icon: Receipt    },
-  { id: "orders",        label: "My Orders",       icon: Package    },
-];
-
 // ─── Mock data (UI only — backend integration pending) ───────────────────────
-// These shapes mirror what we'll consume from the API once it lands. The keys
-// (`reference`, `product`, `licenseCode`, `dateDebut`, `dateFin`, `periode`,
-// `statut`, `price`) intentionally match the backend Abonnement/Commande
-// entities so the wiring will be a one-line swap.
 const MOCK_SUBSCRIPTIONS = [
   {
     _id: "sub_demo_1",
@@ -105,11 +91,11 @@ const MOCK_HISTORY = [
   },
 ];
 
-// ─── Utils used by the new tabs ──────────────────────────────────────────────
+// ─── Utils ───────────────────────────────────────────────────────────────────
 const fmtDateLong = (iso) => {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("en-US", {
+    return new Date(iso).toLocaleDateString(undefined, {
       day: "2-digit", month: "short", year: "numeric",
     });
   } catch { return "—"; }
@@ -117,8 +103,6 @@ const fmtDateLong = (iso) => {
 
 const fmtEur = (n) =>
   Number(n ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
-
-const periodeLabel = (p) => (String(p).toUpperCase() === "ANNEE" ? "Yearly" : "Monthly");
 
 const daysBetween = (from, to) => {
   if (!from || !to) return null;
@@ -159,6 +143,7 @@ const Notify = ({ msg }) => {
 
 // ── Address form modal ────────────────────────────────────────────────────────
 function AddressModal({ address, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = !!address;
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
@@ -180,7 +165,7 @@ function AddressModal({ address, onClose, onSaved }) {
     e.preventDefault();
     const required = ["firstName","lastName","adresse","city","region","country","codePostal","phone"];
     const missing = required.find(k => !form[k].trim());
-    if (missing) { setError(`Field "${missing}" is required.`); return; }
+    if (missing) { setError(t("account.field_required", { field: missing })); return; }
     setSaving(true);
     try {
       isEdit
@@ -188,7 +173,7 @@ function AddressModal({ address, onClose, onSaved }) {
         : await adressesAPI.create(form);
       onSaved();
     } catch (err) {
-      setError(err.response?.data?.message ?? "Error saving address.");
+      setError(err.response?.data?.message ?? t("account.address_error"));
     } finally { setSaving(false); }
   };
 
@@ -197,34 +182,34 @@ function AddressModal({ address, onClose, onSaved }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h3 className="font-semibold text-[var(--text-primary)]">{isEdit ? "Edit address" : "New address"}</h3>
+          <h3 className="font-semibold text-[var(--text-primary)]">{isEdit ? t("account.edit_address") : t("account.new_address")}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="First name *" value={form.firstName} onChange={set("firstName")} />
-            <Field label="Last name *"  value={form.lastName}  onChange={set("lastName")}  />
+            <Field label={t("account.field_fn")} value={form.firstName} onChange={set("firstName")} />
+            <Field label={t("account.field_ln")} value={form.lastName}  onChange={set("lastName")}  />
           </div>
-          <Field label="Address *"      value={form.adresse}    onChange={set("adresse")}   />
-          <Field label="Complement"     value={form.complementAdresse} onChange={set("complementAdresse")} />
+          <Field label={t("account.field_addr")}       value={form.adresse}    onChange={set("adresse")}   />
+          <Field label={t("account.field_complement")} value={form.complementAdresse} onChange={set("complementAdresse")} />
           <div className="grid grid-cols-2 gap-3">
-            <Field label="City *"       value={form.city}       onChange={set("city")}      />
-            <Field label="Region *"     value={form.region}     onChange={set("region")}    />
+            <Field label={t("account.field_city")}   value={form.city}   onChange={set("city")}   />
+            <Field label={t("account.field_region")} value={form.region} onChange={set("region")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Postal code *" value={form.codePostal} onChange={set("codePostal")} />
-            <Field label="Country *"    value={form.country}    onChange={set("country")}   />
+            <Field label={t("account.field_postal")}  value={form.codePostal} onChange={set("codePostal")} />
+            <Field label={t("account.field_country")} value={form.country}    onChange={set("country")}   />
           </div>
-          <Field label="Phone *"        value={form.phone}      onChange={set("phone")}     />
+          <Field label={t("account.field_phone")} value={form.phone} onChange={set("phone")} />
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
             <button type="button" onClick={onClose} disabled={saving}
               className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
-              Cancel
+              {t("account.cancel")}
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
-              {saving ? "Saving…" : isEdit ? "Save changes" : "Add address"}
+              {saving ? t("account.saving") : t("account.save_address")}
             </button>
           </div>
         </form>
@@ -235,6 +220,7 @@ function AddressModal({ address, onClose, onSaved }) {
 
 // ── Card form modal ───────────────────────────────────────────────────────────
 function CardModal({ card, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = !!card;
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
@@ -250,10 +236,10 @@ function CardModal({ card, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.carteName.trim()) { setError("Card holder name is required."); return; }
-    if (!form.carteNumber.trim()) { setError("Card number is required."); return; }
-    if (!form.carteDate.trim())   { setError("Expiry date is required."); return; }
-    if (!form.carteCVV.trim())    { setError("CVV is required."); return; }
+    if (!form.carteName.trim())   { setError(t("checkout.error_cardholder")); return; }
+    if (!form.carteNumber.trim()) { setError(t("checkout.error_card_number")); return; }
+    if (!form.carteDate.trim())   { setError(t("checkout.error_expiry")); return; }
+    if (!form.carteCVV.trim())    { setError(t("checkout.error_cvv")); return; }
     setSaving(true);
     try {
       isEdit
@@ -261,7 +247,7 @@ function CardModal({ card, onClose, onSaved }) {
         : await cartesAPI.create(form);
       onSaved();
     } catch (err) {
-      setError(err.response?.data?.message ?? "Error saving card.");
+      setError(err.response?.data?.message ?? t("account.address_error"));
     } finally { setSaving(false); }
   };
 
@@ -270,15 +256,15 @@ function CardModal({ card, onClose, onSaved }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h3 className="font-semibold text-[var(--text-primary)]">{isEdit ? "Edit card" : "New payment card"}</h3>
+          <h3 className="font-semibold text-[var(--text-primary)]">{isEdit ? t("account.edit_card") : t("account.new_card")}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
-          <Field label="Cardholder name *" value={form.carteName} onChange={set("carteName")} placeholder="John Doe" />
+          <Field label={t("account.field_cardholder")} value={form.carteName} onChange={set("carteName")} placeholder="John Doe" />
           <div className="relative">
             <Field
-              label="Card number *"
+              label={t("account.field_card_number")}
               type={show ? "text" : "password"}
               value={form.carteNumber}
               onChange={set("carteNumber")}
@@ -290,18 +276,18 @@ function CardModal({ card, onClose, onSaved }) {
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Expiry date (MM/YY) *" value={form.carteDate} onChange={set("carteDate")} placeholder="12/27" />
-            <Field label="CVV *" type="password" value={form.carteCVV} onChange={set("carteCVV")} placeholder="•••" />
+            <Field label={t("account.field_expiry")} value={form.carteDate} onChange={set("carteDate")} placeholder="12/27" />
+            <Field label={t("account.field_cvv")} type="password" value={form.carteCVV} onChange={set("carteCVV")} placeholder="•••" />
           </div>
-          <p className="text-xs text-[var(--text-muted)]">🔒 Your payment details are encrypted and stored securely.</p>
+          <p className="text-xs text-[var(--text-muted)]">🔒 {t("account.card_security")}</p>
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
             <button type="button" onClick={onClose} disabled={saving}
               className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
-              Cancel
+              {t("account.cancel")}
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
-              {saving ? "Saving…" : isEdit ? "Save changes" : "Add card"}
+              {saving ? t("account.saving") : t("account.save_address")}
             </button>
           </div>
         </form>
@@ -312,9 +298,10 @@ function CardModal({ card, onClose, onSaved }) {
 
 // ── Addresses tab ─────────────────────────────────────────────────────────────
 function AddressesTab() {
+  const { t } = useTranslation();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [modal, setModal]         = useState(null); // null | { type: 'create'|'edit'|'delete', data? }
+  const [modal, setModal]         = useState(null);
   const [msg, setMsg]             = useState(null);
 
   const load = () => {
@@ -330,10 +317,10 @@ function AddressesTab() {
   const handleDelete = async (id) => {
     try {
       await adressesAPI.delete(id);
-      setMsg({ type: "success", text: "Address deleted." });
+      setMsg({ type: "success", text: t("account.cancel") });
       load();
     } catch {
-      setMsg({ type: "error", text: "Error deleting address." });
+      setMsg({ type: "error", text: t("account.address_error") });
     }
     setTimeout(() => setMsg(null), 3000);
   };
@@ -342,9 +329,9 @@ function AddressesTab() {
     <div>
       <Notify msg={msg} />
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Your billing addresses</p>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("account.addresses_title")}</p>
         <button onClick={() => setModal({ type: "create" })} className="btn-primary gap-2 h-9 px-4 text-sm">
-          <Plus size={14} /> Add address
+          <Plus size={14} /> {t("account.add_address")}
         </button>
       </div>
 
@@ -353,7 +340,7 @@ function AddressesTab() {
       ) : addresses.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
           <MapPin size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No addresses saved yet</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_addresses")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -389,21 +376,21 @@ function AddressesTab() {
 
 // ── Reusable info banner (backend integration pending) ───────────────────────
 function MockBanner() {
+  const { t } = useTranslation();
   return (
     <div
       className="flex items-start gap-2.5 p-3 rounded-xl text-xs mb-4"
       style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
     >
       <AlertCircle size={13} className="flex-shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
-      <span>
-        Preview interface — real data will appear here once your purchases are processed.
-      </span>
+      <span>{t("account.preview_note")}</span>
     </div>
   );
 }
 
 // ── Subscription detail modal ────────────────────────────────────────────────
 function SubscriptionDetailModal({ subscription, onClose }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const remaining = daysBetween(new Date(), subscription.dateFin);
@@ -419,17 +406,21 @@ function SubscriptionDetailModal({ subscription, onClose }) {
     } catch { /* clipboard unavailable */ }
   };
 
+  const periodeLabel = (p) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
+  const daysLabel = (n) => n != null && n > 0
+    ? `${n} ${n > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
+    : t("account.status_expired");
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
-        {/* Header */}
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-[var(--border)]">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
                 style={{ background: "var(--bg-subtle)", color: "var(--accent)" }}>
-                <Sparkles size={10} /> Active
+                <Sparkles size={10} /> {t("account.status_active")}
               </span>
               <span className="text-[10px] font-mono text-[var(--text-muted)]">{subscription.reference}</span>
             </div>
@@ -444,7 +435,7 @@ function SubscriptionDetailModal({ subscription, onClose }) {
           {/* License code */}
           <div>
             <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>
-              <KeyRound size={11} className="inline mr-1" /> License code
+              <KeyRound size={11} className="inline mr-1" /> {t("account.license_label")}
             </label>
             <div className="flex items-stretch gap-2">
               <code
@@ -465,16 +456,16 @@ function SubscriptionDetailModal({ subscription, onClose }) {
               </button>
             </div>
             <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>
-              Use this key to activate the product on your devices.
+              {t("account.license_hint")}
             </p>
           </div>
 
           {/* Progress bar */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>Period progress</span>
+              <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>{t("account.period_progress")}</span>
               <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
-                {remaining != null && remaining > 0 ? `${remaining} day${remaining > 1 ? "s" : ""} remaining` : "Expired"}
+                {daysLabel(remaining)}
               </span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-muted)" }}>
@@ -487,10 +478,10 @@ function SubscriptionDetailModal({ subscription, onClose }) {
 
           {/* Grid: details */}
           <div className="grid grid-cols-2 gap-3">
-            <DetailCell icon={Calendar} label="Start date" value={fmtDateLong(subscription.dateDebut)} />
-            <DetailCell icon={Clock}    label="Expires on" value={fmtDateLong(subscription.dateFin)} />
-            <DetailCell icon={Receipt}  label="Plan"       value={periodeLabel(subscription.periode)} />
-            <DetailCell icon={Package}  label="Quantity"   value={`× ${subscription.quantity ?? 1}`} />
+            <DetailCell icon={Calendar} label={t("account.start_date")} value={fmtDateLong(subscription.dateDebut)} />
+            <DetailCell icon={Clock}    label={t("account.expires_on")} value={fmtDateLong(subscription.dateFin)} />
+            <DetailCell icon={Receipt}  label={t("account.plan_label")} value={periodeLabel(subscription.periode)} />
+            <DetailCell icon={Package}  label={t("account.quantity_label")} value={`× ${subscription.quantity ?? 1}`} />
           </div>
 
           {/* Pricing */}
@@ -500,12 +491,12 @@ function SubscriptionDetailModal({ subscription, onClose }) {
           >
             <div>
               <p className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>
-                {subscription.autoRenew ? "Next renewal" : "Subscription cost"}
+                {subscription.autoRenew ? t("account.next_renewal") : t("account.subscription_cost")}
               </p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {subscription.autoRenew
-                  ? `Auto-renews on ${fmtDateLong(subscription.dateFin)}`
-                  : "Auto-renewal disabled"}
+                  ? `${t("account.auto_renews")} ${fmtDateLong(subscription.dateFin)}`
+                  : t("account.no_auto_renewal")}
               </p>
             </div>
             <span className="font-[Kumbh Sans] font-700 text-lg" style={{ color: "var(--accent)" }}>
@@ -529,16 +520,19 @@ function DetailCell({ icon: Icon, label, value }) {
   );
 }
 
-// ── Subscriptions tab (active) ───────────────────────────────────────────────
+// ── Subscriptions tab ─────────────────────────────────────────────────────────
 function SubscriptionsTab() {
+  const { t } = useTranslation();
   const [subs] = useState(MOCK_SUBSCRIPTIONS);
   const [selected, setSelected] = useState(null);
 
+  const periodeLabel = (p) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
+
   const statusPill = (statut) => {
     const map = {
-      ACTIVE:  { label: "Active",  cls: "bg-green-50 text-green-600 border-green-200" },
-      PENDING: { label: "Pending", cls: "bg-amber-50 text-amber-600 border-amber-200" },
-      EXPIRED: { label: "Expired", cls: "bg-red-50 text-red-600 border-red-200" },
+      ACTIVE:  { label: t("account.status_active"),  cls: "bg-green-50 text-green-600 border-green-200" },
+      PENDING: { label: t("account.status_pending"), cls: "bg-amber-50 text-amber-600 border-amber-200" },
+      EXPIRED: { label: t("account.status_expired"), cls: "bg-red-50 text-red-600 border-red-200" },
     };
     const m = map[statut] ?? map.ACTIVE;
     return (
@@ -551,10 +545,10 @@ function SubscriptionsTab() {
   if (subs.length === 0) {
     return (
       <div className="cyna-card p-6">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-4">Active subscriptions</h2>
+        <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.subscriptions_title")}</h2>
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
           <Sparkles size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>You don't have any active subscriptions yet.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_subscriptions")}</p>
         </div>
       </div>
     );
@@ -565,13 +559,16 @@ function SubscriptionsTab() {
       <MockBanner />
       <div className="cyna-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[var(--text-primary)]">Active subscriptions</h2>
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{subs.length} active</span>
+          <h2 className="font-semibold text-[var(--text-primary)]">{t("account.subscriptions_title")}</h2>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("account.subscriptions_count", { count: subs.length })}</span>
         </div>
 
         <div className="space-y-3">
           {subs.map((s) => {
             const remaining = daysBetween(new Date(), s.dateFin);
+            const daysLeft = remaining != null && remaining > 0
+              ? `${remaining} ${remaining > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
+              : t("account.status_expired");
             return (
               <button
                 key={s._id}
@@ -602,11 +599,10 @@ function SubscriptionsTab() {
                     </p>
                     <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
                       <span className="inline-flex items-center gap-1">
-                        <Clock size={11} />
-                        {remaining != null && remaining > 0 ? `${remaining} day${remaining > 1 ? "s" : ""} left` : "Expired"}
+                        <Clock size={11} /> {daysLeft}
                       </span>
                       <span style={{ color: "var(--text-muted)" }}>·</span>
-                      <span>Until {fmtDateLong(s.dateFin)}</span>
+                      <span>{fmtDateLong(s.dateFin)}</span>
                     </div>
                   </div>
 
@@ -615,7 +611,7 @@ function SubscriptionsTab() {
                       {fmtEur(s.price)}
                     </span>
                     <span className="text-[11px] flex items-center gap-1 transition-colors group-hover:text-[var(--accent)]" style={{ color: "var(--text-muted)" }}>
-                      View details <ChevronRight size={11} />
+                      {t("account.view_details")} <ChevronRight size={11} />
                     </span>
                   </div>
                 </div>
@@ -634,6 +630,8 @@ function SubscriptionsTab() {
 
 // ── Billing history detail modal ─────────────────────────────────────────────
 function PaymentDetailModal({ payment, onClose }) {
+  const { t } = useTranslation();
+  const periodeLabel = (p) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -649,13 +647,13 @@ function PaymentDetailModal({ payment, onClose }) {
         </div>
 
         <div className="p-6 space-y-3">
-          <DetailCell icon={Calendar}   label="Date"           value={fmtDateLong(payment.date)} />
-          <DetailCell icon={CreditCard} label="Payment method" value={payment.method ?? "—"} />
-          <DetailCell icon={Receipt}    label="Plan"           value={periodeLabel(payment.periode)} />
+          <DetailCell icon={Calendar}   label={t("account.billing_date")}   value={fmtDateLong(payment.date)} />
+          <DetailCell icon={CreditCard} label={t("account.billing_method")} value={payment.method ?? "—"} />
+          <DetailCell icon={Receipt}    label={t("account.billing_plan")}   value={periodeLabel(payment.periode)} />
 
           <div className="flex items-center justify-between p-4 rounded-xl"
             style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
-            <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>Amount charged</span>
+            <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>{t("account.billing_amount")}</span>
             <span className="font-[Kumbh Sans] font-700 text-lg" style={{ color: "var(--accent)" }}>{fmtEur(payment.amount)}</span>
           </div>
         </div>
@@ -666,6 +664,7 @@ function PaymentDetailModal({ payment, onClose }) {
 
 // ── Billing history tab ──────────────────────────────────────────────────────
 function HistoryTab() {
+  const { t } = useTranslation();
   const [history] = useState(MOCK_HISTORY);
   const [selected, setSelected] = useState(null);
 
@@ -687,10 +686,10 @@ function HistoryTab() {
   if (history.length === 0) {
     return (
       <div className="cyna-card p-6">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-4">Billing history</h2>
+        <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.billing_title")}</h2>
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
           <Receipt size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No payment recorded yet.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_billing")}</p>
         </div>
       </div>
     );
@@ -705,9 +704,9 @@ function HistoryTab() {
       <MockBanner />
       <div className="cyna-card p-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="font-semibold text-[var(--text-primary)]">Billing history</h2>
+          <h2 className="font-semibold text-[var(--text-primary)]">{t("account.billing_title")}</h2>
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Total paid · <strong style={{ color: "var(--accent)" }}>{fmtEur(totalPaid)}</strong>
+            {t("account.total_paid")} · <strong style={{ color: "var(--accent)" }}>{fmtEur(totalPaid)}</strong>
           </span>
         </div>
 
@@ -761,6 +760,7 @@ function HistoryTab() {
 
 // ── Orders tab ────────────────────────────────────────────────────────────────
 function OrdersTab() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -777,9 +777,9 @@ function OrdersTab() {
 
   const statusBadge = (statut) => {
     const map = {
-      PAID:   { label: "Paid",     cls: "bg-green-50 text-green-600 border-green-200" },
-      PENDING:{ label: "Pending",  cls: "bg-amber-50 text-amber-600 border-amber-200" },
-      CANCEL: { label: "Cancelled",cls: "bg-red-50 text-red-600 border-red-200"       },
+      PAID:   { label: "Paid",      cls: "bg-green-50 text-green-600 border-green-200" },
+      PENDING:{ label: "Pending",   cls: "bg-amber-50 text-amber-600 border-amber-200" },
+      CANCEL: { label: "Cancelled", cls: "bg-red-50 text-red-600 border-red-200"       },
     };
     const m = map[statut] ?? { label: statut, cls: "bg-gray-50 text-gray-600 border-gray-200" };
     return (
@@ -796,15 +796,15 @@ function OrdersTab() {
   if (orders.length === 0) {
     return (
       <div className="cyna-card p-6">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-4">Order history</h2>
+        <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.orders_title")}</h2>
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
           <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>No orders yet</p>
+          <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>{t("account.no_orders")}</p>
           <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-            Your orders will appear here once you have made a purchase.
+            {t("account.no_orders_hint")}
           </p>
           <Link to="/categories" className="btn-primary gap-2 inline-flex items-center">
-            <Star size={14} /> Explore our solutions
+            <Star size={14} /> {t("account.explore_solutions")}
           </Link>
         </div>
       </div>
@@ -813,18 +813,18 @@ function OrdersTab() {
 
   return (
     <div className="cyna-card p-6">
-      <h2 className="font-semibold text-[var(--text-primary)] mb-4">Order history</h2>
+      <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.orders_title")}</h2>
       <div className="space-y-3">
         {orders.map(order => (
           <div key={order._id ?? order.reference} className="rounded-2xl border border-[var(--border)] p-4">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="min-w-0">
                 <p className="font-medium text-sm text-[var(--text-primary)]">
-                  Order #{order.reference}
+                  {t("account.order_prefix")}{order.reference}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">
                   {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
-                  {order.nbreProducts ? ` · ${order.nbreProducts} item${order.nbreProducts > 1 ? "s" : ""}` : ""}
+                  {order.nbreProducts ? ` · ${order.nbreProducts} ${order.nbreProducts > 1 ? t("account.items") : t("account.item")}` : ""}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -843,7 +843,9 @@ function OrdersTab() {
                     <div key={idx} className="flex justify-between text-xs">
                       <span className="text-[var(--text-secondary)]">
                         {pname} ×{ab.quantity ?? 1}
-                        <span className="text-[var(--text-muted)] ml-1">({ab.periode === "ANNEE" ? "yearly" : "monthly"})</span>
+                        <span className="text-[var(--text-muted)] ml-1">
+                          ({ab.periode === "ANNEE" ? t("account.yearly") : t("account.monthly")})
+                        </span>
                       </span>
                       <span className="text-[var(--text-primary)] font-medium">
                         {Number(ab.price ?? 0).toFixed(2)} €
@@ -862,6 +864,7 @@ function OrdersTab() {
 
 // ── Payment cards tab ─────────────────────────────────────────────────────────
 function CardsTab() {
+  const { t } = useTranslation();
   const [cards, setCards]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal]     = useState(null);
@@ -880,10 +883,10 @@ function CardsTab() {
   const handleDelete = async (id) => {
     try {
       await cartesAPI.delete(id);
-      setMsg({ type: "success", text: "Card removed." });
+      setMsg({ type: "success", text: t("account.card_removed") });
       load();
     } catch {
-      setMsg({ type: "error", text: "Error removing card." });
+      setMsg({ type: "error", text: t("account.card_remove_error") });
     }
     setTimeout(() => setMsg(null), 3000);
   };
@@ -894,9 +897,9 @@ function CardsTab() {
     <div>
       <Notify msg={msg} />
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Your saved payment methods</p>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("account.payment_title")}</p>
         <button onClick={() => setModal({ type: "create" })} className="btn-primary gap-2 h-9 px-4 text-sm">
-          <Plus size={14} /> Add card
+          <Plus size={14} /> {t("account.add_card")}
         </button>
       </div>
 
@@ -905,7 +908,7 @@ function CardsTab() {
       ) : cards.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
           <CreditCard size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No payment methods saved yet</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_cards")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -916,7 +919,7 @@ function CardsTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-[var(--text-primary)]">{mask(c.carteNumber)}</p>
-                <p className="text-xs text-[var(--text-muted)]">{c.carteName} — Expires {c.carteDate}</p>
+                <p className="text-xs text-[var(--text-muted)]">{c.carteName} — {t("account.card_expires")} {c.carteDate}</p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <button onClick={() => setModal({ type: "edit", data: c })}
@@ -941,6 +944,7 @@ function CardsTab() {
 
 // ── Main AccountPage ──────────────────────────────────────────────────────────
 export default function AccountPage() {
+  const { t } = useTranslation();
   const navigate   = useNavigate();
   const tokenUser  = getUser();
   const [tab, setTab]       = useState("profile");
@@ -949,6 +953,16 @@ export default function AccountPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [msg, setMsg]       = useState(null);
   const [saving, setSaving] = useState(false);
+
+  const TABS = [
+    { id: "profile",       label: t("account.tab_profile"),       icon: User       },
+    { id: "password",      label: t("account.tab_password"),      icon: Lock       },
+    { id: "addresses",     label: t("account.tab_addresses"),     icon: MapPin     },
+    { id: "cards",         label: t("account.tab_payment"),       icon: CreditCard },
+    { id: "subscriptions", label: t("account.tab_subscriptions"), icon: Sparkles   },
+    { id: "history",       label: t("account.tab_billing"),       icon: Receipt    },
+    { id: "orders",        label: t("account.tab_orders"),        icon: Package    },
+  ];
 
   useEffect(() => {
     if (!tokenUser) { navigate("/auth"); return; }
@@ -974,25 +988,24 @@ export default function AccountPage() {
         firstName: profile.firstName,
         lastName:  profile.lastName,
       });
-      notify("success", "Profile updated successfully!");
+      notify("success", t("account.profile_success"));
     } catch {
-      notify("error", "Error updating profile.");
+      notify("error", t("account.profile_error"));
     }
     setSaving(false);
   };
 
   const handleChangePassword = async () => {
-    if (pwd.new !== pwd.confirm) { notify("error", "Passwords do not match."); return; }
-    if (pwd.new.length < 8)      { notify("error", "Password must be at least 8 characters."); return; }
+    if (pwd.new !== pwd.confirm) { notify("error", t("account.password_mismatch")); return; }
+    if (pwd.new.length < 8)      { notify("error", t("account.password_too_short")); return; }
     if (!tokenUser?.id) return;
     setSaving(true);
     try {
-      // PATCH /users/profil/:id  { password: newPwd }
       await usersAPI.updateProfile(tokenUser.id, { password: pwd.new });
-      notify("success", "Password changed successfully!");
+      notify("success", t("account.password_success"));
       setPwd({ new: "", confirm: "" });
     } catch {
-      notify("error", "Error updating password.");
+      notify("error", t("account.password_error"));
     }
     setSaving(false);
   };
@@ -1002,10 +1015,10 @@ export default function AccountPage() {
       {/* Header */}
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
         <div className="cyna-container py-10 sm:py-14">
-          <p className="section-label">Account Settings</p>
-          <h1 className="section-title mb-2">Account</h1>
+          <p className="section-label">{t("account.title")}</p>
+          <h1 className="section-title mb-2">{t("account.title")}</h1>
           <p className="text-sm mb-6" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-            Manage your personal information, password and view your order history.
+            {t("account.subtitle")}
           </p>
         </div>
       </div>
@@ -1035,7 +1048,7 @@ export default function AccountPage() {
                 onClick={() => authAPI.logout()}
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
               >
-                <LogOut size={15} /> Sign out
+                <LogOut size={15} /> {t("account.sign_out")}
               </button>
             </nav>
           </aside>
@@ -1047,19 +1060,19 @@ export default function AccountPage() {
             {/* ── Profile ── */}
             {tab === "profile" && (
               <div className="cyna-card p-6 space-y-4">
-                <h2 className="font-semibold text-[var(--text-primary)] mb-4">Personal information</h2>
+                <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.personal_info")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="First name" value={profile.firstName} onChange={v => setProfile(p => ({ ...p, firstName: v }))} />
-                  <Field label="Last name"  value={profile.lastName}  onChange={v => setProfile(p => ({ ...p, lastName:  v }))} />
+                  <Field label={t("account.field_first_name")} value={profile.firstName} onChange={v => setProfile(p => ({ ...p, firstName: v }))} />
+                  <Field label={t("account.field_last_name")}  value={profile.lastName}  onChange={v => setProfile(p => ({ ...p, lastName:  v }))} />
                 </div>
-                <Field label="Email (read-only)" value={profile.email} onChange={() => {}} disabled />
+                <Field label={t("account.field_email")} value={profile.email} onChange={() => {}} disabled />
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  To change your email, please contact support.
+                  {t("account.email_hint")}
                 </p>
                 <div className="flex justify-end">
                   <button onClick={handleSaveProfile} disabled={saving} className="btn-primary gap-2">
                     <Save size={14} />
-                    {saving ? "Saving…" : "Save changes"}
+                    {saving ? t("account.saving") : t("account.save")}
                   </button>
                 </div>
               </div>
@@ -1068,32 +1081,32 @@ export default function AccountPage() {
             {/* ── Password ── */}
             {tab === "password" && (
               <div className="cyna-card p-6 space-y-4">
-                <h2 className="font-semibold text-[var(--text-primary)] mb-4">Change password</h2>
+                <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.change_password")}</h2>
                 <Field
-                  label="New password"
+                  label={t("account.new_password")}
                   type={showPwd ? "text" : "password"}
                   value={pwd.new}
                   onChange={v => setPwd(p => ({ ...p, new: v }))}
-                  placeholder="At least 8 characters"
+                  placeholder={t("account.password_hint")}
                 />
                 <Field
-                  label="Confirm new password"
+                  label={t("account.confirm_password")}
                   type={showPwd ? "text" : "password"}
                   value={pwd.confirm}
                   onChange={v => setPwd(p => ({ ...p, confirm: v }))}
-                  placeholder="Repeat new password"
+                  placeholder={t("account.repeat_password")}
                 />
                 <button onClick={() => setShowPwd(v => !v)} className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                   {showPwd ? <EyeOff size={12} /> : <Eye size={12} />}
-                  {showPwd ? "Hide" : "Show"} passwords
+                  {showPwd ? t("account.hide_passwords") : t("account.show_passwords")}
                 </button>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  The password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character.
+                  {t("account.password_requirement")}
                 </p>
                 <div className="flex justify-end">
                   <button onClick={handleChangePassword} disabled={saving || !pwd.new || !pwd.confirm} className="btn-primary gap-2">
                     <Lock size={14} />
-                    {saving ? "Saving…" : "Change password"}
+                    {saving ? t("account.saving") : t("account.change_password_btn")}
                   </button>
                 </div>
               </div>

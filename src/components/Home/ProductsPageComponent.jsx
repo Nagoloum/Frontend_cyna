@@ -4,6 +4,9 @@ import { CheckCircle2, Package, Search, ShoppingBag, SlidersHorizontal, Star, X,
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Select from "@/components/ui/Select";
+import { useTranslation } from "react-i18next";
+import { useAppDispatch } from "@/store/hooks";
+import { addToCart } from "@/store/slices/cartSlice";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -20,6 +23,7 @@ const SkeletonCard = () => (
 );
 
 const ProductCard = ({ product, onAddToCart }) => {
+  const { t } = useTranslation();
   const [imgErr, setImgErr] = useState(false);
   const img = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
   const isOut = product.stock === 0;
@@ -36,14 +40,14 @@ const ProductCard = ({ product, onAddToCart }) => {
         {product.is_selected && (
           <div className="absolute top-2 left-2">
             <span className="badge badge-accent gap-1 text-[10px]">
-              <Star size={8} fill="currentColor" /> Top
+              <Star size={8} fill="currentColor" /> {t("products.badge_top")}
             </span>
           </div>
         )}
         {isOut && (
           <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }}>
             <span className="badge badge-danger gap-1">
-              <XCircle size={11} /> Out of Stock
+              <XCircle size={11} /> {t("products.badge_out_of_stock")}
             </span>
           </div>
         )}
@@ -56,8 +60,8 @@ const ProductCard = ({ product, onAddToCart }) => {
 
         <div className="flex items-center gap-1.5 text-xs">
           {isOut
-            ? <><XCircle size={12} style={{ color: "var(--danger)" }} /><span style={{ color: "var(--danger)" }}>Out of stock</span></>
-            : <><CheckCircle2 size={12} style={{ color: "var(--success)" }} /><span style={{ color: "var(--success)" }}>Available</span></>
+            ? <><XCircle size={12} style={{ color: "var(--danger)" }} /><span style={{ color: "var(--danger)" }}>{t("products.status_out_of_stock")}</span></>
+            : <><CheckCircle2 size={12} style={{ color: "var(--success)" }} /><span style={{ color: "var(--success)" }}>{t("products.status_available")}</span></>
           }
         </div>
 
@@ -66,22 +70,22 @@ const ProductCard = ({ product, onAddToCart }) => {
             {product.priceMonth != null && (
               <p className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>
                 {Number(product.priceMonth).toFixed(2)} €
-                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-muted)" }}>/month</span>
+                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-muted)" }}>{t("products.per_month")}</span>
               </p>
             )}
             {product.priceYear != null && (
               <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {Number(product.priceYear).toFixed(2)} €/year
+                {Number(product.priceYear).toFixed(2)} €{t("products.per_year")}
               </p>
             )}
           </div>
 
           <div className="flex gap-1.5">
             <Link to={`/products/${product.slug}`} className="btn-ghost py-1.5 px-2.5 text-xs">
-              View
+              {t("products.view")}
             </Link>
-            <button 
-              onClick={() => !isOut && onAddToCart(product)} 
+            <button
+              onClick={() => !isOut && onAddToCart(product)}
               disabled={isOut}
               className="btn-primary py-1.5 px-2.5 text-xs gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
             >
@@ -95,6 +99,8 @@ const ProductCard = ({ product, onAddToCart }) => {
 };
 
 export default function ProductsPage() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,8 +111,6 @@ export default function ProductsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
-    // Use the full paginated catalog (not the priority-filtered "by-order" list)
-    // so every published product is visible on the public catalog page.
     Promise.all([
       productsAPI.getAll({ limit: 1000 }),
       categoriesAPI.getAllByOrder()
@@ -120,15 +124,10 @@ export default function ProductsPage() {
 
   const handleAddToCart = (product) => {
     try {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const ex = cart.find(i => i._id === product._id);
-      if (ex) ex.qty = (ex.qty || 1) + 1;
-      else cart.push({ ...product, qty: 1, billingPeriod: "monthly" });
-      localStorage.setItem("cart", JSON.stringify(cart));
-      window.dispatchEvent(new Event("cart-updated"));
-      notify.success("Added to cart", product.name);
+      dispatch(addToCart({ ...product, qty: 1, billingPeriod: "monthly" }));
+      notify.success(t("products.added_to_cart"), product.name);
     } catch {
-      notify.error("Cart error", "Could not add this product to your cart.");
+      notify.error(t("products.cart_error"), t("products.cart_error_msg"));
     }
   };
 
@@ -152,36 +151,38 @@ export default function ProductsPage() {
       return 0;
     });
 
-  const activeFilters = [selCat, showAvail ? "Available only" : ""].filter(Boolean);
+  const activeFilters = [selCat, showAvail ? t("products.available_only") : ""].filter(Boolean);
 
   return (
     <div className="page-enter" style={{ background: "var(--bg-base)", minHeight: "70vh" }}>
       {/* Hero */}
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
         <div className="cyna-container py-10 sm:py-14">
-          <p className="section-label">Catalog</p>
-          <h1 className="section-title mb-2">All Products</h1>
+          <p className="section-label">{t("products.badge")}</p>
+          <h1 className="section-title mb-2">{t("products.title")}</h1>
           <p className="text-sm mb-6" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-            {products.length} cybersecurity solutions available
+            {products.length <= 1
+              ? t("products.count", { count: products.length })
+              : t("products.count_plural", { count: products.length })}
           </p>
 
           {/* Search bar */}
           <div className="flex gap-2 max-w-lg">
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-              <input 
-                type="text" 
-                value={search} 
+              <input
+                type="text"
+                value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search for a product..."
-                className="w-full pl-10 pr-4 h-11 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all" 
+                placeholder={t("products.search_placeholder")}
+                className="w-full pl-10 pr-4 h-11 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all"
               />
             </div>
-            <button 
+            <button
               onClick={() => setFiltersOpen(v => !v)}
               className={`flex items-center gap-1.5 px-4 h-11 rounded-full border text-sm font-[Kumbh Sans] font-600 transition-all ${filtersOpen ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]"}`}
             >
-              <SlidersHorizontal size={15} /> Filters 
+              <SlidersHorizontal size={15} /> {t("products.filters_btn")}
               {activeFilters.length > 0 && (
                 <span className="badge badge-accent text-[10px] px-1.5 py-0.5">{activeFilters.length}</span>
               )}
@@ -194,9 +195,9 @@ export default function ProductsPage() {
               <div className="flex flex-wrap gap-4">
                 {/* Category filter */}
                 <div className="flex-1 min-w-[180px]">
-                  <label className="block text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>CATEGORY</label>
+                  <label className="block text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>{t("products.category_label")}</label>
                   <Select size="sm" value={selCat} onChange={e => setSelCat(e.target.value)}>
-                    <option value="">All Categories</option>
+                    <option value="">{t("products.all_categories")}</option>
                     {categories.map(c => (
                       <option key={c._id} value={c.slug}>{c.name}</option>
                     ))}
@@ -205,22 +206,22 @@ export default function ProductsPage() {
 
                 {/* Sort */}
                 <div className="flex-1 min-w-[160px]">
-                  <label className="block text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>SORT BY</label>
+                  <label className="block text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>{t("products.sort_label")}</label>
                   <Select size="sm" value={sort} onChange={e => setSort(e.target.value)}>
-                    <option value="priority">Priority</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                    <option value="name">Name A-Z</option>
+                    <option value="priority">{t("products.sort_priority")}</option>
+                    <option value="price-asc">{t("products.sort_price_asc")}</option>
+                    <option value="price-desc">{t("products.sort_price_desc")}</option>
+                    <option value="name">{t("products.sort_name_az")}</option>
                   </Select>
                 </div>
 
                 {/* Availability toggle */}
                 <div className="flex flex-col justify-end">
-                  <button 
+                  <button
                     onClick={() => setShowAvail(v => !v)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-[Kumbh Sans] font-600 transition-all ${showAvail ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-secondary)]"}`}
                   >
-                    <CheckCircle2 size={14} /> Available only
+                    <CheckCircle2 size={14} /> {t("products.available_only")}
                   </button>
                 </div>
               </div>
@@ -233,14 +234,15 @@ export default function ProductsPage() {
       <div className="cyna-container py-10">
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--text-primary)" }}>{filtered.length}</strong> result{filtered.length !== 1 ? "s" : ""}
+            <strong style={{ color: "var(--text-primary)" }}>{filtered.length}</strong>{" "}
+            {filtered.length <= 1 ? t("products.result", { count: filtered.length }) : t("products.result_plural", { count: filtered.length })}
           </p>
           {activeFilters.length > 0 && (
-            <button 
+            <button
               onClick={() => { setSelCat(""); setShowAvail(false); }}
               className="flex items-center gap-1 text-xs text-[var(--danger)] hover:underline"
             >
-              <X size={12} /> Clear filters
+              <X size={12} /> {t("products.clear_filters")}
             </button>
           )}
         </div>
@@ -253,7 +255,7 @@ export default function ProductsPage() {
           <div className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center" style={{ background: "var(--bg-subtle)" }}>
             <Package size={36} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
             <p className="font-[Kumbh Sans] font-600" style={{ color: "var(--text-secondary)" }}>
-              No products found
+              {t("products.empty")}
             </p>
           </div>
         ) : (

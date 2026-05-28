@@ -4,6 +4,9 @@ import { ArrowLeft, CheckCircle2, Filter, Package, ShoppingBag, Star, XCircle } 
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Select from "@/components/ui/Select";
+import { useTranslation } from "react-i18next";
+import { useAppDispatch } from "@/store/hooks";
+import { addToCart } from "@/store/slices/cartSlice";
 
 const SkeletonProduct = () => (
   <div className="cyna-card overflow-hidden">
@@ -20,6 +23,7 @@ const SkeletonProduct = () => (
 );
 
 const ProductCard = ({ product, onAddToCart }) => {
+  const { t } = useTranslation();
   const [imgErr, setImgErr] = useState(false);
   const img = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
   const isOut = product.stock === 0;
@@ -44,7 +48,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         {isOut && (
           <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }}>
             <span className="badge badge-danger gap-1">
-              <XCircle size={12} /> Out of Stock
+              <XCircle size={12} /> {t("categoryDetail.status_out_of_stock")}
             </span>
           </div>
         )}
@@ -60,8 +64,8 @@ const ProductCard = ({ product, onAddToCart }) => {
 
         <div className="flex items-center gap-1.5 text-xs">
           {isOut
-            ? <><XCircle size={12} style={{ color: "var(--danger)" }} /><span style={{ color: "var(--danger)" }}>Out of stock</span></>
-            : <><CheckCircle2 size={12} style={{ color: "var(--success)" }} /><span style={{ color: "var(--success)" }}>Available</span></>
+            ? <><XCircle size={12} style={{ color: "var(--danger)" }} /><span style={{ color: "var(--danger)" }}>{t("categoryDetail.status_out_of_stock")}</span></>
+            : <><CheckCircle2 size={12} style={{ color: "var(--success)" }} /><span style={{ color: "var(--success)" }}>{t("categoryDetail.status_available")}</span></>
           }
         </div>
 
@@ -71,12 +75,12 @@ const ProductCard = ({ product, onAddToCart }) => {
             {product.priceMonth != null && (
               <p className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>
                 {Number(product.priceMonth).toFixed(2)} €
-                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-muted)" }}>/month</span>
+                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-muted)" }}>{t("categoryDetail.per_month")}</span>
               </p>
             )}
             {product.priceYear != null && (
               <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {Number(product.priceYear).toFixed(2)} €/year
+                {t("categoryDetail.or_per_year", { price: Number(product.priceYear).toFixed(2) })}
               </p>
             )}
           </div>
@@ -85,7 +89,7 @@ const ProductCard = ({ product, onAddToCart }) => {
             to={`/products/${product.slug}`}
             className="btn-ghost py-1.5 px-3 text-xs"
           >
-            Details
+            {t("categoryDetail.details")}
           </Link>
 
           <button
@@ -93,7 +97,7 @@ const ProductCard = ({ product, onAddToCart }) => {
             disabled={isOut}
             className="btn-primary py-1.5 px-3 text-xs gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
           >
-            <ShoppingBag size={12} /> Add to Cart
+            <ShoppingBag size={12} /> {t("categoryDetail.add_to_cart")}
           </button>
         </div>
       </div>
@@ -102,6 +106,8 @@ const ProductCard = ({ product, onAddToCart }) => {
 };
 
 export default function CategoryDetailPage() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const { slug } = useParams();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
@@ -117,8 +123,6 @@ export default function CategoryDetailPage() {
         const cat = payload.category ?? payload;
         setCategory(cat);
 
-        // Endpoint may return products embedded; otherwise derive them from
-        // the public ordered list and filter by category.
         const embedded = payload.products ?? cat?.products ?? null;
         if (Array.isArray(embedded) && embedded.length > 0) {
           setProducts(embedded);
@@ -141,19 +145,13 @@ export default function CategoryDetailPage() {
 
   const handleAddToCart = (product) => {
     try {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const ex = cart.find(i => i._id === product._id);
-      if (ex) ex.qty = (ex.qty || 1) + 1;
-      else cart.push({ ...product, qty: 1, billingPeriod: "monthly" });
-      localStorage.setItem("cart", JSON.stringify(cart));
-      window.dispatchEvent(new Event("cart-updated"));
-      notify.success("Added to cart", product.name);
+      dispatch(addToCart({ ...product, qty: 1, billingPeriod: "monthly" }));
+      notify.success(t("categoryDetail.added_to_cart"), product.name);
     } catch {
-      notify.error("Cart error", "Could not add this product to your cart.");
+      notify.error(t("categoryDetail.cart_error"), t("categoryDetail.cart_error_msg"));
     }
   };
 
-  // Sort & Filter logic
   const sortedProducts = [...products]
     .filter(p => showAvail ? p.stock !== 0 : true)
     .sort((a, b) => {
@@ -186,7 +184,7 @@ export default function CategoryDetailPage() {
             className="inline-flex items-center gap-1.5 text-sm mb-6 hover:text-[var(--accent)] transition-colors"
             style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}
           >
-            <ArrowLeft size={15} /> All Categories
+            <ArrowLeft size={15} /> {t("categoryDetail.all_categories")}
           </Link>
 
           {loading && !category ? (
@@ -203,7 +201,7 @@ export default function CategoryDetailPage() {
               )}
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="section-label" style={{ marginBottom: 0 }}>Category</p>
+                  <p className="section-label" style={{ marginBottom: 0 }}>{t("categoryDetail.badge")}</p>
                 </div>
                 <h1 className="font-[Kumbh Sans] font-800 text-2xl sm:text-3xl" style={{ color: "var(--text-primary)" }}>
                   {category?.name ?? slug}
@@ -224,7 +222,10 @@ export default function CategoryDetailPage() {
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-7">
           <p className="text-sm" style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-            <strong style={{ color: "var(--text-primary)" }}>{sortedProducts.length}</strong> product{sortedProducts.length !== 1 ? "s" : ""}
+            <strong style={{ color: "var(--text-primary)" }}>{sortedProducts.length}</strong>{" "}
+            {sortedProducts.length <= 1
+              ? t("categoryDetail.count", { count: sortedProducts.length })
+              : t("categoryDetail.count_plural", { count: sortedProducts.length })}
           </p>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -232,19 +233,19 @@ export default function CategoryDetailPage() {
             <button
               onClick={() => setShowAvail(v => !v)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-[Kumbh Sans] font-600 border transition-all ${showAvail
-                  ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]"
-                  : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]"
+                ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]"
+                : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]"
                 }`}
             >
-              <Filter size={12} /> Available only
+              <Filter size={12} /> {t("categoryDetail.available_only")}
             </button>
 
             {/* Sort */}
             <div className="w-44">
               <Select size="sm" value={sort} onChange={e => setSort(e.target.value)}>
-                <option value="priority">Priority</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="priority">{t("categoryDetail.sort_priority")}</option>
+                <option value="price-asc">{t("categoryDetail.sort_price_asc")}</option>
+                <option value="price-desc">{t("categoryDetail.sort_price_desc")}</option>
               </Select>
             </div>
           </div>
@@ -259,7 +260,7 @@ export default function CategoryDetailPage() {
           <div className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center" style={{ background: "var(--bg-subtle)" }}>
             <Package size={36} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
             <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>
-              No products in this category
+              {t("categoryDetail.empty")}
             </p>
           </div>
         ) : (

@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   setAuthStatus, setRedirectTarget, setCountdown, decrementCountdown, resetAuth,
 } from '../store/slices/authSlice';
+import { useTranslation } from 'react-i18next';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JWT utilities (client-side read only — real validation stays on backend)
@@ -62,6 +63,7 @@ function FullScreen({ children }) {
 }
 
 function LoadingScreen() {
+  const { t } = useTranslation();
   return (
     <FullScreen>
       <div className="relative z-10 flex flex-col items-center gap-8">
@@ -78,8 +80,8 @@ function LoadingScreen() {
             <div className="absolute -inset-1.5 rounded-[100%] border-2 border-transparent border-t-indigo-500 border-r-indigo-400 animate-spin" />
           </div>
           <div className="text-center space-y-1">
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Verifying access</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Checking your credentials…</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('routeLayout.verifying')}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{t('routeLayout.checking')}</p>
           </div>
           <div className="flex items-center gap-1.5">
             {[0, 1, 2].map((i) => (
@@ -93,6 +95,7 @@ function LoadingScreen() {
 }
 
 function ExpiredScreen({ redirectTo, countdown }) {
+  const { t } = useTranslation();
   return (
     <FullScreen>
       <div className="relative z-10 flex flex-col items-center gap-8">
@@ -106,14 +109,14 @@ function ExpiredScreen({ redirectTo, countdown }) {
             <ShieldOff size={22} className="text-amber-500" />
           </div>
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-900 dark:text-white">Session Expired</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Your session has timed out for security reasons. Please sign in again to continue.</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">{t('routeLayout.session_expired')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('routeLayout.session_expired_msg')}</p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
             <Loader2 size={12} className="text-amber-500 animate-spin flex-shrink-0" />
-            <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Redirecting in {countdown}s…</span>
+            <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">{t('routeLayout.redirecting_in', { count: countdown })}</span>
           </div>
-          <a href={redirectTo} className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">Sign in now</a>
+          <a href={redirectTo} className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">{t('routeLayout.sign_in_now')}</a>
         </div>
       </div>
     </FullScreen>
@@ -121,6 +124,7 @@ function ExpiredScreen({ redirectTo, countdown }) {
 }
 
 function AccessDeniedScreen({ countdown }) {
+  const { t } = useTranslation();
   return (
     <FullScreen>
       <div className="relative z-10 flex flex-col items-center gap-8">
@@ -134,17 +138,17 @@ function AccessDeniedScreen({ countdown }) {
             <ShieldAlert size={22} className="text-red-500" />
           </div>
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-900 dark:text-white">Access Denied</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">You don't have the required permissions to access this area.</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">{t('routeLayout.access_denied')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('routeLayout.access_denied_msg')}</p>
           </div>
           <div className="px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Admin privileges required</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('routeLayout.admin_required')}</p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
             <Loader2 size={12} className="text-red-500 animate-spin flex-shrink-0" />
-            <span className="text-xs text-red-700 dark:text-red-400 font-medium">Redirecting in {countdown}s…</span>
+            <span className="text-xs text-red-700 dark:text-red-400 font-medium">{t('routeLayout.redirecting_in', { count: countdown })}</span>
           </div>
-          <a href="/home" className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">Go to homepage</a>
+          <a href="/home" className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">{t('routeLayout.go_home')}</a>
         </div>
       </div>
     </FullScreen>

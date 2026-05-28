@@ -1,5 +1,6 @@
 import { Github, Linkedin, Mail, Shield, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const CynaLogo = () => (
   <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 28, height: 28 }}>
@@ -11,29 +12,31 @@ const CynaLogo = () => (
     </defs>
   </svg>
 );
- 
-const links = {
-  Solutions: [
-    { label: "SOC — Security Operations", href: "/categories" },
-    { label: "EDR — Endpoint Detection", href: "/categories" },
-    { label: "XDR — Extended Detection", href: "/categories" },
-    { label: "All Products", href: "/products" },
-  ],
-  Company: [
-    { label: "About Cyna", href: "/about" },
-    { label: "Blog & News", href: "/blog" },
-    { label: "Contact Us", href: "/contact" },
-    { label: "Customer Support", href: "/contact" },
-  ],
-  Legal: [
-    { label: "Terms of Service", href: "/terms-of-use" },
-    { label: "Privacy Policy", href: "/privacy-policy" },
-    { label: "Cookie Policy", href: "/cookie-policy" },
-    { label: "Legal Notice", href: "/legal" },
-  ],
-};
 
 export default function Footer() {
+  const { t } = useTranslation();
+
+  const links = {
+    [t("footer.solutions")]: [
+      { label: t("footer.links.soc"), href: "/categories" },
+      { label: t("footer.links.edr"), href: "/categories" },
+      { label: t("footer.links.xdr"), href: "/categories" },
+      { label: t("footer.links.all_products"), href: "/products" },
+    ],
+    [t("footer.company")]: [
+      { label: t("footer.links.about"), href: "/about" },
+      { label: t("footer.links.blog"), href: "/blog" },
+      { label: t("footer.links.contact"), href: "/contact" },
+      { label: t("footer.links.support"), href: "/contact" },
+    ],
+    [t("footer.legal")]: [
+      { label: t("footer.links.terms"), href: "/terms-of-use" },
+      { label: t("footer.links.privacy"), href: "/privacy-policy" },
+      { label: t("footer.links.cookies"), href: "/cookie-policy" },
+      { label: t("footer.links.legal"), href: "/legal" },
+    ],
+  };
+
   return (
     <footer style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border)" }}>
       {/* Main */}
@@ -48,7 +51,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-              The leading SaaS cybersecurity platform for businesses. SOC, EDR, XDR — secure your future.
+              {t("footer.brand_description")}
             </p>
             {/* Socials */}
             <div className="flex items-center gap-2">
@@ -109,7 +112,7 @@ export default function Footer() {
           <div className="flex items-center gap-1.5">
             <Shield size={12} style={{ color: "var(--success)" }} />
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              SSL Secured Website — SIRET 91371103200015
+              {t("footer.ssl")}
             </span>
           </div>
         </div>

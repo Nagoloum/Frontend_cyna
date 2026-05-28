@@ -6,6 +6,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Select from "@/components/ui/Select";
+import { useTranslation } from "react-i18next";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,7 @@ const fmtPrice = (n) =>
 
 // ── Product card ─────────────────────────────────────────────────────────────
 function ProductCard({ product }) {
+  const { t } = useTranslation();
   const [imgErr, setImgErr] = useState(false);
   const images = product.images ?? [];
   const firstImg = images[0];
@@ -51,7 +53,7 @@ function ProductCard({ product }) {
             style={{ background: "rgba(0,0,0,.45)" }}
           >
             <span className="text-white font-semibold text-xs px-3 py-1 rounded-full bg-red-500/80">
-              Unavailable
+              {t("search.unavailable")}
             </span>
           </div>
         )}
@@ -76,16 +78,16 @@ function ProductCard({ product }) {
                 {fmtPrice(priceMonth)}<span className="text-xs font-normal text-[var(--text-muted)]">/mo</span>
               </span>
             ) : (
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Price on request</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("search.price_on_request")}</span>
             )}
           </div>
           {isOut ? (
             <span className="flex items-center gap-1 text-xs text-red-500">
-              <XCircle size={12} /> Out of stock
+              <XCircle size={12} /> {t("search.out_of_stock")}
             </span>
           ) : (
             <span className="flex items-center gap-1 text-xs text-green-500">
-              <CheckCircle2 size={12} /> Available
+              <CheckCircle2 size={12} /> {t("search.available")}
             </span>
           )}
         </div>
@@ -106,14 +108,14 @@ const SkeletonCard = () => (
 );
 
 // ── Range input ──────────────────────────────────────────────────────────────
-function PriceRange({ min, max, onChange }) {
+function PriceRange({ min, max, onChange, minLabel, maxLabel }) {
   const [localMin, setLocalMin] = useState(min ?? "");
   const [localMax, setLocalMax] = useState(max ?? "");
-  const t = useRef(null);
+  const timer = useRef(null);
 
   const commit = (newMin, newMax) => {
-    clearTimeout(t.current);
-    t.current = setTimeout(() => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
       onChange(
         newMin !== "" ? Number(newMin) : undefined,
         newMax !== "" ? Number(newMax) : undefined,
@@ -126,7 +128,7 @@ function PriceRange({ min, max, onChange }) {
       <input
         type="number"
         min="0"
-        placeholder="Min €"
+        placeholder={minLabel}
         value={localMin}
         onChange={(e) => { setLocalMin(e.target.value); commit(e.target.value, localMax); }}
         className="w-full h-9 px-3 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
@@ -135,7 +137,7 @@ function PriceRange({ min, max, onChange }) {
       <input
         type="number"
         min="0"
-        placeholder="Max €"
+        placeholder={maxLabel}
         value={localMax}
         onChange={(e) => { setLocalMax(e.target.value); commit(localMin, e.target.value); }}
         className="w-full h-9 px-3 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
@@ -146,13 +148,12 @@ function PriceRange({ min, max, onChange }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SearchPage() {
+  const { t } = useTranslation();
   const [urlParams, setUrlParams] = useSearchParams();
   const q = urlParams.get("q") || "";
 
-  // Local query (controlled input, not committed yet)
   const [query, setQuery] = useState(q);
 
-  // Filter state
   const [minPrice, setMinPrice]           = useState(undefined);
   const [maxPrice, setMaxPrice]           = useState(undefined);
   const [onlyAvailable, setOnlyAvailable] = useState(false);
@@ -161,21 +162,17 @@ export default function SearchPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedService, setSelectedService]   = useState("");
 
-  // Filter panel visibility (mobile)
   const [showFilters, setShowFilters] = useState(false);
 
-  // Data
   const [results, setResults]   = useState([]);
   const [loading, setLoading]   = useState(false);
   const [total, setTotal]       = useState(0);
   const [page, setPage]         = useState(1);
   const LIMIT = 12;
 
-  // Metadata for filter dropdowns
   const [categories, setCategories] = useState([]);
   const [services, setServices]     = useState([]);
 
-  // Load categories + services for filter dropdowns
   useEffect(() => {
     categoriesAPI.getAllByOrder()
       .then((r) => setCategories(extractList(r.data)))
@@ -185,7 +182,6 @@ export default function SearchPage() {
       .catch(() => {});
   }, []);
 
-  // Execute search whenever any filter changes
   useEffect(() => {
     if (!q && !selectedCategory && !selectedService && minPrice === undefined && maxPrice === undefined) {
       setResults([]);
@@ -250,7 +246,7 @@ export default function SearchPage() {
       {/* Header / search bar */}
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
         <div className="cyna-container py-10">
-          <p className="section-label mt-5">Search</p>
+          <p className="section-label mt-5">{t("search.badge")}</p>
           <form onSubmit={handleSearch} className="flex gap-2 max-w-lg mb-2">
             <div className="relative flex-1">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
@@ -258,18 +254,19 @@ export default function SearchPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search for a solution..."
+                placeholder={t("search.placeholder")}
                 className="w-full pl-10 pr-4 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all"
               />
             </div>
-            <button type="submit" className="btn-primary px-6">Search</button>
+            <button type="submit" className="btn-primary px-6">{t("search.search_btn")}</button>
           </form>
           {(q || hasActiveFilters) && (
             <p className="text-sm mb-1" style={{ color: "var(--text-muted)" }}>
-              {loading ? "Searching…" : (
+              {loading ? t("search.searching") : (
                 <>
-                  <strong style={{ color: "var(--text-primary)" }}>{total}</strong> result{total !== 1 ? "s" : ""}
-                  {q && <> for «&nbsp;<strong style={{ color: "var(--text-primary)" }}>{q}</strong>&nbsp;»</>}
+                  <strong style={{ color: "var(--text-primary)" }}>{total}</strong>{" "}
+                  {total <= 1 ? t("search.result", { count: total }) : t("search.result_plural", { count: total })}
+                  {q && <> {t("search.for_query", { query: q })}</>}
                 </>
               )}
             </p>
@@ -287,7 +284,7 @@ export default function SearchPage() {
               onClick={() => setShowFilters((v) => !v)}
               className="lg:hidden flex items-center gap-2 mb-4 h-9 px-4 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] text-sm text-[var(--text-primary)] w-full justify-between"
             >
-              <span className="flex items-center gap-2"><SlidersHorizontal size={14} /> Filters</span>
+              <span className="flex items-center gap-2"><SlidersHorizontal size={14} /> {t("search.filters_btn")}</span>
               <ChevronDown size={14} className={`transition-transform ${showFilters ? "rotate-180" : ""}`} />
             </button>
 
@@ -295,24 +292,24 @@ export default function SearchPage() {
               <div className="cyna-card p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                    <Filter size={11} className="inline mr-1" />Filters
+                    <Filter size={11} className="inline mr-1" />{t("search.filter_label")}
                   </span>
                   {hasActiveFilters && (
                     <button onClick={clearFilters} className="text-xs flex items-center gap-1 text-red-400 hover:text-red-500 transition-colors">
-                      <X size={11} /> Reset
+                      <X size={11} /> {t("search.reset")}
                     </button>
                   )}
                 </div>
 
                 {/* Category */}
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Category</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>{t("search.category_label")}</label>
                   <Select
                     size="sm"
                     value={selectedCategory}
                     onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
                   >
-                    <option value="">All categories</option>
+                    <option value="">{t("search.all_categories")}</option>
                     {categories.map((c) => (
                       <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>
                     ))}
@@ -321,13 +318,13 @@ export default function SearchPage() {
 
                 {/* Service */}
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Service type</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>{t("search.service_type_label")}</label>
                   <Select
                     size="sm"
                     value={selectedService}
                     onChange={(e) => { setSelectedService(e.target.value); setPage(1); }}
                   >
-                    <option value="">All services</option>
+                    <option value="">{t("search.all_services")}</option>
                     {services.map((s) => (
                       <option key={s._id ?? s.slug} value={s._id ?? s.slug}>{s.name}</option>
                     ))}
@@ -336,10 +333,12 @@ export default function SearchPage() {
 
                 {/* Price range */}
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Price / month (€)</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>{t("search.price_label")}</label>
                   <PriceRange
                     min={minPrice}
                     max={maxPrice}
+                    minLabel={t("search.price_min")}
+                    maxLabel={t("search.price_max")}
                     onChange={(mn, mx) => { setMinPrice(mn); setMaxPrice(mx); setPage(1); }}
                   />
                 </div>
@@ -355,12 +354,12 @@ export default function SearchPage() {
                     />
                     <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
                   </div>
-                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>Available only</span>
+                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>{t("search.available_only")}</span>
                 </label>
 
                 {/* Sort */}
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Sort by</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>{t("search.sort_label")}</label>
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <Select
@@ -368,10 +367,10 @@ export default function SearchPage() {
                         value={sortBy}
                         onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
                       >
-                        <option value="">Default</option>
-                        <option value="prix">Price</option>
-                        <option value="nouveauté">Newest</option>
-                        <option value="disponibilité">Availability</option>
+                        <option value="">{t("search.sort_default")}</option>
+                        <option value="prix">{t("search.sort_price")}</option>
+                        <option value="nouveauté">{t("search.sort_newest")}</option>
+                        <option value="disponibilité">{t("search.sort_availability")}</option>
                       </Select>
                     </div>
                     <div className="w-24">
@@ -380,8 +379,8 @@ export default function SearchPage() {
                         value={sortOrder}
                         onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
                       >
-                        <option value="asc">↑ Asc</option>
-                        <option value="desc">↓ Desc</option>
+                        <option value="asc">{t("search.sort_asc")}</option>
+                        <option value="desc">{t("search.sort_desc")}</option>
                       </Select>
                     </div>
                   </div>
@@ -399,10 +398,10 @@ export default function SearchPage() {
               >
                 <Search size={32} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
                 <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
-                  Enter a search term or select a filter
+                  {t("search.empty_heading")}
                 </p>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Find the right cybersecurity solution for your business
+                  {t("search.empty_description")}
                 </p>
               </div>
             ) : loading ? (
@@ -416,11 +415,11 @@ export default function SearchPage() {
               >
                 <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
                 <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
-                  No results found
+                  {t("search.no_results")}
                 </p>
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="mt-3 btn-ghost text-xs gap-1">
-                    <X size={12} /> Clear filters
+                    <X size={12} /> {t("search.reset")}
                   </button>
                 )}
               </div>
@@ -440,17 +439,17 @@ export default function SearchPage() {
                       disabled={page <= 1}
                       className="h-9 px-4 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] text-sm text-[var(--text-primary)] disabled:opacity-30 hover:border-[var(--accent)] transition-all"
                     >
-                      ← Prev
+                      {t("search.prev")}
                     </button>
                     <span className="text-sm px-2" style={{ color: "var(--text-muted)" }}>
-                      Page {page} / {totalPages}
+                      {t("search.page", { page, total: totalPages })}
                     </span>
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page >= totalPages}
                       className="h-9 px-4 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] text-sm text-[var(--text-primary)] disabled:opacity-30 hover:border-[var(--accent)] transition-all"
                     >
-                      Next →
+                      {t("search.next")}
                     </button>
                   </div>
                 )}
