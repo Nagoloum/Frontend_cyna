@@ -3,8 +3,9 @@ import {
   AlertCircle, ArrowRight, LogIn, Minus, Package,
   Plus, ShoppingBag, Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { updateCartItem, removeCartItem } from "@/store/slices/cartSlice";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const getUser = () => {
@@ -96,7 +97,7 @@ function CartItem({ item, onUpdate, onRemove }) {
                   return (
                     <button
                       key={v}
-                      onClick={() => onUpdate(item._id, { billingPeriod: v })}
+                      onClick={() => onUpdate(item._id, item.billingPeriod, { billingPeriod: v })}
                       className="px-3 py-1.5 font-[Kumbh Sans] font-600 transition-all"
                       style={{
                         background: active ? "var(--accent)" : "transparent",
@@ -115,7 +116,7 @@ function CartItem({ item, onUpdate, onRemove }) {
                 style={{ border: "1px solid var(--border)", background: "var(--bg-subtle)" }}
               >
                 <button
-                  onClick={() => onUpdate(item._id, { qty: Math.max(1, qty - 1) })}
+                  onClick={() => onUpdate(item._id, item.billingPeriod, { qty: Math.max(1, qty - 1) })}
                   disabled={qty <= 1}
                   aria-label="Decrease quantity"
                   className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[var(--bg-muted)] disabled:opacity-40 disabled:cursor-not-allowed"
@@ -130,7 +131,7 @@ function CartItem({ item, onUpdate, onRemove }) {
                   {qty}
                 </span>
                 <button
-                  onClick={() => onUpdate(item._id, { qty: qty + 1 })}
+                  onClick={() => onUpdate(item._id, item.billingPeriod, { qty: qty + 1 })}
                   aria-label="Increase quantity"
                   className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[var(--bg-muted)]"
                   style={{ color: "var(--text-secondary)" }}
@@ -163,37 +164,18 @@ function CartItem({ item, onUpdate, onRemove }) {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function CartPage() {
-  const [cart, setCart] = useState([]);
-  const navigate        = useNavigate();
-  const user            = getUser();
-
-  const loadCart = () => {
-    try { setCart(JSON.parse(localStorage.getItem("cart") || "[]")); }
-    catch { setCart([]); }
-  };
-
-  useEffect(() => {
-    loadCart();
-    window.addEventListener("cart-updated", loadCart);
-    return () => window.removeEventListener("cart-updated", loadCart);
-  }, []);
-
-  const saveCart = (newCart) => {
-    localStorage.setItem("cart", JSON.stringify(newCart));
-    setCart(newCart);
-    window.dispatchEvent(new Event("cart-updated"));
-  };
+  const dispatch = useAppDispatch();
+  const cart     = useAppSelector((s) => s.cart.items);
+  const navigate = useNavigate();
+  const user     = getUser();
 
   const handleUpdate = (id, billingPeriod, patch) => {
-    saveCart(cart.map(i =>
-      (i._id === id && i.billingPeriod === billingPeriod)
-        ? { ...i, ...patch }
-        : i
-    ));
+    dispatch(updateCartItem({ id, billingPeriod, patch }));
   };
 
-  const handleRemove = (id, billingPeriod) =>
-    saveCart(cart.filter(i => !(i._id === id && i.billingPeriod === billingPeriod)));
+  const handleRemove = (id, billingPeriod) => {
+    dispatch(removeCartItem({ id, billingPeriod }));
+  };
 
   const itemCount = cart.reduce((s, i) => s + (Number(i.qty) || 1), 0);
   const total = cart.reduce((sum, i) => {
@@ -273,7 +255,7 @@ export default function CartPage() {
                   <CartItem
                     key={`${item._id}-${item.billingPeriod}-${i}`}
                     item={item}
-                    onUpdate={(id, patch) => handleUpdate(id, item.billingPeriod, patch)}
+                    onUpdate={handleUpdate}
                     onRemove={handleRemove}
                   />
                 ))}

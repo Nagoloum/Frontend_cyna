@@ -1,36 +1,35 @@
 // Imperative bridge: lets non-React code (callbacks, services, axios interceptors)
-// trigger toasts and confirm dialogs without needing a hook.
-//
-// The NotifyProvider registers its handlers on mount; if a notify call happens
-// before the provider is ready, the call falls back to console output so it's
-// never silently lost.
+// trigger toasts and confirm dialogs by dispatching directly to the Redux store.
 
-let notifyHandler = null;
-let confirmHandler = null;
+import { store } from '../../../store';
+import { addToast, openConfirm, closeConfirm } from '../../../store/slices/notificationsSlice';
 
-export function setNotifyHandler(handler) { notifyHandler = handler; }
-export function setConfirmHandler(handler) { confirmHandler = handler; }
-
-const fallback = (level, title, message) => {
-  // eslint-disable-next-line no-console
-  console[level === 'error' ? 'error' : 'log'](`[notify:${level}]`, title, message ?? '');
-};
+// Resolve callback for the currently pending confirm dialog.
+// Stored outside Redux because functions are not serializable.
+let pendingConfirmResolve = null;
 
 export const notify = {
   success: (title, message, opts) =>
-    notifyHandler ? notifyHandler.success(title, message, opts) : fallback('success', title, message),
+    store.dispatch(addToast({ type: 'success', title, message, ...opts })),
   error: (title, message, opts) =>
-    notifyHandler ? notifyHandler.error(title, message, opts) : fallback('error', title, message),
+    store.dispatch(addToast({ type: 'error', title, message, ...opts })),
   warning: (title, message, opts) =>
-    notifyHandler ? notifyHandler.warning(title, message, opts) : fallback('warning', title, message),
+    store.dispatch(addToast({ type: 'warning', title, message, ...opts })),
   info: (title, message, opts) =>
-    notifyHandler ? notifyHandler.info(title, message, opts) : fallback('info', title, message),
+    store.dispatch(addToast({ type: 'info', title, message, ...opts })),
 };
 
 export function confirmDialog(opts) {
-  if (confirmHandler) return confirmHandler(opts);
-  // Fallback: if provider isn't mounted, fail safely (resolve to false).
-  // eslint-disable-next-line no-console
-  console.warn('[confirmDialog] NotifyProvider not mounted — defaulting to false', opts);
-  return Promise.resolve(false);
+  return new Promise((resolve) => {
+    pendingConfirmResolve = resolve;
+    store.dispatch(openConfirm(opts));
+  });
+}
+
+export function resolveConfirm(value) {
+  if (pendingConfirmResolve) {
+    pendingConfirmResolve(value);
+    pendingConfirmResolve = null;
+  }
+  store.dispatch(closeConfirm());
 }

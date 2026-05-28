@@ -1,5 +1,4 @@
 // src/layouts/admin/AdminSidebar.jsx
-import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -11,8 +10,9 @@ import {
   LogOut,
   Shield,
 } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { toggleSidebar } from '../../store/slices/uiSlice';
 
-// ── Logo CYNA SVG (réutilisé depuis tes composants Toth) ──────────────────────
 const CynaLogo = ({ className = '' }) => (
   <svg
     viewBox="0 0 32 32"
@@ -33,34 +33,17 @@ const CynaLogo = ({ className = '' }) => (
   </svg>
 );
 
-// ── Liens de navigation ────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  {
-    label: 'Dashboard',
-    to: '/admin/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    label: 'Products',
-    to: '/admin/products',
-    icon: Package,
-  },
-  {
-    label: 'Orders',
-    to: '/admin/orders',
-    icon: ShoppingCart,
-  },
-  {
-    label: 'Settings',
-    to: '/admin/settings',
-    icon: Settings,
-  },
+  { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Products',  to: '/admin/products',  icon: Package          },
+  { label: 'Orders',    to: '/admin/orders',    icon: ShoppingCart     },
+  { label: 'Settings',  to: '/admin/settings',  icon: Settings         },
 ];
 
-// ── Composant principal ────────────────────────────────────────────────────────
 export default function AdminSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
+  const dispatch   = useAppDispatch();
+  const collapsed  = useAppSelector((s) => s.ui.sidebarCollapsed);
+  const navigate   = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -130,7 +113,6 @@ export default function AdminSidebar() {
                     }`}
                   />
                   {!collapsed && <span>{item.label}</span>}
-
                   {isActive && !collapsed && (
                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
                   )}
@@ -141,9 +123,8 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* ── Section admin info + Logout ── */}
-      <div className={`border-t border-gray-200 dark:border-gray-700/60 p-3 space-y-1`}>
-        {/* Badge sécurité 2FA */}
+      {/* ── Section admin + Logout ── */}
+      <div className="border-t border-gray-200 dark:border-gray-700/60 p-3 space-y-1">
         {!collapsed && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 dark:bg-green-500/10">
             <Shield size={14} className="text-green-500 flex-shrink-0" />
@@ -153,7 +134,6 @@ export default function AdminSidebar() {
           </div>
         )}
 
-        {/* Bouton Logout */}
         <button
           onClick={handleLogout}
           className={`
@@ -173,7 +153,7 @@ export default function AdminSidebar() {
 
       {/* ── Bouton collapse ── */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => dispatch(toggleSidebar())}
         className="
           absolute -right-3 top-[72px]
           w-6 h-6 rounded-full

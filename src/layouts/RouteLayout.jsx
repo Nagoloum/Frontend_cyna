@@ -1,7 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { ShieldAlert, ShieldOff, Loader2, Lock } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  setAuthStatus, setRedirectTarget, setCountdown, decrementCountdown, resetAuth,
+} from '../store/slices/authSlice';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JWT utilities (client-side read only — real validation stays on backend)
@@ -19,7 +23,6 @@ const decodeToken = (token) => {
 const isTokenExpired = (token) => {
   const payload = decodeToken(token);
   if (!payload?.exp) return true;
-  // 10s grace margin to avoid false positives at the edge
   return payload.exp * 1000 < Date.now() - 10_000;
 };
 
@@ -47,98 +50,40 @@ const CynaLogo = ({ className = '' }) => (
   </svg>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared full-screen wrapper
-// ─────────────────────────────────────────────────────────────────────────────
-
 function FullScreen({ children }) {
   return (
-    <div className="
-      min-h-screen w-full flex flex-col items-center justify-center
-      bg-gray-50 dark:bg-gray-950
-      px-4
-      transition-colors duration-300
-    ">
-      {/* Subtle radial glow behind card */}
-      <div className="
-        absolute inset-0 pointer-events-none overflow-hidden
-      ">
-        <div className="
-          absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-          w-[600px] h-[600px] rounded-full
-          bg-indigo-500/5 dark:bg-indigo-500/10
-          blur-3xl
-        " />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-4 transition-colors duration-300">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl" />
       </div>
       {children}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Loading screen — shown while verifying token
-// ─────────────────────────────────────────────────────────────────────────────
-
 function LoadingScreen() {
   return (
     <FullScreen>
       <div className="relative z-10 flex flex-col items-center gap-8">
-        {/* Logo */}
         <div className="flex items-center gap-3">
           <CynaLogo className="w-10 h-10" />
-          <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Cyna
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-            Auth
-          </span>
+          <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Cyna</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">Auth</span>
         </div>
-
-        {/* Card */}
-        <div className="
-          flex flex-col items-center gap-5
-          bg-white dark:bg-gray-900
-          border border-gray-200 dark:border-gray-700/60
-          rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30
-          px-10 py-8
-          w-full max-w-xs
-        ">
-          {/* Animated icon */}
+        <div className="flex flex-col items-center gap-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30 px-10 py-8 w-full max-w-xs">
           <div className="relative p-3">
-            <div className="
-              w-14 h-14 rounded-2xl
-              bg-indigo-50 dark:bg-indigo-500/10
-              border border-indigo-100 dark:border-indigo-500/20
-              flex items-center justify-center
-            ">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center">
               <Lock size={22} className="text-indigo-500" />
             </div>
-            {/* Spinning ring */}
-            <div className="
-              absolute -inset-1.5 rounded-[100%]
-              border-2 border-transparent
-              border-t-indigo-500 border-r-indigo-400
-              animate-spin
-            " />
+            <div className="absolute -inset-1.5 rounded-[100%] border-2 border-transparent border-t-indigo-500 border-r-indigo-400 animate-spin" />
           </div>
-
           <div className="text-center space-y-1">
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              Verifying access
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              Checking your credentials…
-            </p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Verifying access</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Checking your credentials…</p>
           </div>
-
-          {/* Progress dots */}
           <div className="flex items-center gap-1.5">
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-bounce"
-                style={{ animationDelay: `${i * 150}ms` }}
-              />
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
             ))}
           </div>
         </div>
@@ -147,141 +92,59 @@ function LoadingScreen() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Expired session screen
-// ─────────────────────────────────────────────────────────────────────────────
-
 function ExpiredScreen({ redirectTo, countdown }) {
   return (
     <FullScreen>
       <div className="relative z-10 flex flex-col items-center gap-8">
-        {/* Logo */}
         <div className="flex items-center gap-3">
           <CynaLogo className="w-10 h-10" />
           <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Cyna</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-            Auth
-          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">Auth</span>
         </div>
-
-        {/* Card */}
-        <div className="
-          flex flex-col items-center gap-5
-          bg-white dark:bg-gray-900
-          border border-amber-200 dark:border-amber-500/20
-          rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30
-          px-8 py-8
-          w-full max-w-sm
-          text-center
-        ">
-          {/* Icon */}
-          <div className="
-            w-14 h-14 rounded-2xl
-            bg-amber-50 dark:bg-amber-500/10
-            border border-amber-100 dark:border-amber-500/20
-            flex items-center justify-center
-          ">
+        <div className="flex flex-col items-center gap-5 bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-500/20 rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30 px-8 py-8 w-full max-w-sm text-center">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center">
             <ShieldOff size={22} className="text-amber-500" />
           </div>
-
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-900 dark:text-white">
-              Session Expired
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-              Your session has timed out for security reasons. Please sign in again to continue.
-            </p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">Session Expired</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Your session has timed out for security reasons. Please sign in again to continue.</p>
           </div>
-
-          {/* Countdown pill */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
             <Loader2 size={12} className="text-amber-500 animate-spin flex-shrink-0" />
-            <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-              Redirecting in {countdown}s…
-            </span>
+            <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Redirecting in {countdown}s…</span>
           </div>
-
-          {/* Manual link */}
-          <a
-            href={redirectTo}
-            className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors"
-          >
-            Sign in now
-          </a>
+          <a href={redirectTo} className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">Sign in now</a>
         </div>
       </div>
     </FullScreen>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Access denied screen (wrong role)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function AccessDeniedScreen({ countdown }) {
   return (
     <FullScreen>
       <div className="relative z-10 flex flex-col items-center gap-8">
-        {/* Logo */}
         <div className="flex items-center gap-3">
           <CynaLogo className="w-10 h-10" />
           <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Cyna</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-            Auth
-          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">Auth</span>
         </div>
-
-        {/* Card */}
-        <div className="
-          flex flex-col items-center gap-5
-          bg-white dark:bg-gray-900
-          border border-red-200 dark:border-red-500/20
-          rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30
-          px-8 py-8
-          w-full max-w-sm
-          text-center
-        ">
-          {/* Icon */}
-          <div className="
-            w-14 h-14 rounded-2xl
-            bg-red-50 dark:bg-red-500/10
-            border border-red-100 dark:border-red-500/20
-            flex items-center justify-center
-          ">
+        <div className="flex flex-col items-center gap-5 bg-white dark:bg-gray-900 border border-red-200 dark:border-red-500/20 rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30 px-8 py-8 w-full max-w-sm text-center">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 flex items-center justify-center">
             <ShieldAlert size={22} className="text-red-500" />
           </div>
-
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-900 dark:text-white">
-              Access Denied
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-              You don't have the required permissions to access this area.
-            </p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">Access Denied</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">You don't have the required permissions to access this area.</p>
           </div>
-
-          {/* Role badge */}
           <div className="px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Admin privileges required
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Admin privileges required</p>
           </div>
-
-          {/* Countdown pill */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
             <Loader2 size={12} className="text-red-500 animate-spin flex-shrink-0" />
-            <span className="text-xs text-red-700 dark:text-red-400 font-medium">
-              Redirecting in {countdown}s…
-            </span>
+            <span className="text-xs text-red-700 dark:text-red-400 font-medium">Redirecting in {countdown}s…</span>
           </div>
-
-          {/* Manual link */}
-          <a
-            href="/home"
-            className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors"
-          >
-            Go to homepage
-          </a>
+          <a href="/home" className="text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">Go to homepage</a>
         </div>
       </div>
     </FullScreen>
@@ -289,27 +152,7 @@ function AccessDeniedScreen({ countdown }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RouteLayout — Universal route guard with beautiful Cyna-branded feedback
-//
-// Props:
-//   requireAuth   {boolean}   – route requires authentication
-//   allowedRoles  {string[]}  – allowed roles (e.g. ['ADMIN', 'SUPERADMIN'])
-//   redirectTo    {string}    – redirect if not authenticated (default: '/auth')
-//   children      {ReactNode}
-//
-// Usage:
-//   // Public route
-//   <RouteLayout><LoginPage /></RouteLayout>
-//
-//   // Admin-only route
-//   <RouteLayout requireAuth allowedRoles={['ADMIN']}>
-//     <AdminLayout />
-//   </RouteLayout>
-//
-//   // Any authenticated user
-//   <RouteLayout requireAuth>
-//     <ProfilePage />
-//   </RouteLayout>
+// RouteLayout — Universal route guard with Redux state management
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RouteLayout({
@@ -319,106 +162,82 @@ export default function RouteLayout({
   redirectTo = '/auth',
 }) {
   const location = useLocation();
+  const dispatch = useAppDispatch();
 
-  // Countdown state for redirect screens (3 → 0)
-  const [countdown, setCountdown]     = useState(3);
-  const [authState, setAuthState]     = useState('checking'); // 'checking' | 'ok' | 'expired' | 'denied' | 'redirect' | 'twoFA'
-  const [redirectTarget, setRedirectTarget] = useState(redirectTo);
+  const authStatus     = useAppSelector((s) => s.auth.status);
+  const redirectTarget = useAppSelector((s) => s.auth.redirectTarget);
+  const countdown      = useAppSelector((s) => s.auth.countdown);
 
-  // Stabilise allowedRoles : on ne garde que la version sérialisée pour éviter
-  // qu'un nouveau tableau littéral (["ADMIN"]) ne re-déclenche l'effet à chaque render.
   const allowedRolesKey = JSON.stringify(allowedRoles);
 
   useEffect(() => {
-    // ── Public route: skip all checks immediately
+    dispatch(resetAuth());
+
     if (!requireAuth) {
-      setAuthState('ok');
+      dispatch(setAuthStatus('ok'));
       return;
     }
 
     const token = localStorage.getItem('token');
 
-    // ── 1. No token → redirect to login
     if (!token) {
-      setRedirectTarget(redirectTo);
-      setAuthState('redirect');
+      dispatch(setRedirectTarget(redirectTo));
+      dispatch(setAuthStatus('redirect'));
       return;
     }
 
-    // ── 2. Token expired
     if (isTokenExpired(token)) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      setAuthState('expired');
+      dispatch(setAuthStatus('expired'));
       return;
     }
 
-    // ── 3. Role check
     const parsedRoles = JSON.parse(allowedRolesKey);
     const role = getRoleFromToken(token);
     if (parsedRoles.length > 0) {
       if (!role || !parsedRoles.includes(role)) {
-        setAuthState('denied');
+        dispatch(setAuthStatus('denied'));
         return;
       }
     }
 
-    // ── 4. 2FA check (admin only). When the route allows ADMIN access, the
-    // admin must have completed the 6-digit email verification step before
-    // entering /admin/*. Customers are not affected.
     if (role === 'ADMIN' && parsedRoles.includes('ADMIN')) {
       const verified = localStorage.getItem('twoFAVerified') === '1';
       if (!verified) {
-        setRedirectTarget('/2FA');
-        setAuthState('twoFA');
+        dispatch(setRedirectTarget('/2FA'));
+        dispatch(setAuthStatus('twoFA'));
         return;
       }
     }
 
-    // ── All good
-    // Small intentional delay (2000ms) so the loading screen doesn't flash
-    const t = setTimeout(() => setAuthState('ok'), 2000);
+    const t = setTimeout(() => dispatch(setAuthStatus('ok')), 2000);
     return () => clearTimeout(t);
-// eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireAuth, redirectTo, allowedRolesKey]);
 
   // ── Countdown timer for expired / denied screens
   useEffect(() => {
-    if (authState !== 'expired' && authState !== 'denied') return;
+    if (authStatus !== 'expired' && authStatus !== 'denied') return;
 
-    const destination = authState === 'expired' ? redirectTo : '/home';
+    const destination = authStatus === 'expired' ? redirectTo : '/home';
 
     if (countdown <= 0) {
       window.location.href = destination;
       return;
     }
 
-    const t = setTimeout(() => setCountdown((c) => c - 1), 2000);
+    const t = setTimeout(() => dispatch(decrementCountdown()), 2000);
     return () => clearTimeout(t);
-  }, [authState, countdown, redirectTo]);
+  }, [authStatus, countdown, redirectTo, dispatch]);
 
-  // ── Render states ──────────────────────────────────────────────────────────
-
-  // Silent redirect (no token, or admin without 2FA verification) — no UI needed
-  if (authState === 'redirect' || authState === 'twoFA') {
+  if (authStatus === 'redirect' || authStatus === 'twoFA') {
     return <Navigate to={redirectTarget} replace state={{ from: location }} />;
   }
 
-  // Checking (brief loading screen)
-  if (authState === 'checking') {
-    return <LoadingScreen />;
-  }
+  if (authStatus === 'checking') return <LoadingScreen />;
+  if (authStatus === 'expired')  return <ExpiredScreen redirectTo={redirectTo} countdown={countdown} />;
+  if (authStatus === 'denied')   return <AccessDeniedScreen countdown={countdown} />;
 
-  // Session expired
-  if (authState === 'expired') {
-    return <ExpiredScreen redirectTo={redirectTo} countdown={countdown} />;
-  }
-
-  // Access denied (wrong role)
-  if (authState === 'denied') {
-    return <AccessDeniedScreen countdown={countdown} />;
-  }
-
-  // ── All verified: render the route
   return <>{children}</>;
 }

@@ -42,14 +42,10 @@ import TwoFactor from "./pages/Auth/TwoFactor";
 import ThemeToggle from "./components/Kit/ThemeToggle";
 import { NotifyProvider } from "./components/ui/feedback";
 
-// Wrapper avec Navbar + Footer
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>
 );
 
-// Auth pages have no Navbar/Sidebar, so we keep the floating bottom-right
-// theme toggle only on those routes. On every other page the toggle lives
-// inside the Navbar (public) or AdminHeader (admin).
 const AUTH_PATHS = ['/auth', '/forgot-password', '/reset-password', '/email-confirmation', '/2FA'];
 const AuthOnlyThemeToggle = () => {
   const { pathname } = useLocation();
@@ -60,71 +56,72 @@ const AuthOnlyThemeToggle = () => {
 
 function App() {
   return (
+    // NotifyProvider reads from Redux and renders toast/confirm portals into <body>
     <NotifyProvider>
       <BrowserRouter>
         <Routes>
-        {/* Redirect racine */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* Redirect racine */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
 
-        {/* ── Routes publiques (avec layout Navbar+Footer) ── */}
-        <Route path="/home" element={<PublicPage><HomePage /></PublicPage>} />
-        <Route path="/categories" element={<PublicPage><CategoriesPage /></PublicPage>} />
-        <Route path="/categories/:slug" element={<PublicPage><CategoryDetailPage /></PublicPage>} />
-        <Route path="/products" element={<PublicPage><ProductsPage /></PublicPage>} />
-        <Route path="/products/:slug" element={<PublicPage><ProductDetailPage /></PublicPage>} />
-        <Route path="/cart" element={<PublicPage><CartPage /></PublicPage>} />
-        <Route path="/search" element={<PublicPage><SearchPage /></PublicPage>} />
-        <Route path="/contact" element={<PublicPage><ContactPage /></PublicPage>} />
+          {/* ── Routes publiques (avec layout Navbar+Footer) ── */}
+          <Route path="/home" element={<PublicPage><HomePage /></PublicPage>} />
+          <Route path="/categories" element={<PublicPage><CategoriesPage /></PublicPage>} />
+          <Route path="/categories/:slug" element={<PublicPage><CategoryDetailPage /></PublicPage>} />
+          <Route path="/products" element={<PublicPage><ProductsPage /></PublicPage>} />
+          <Route path="/products/:slug" element={<PublicPage><ProductDetailPage /></PublicPage>} />
+          <Route path="/cart" element={<PublicPage><CartPage /></PublicPage>} />
+          <Route path="/search" element={<PublicPage><SearchPage /></PublicPage>} />
+          <Route path="/contact" element={<PublicPage><ContactPage /></PublicPage>} />
 
-        {/* ── Routes privées utilisateur ── */}
-        <Route path="/checkout" element={
-          <RouteLayout requireAuth redirectTo="/auth">
-            <PublicPage><CheckoutPage /></PublicPage>
-          </RouteLayout>
-        } />
-        <Route path="/checkout/confirmation" element={
-          <RouteLayout requireAuth redirectTo="/auth">
-            <PublicPage><OrderConfirmationPage /></PublicPage>
-          </RouteLayout>
-        } />
-        <Route path="/account" element={
-          <RouteLayout requireAuth redirectTo="/auth">
-            <PublicPage><AccountPage /></PublicPage>
-          </RouteLayout>
-        } />
-        <Route path="/compte" element={<Navigate to="/account" replace />} />
-
-        {/* ── Auth ── */}
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/email-confirmation" element={<EmailConfirmation />} />
-        <Route path="/2FA" element={<TwoFactor />} /> 
-
-        {/* ── Pages légales ── */}
-        <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />
-        <Route path="/privacy-policy" element={<PublicPage><PrivacyPolicyComponent /></PublicPage>} />
-        <Route path="/cookie-policy" element={<PublicPage><CookiePolicyComponent /></PublicPage>} />
-
-        {/* ── Admin (rôle ADMIN obligatoire) ── */}
-        <Route
-          path="/admin"
-          element={
-            <RouteLayout requireAuth allowedRoles={["ADMIN"]}>
-              <AdminLayout />
+          {/* ── Routes privées utilisateur ── */}
+          <Route path="/checkout" element={
+            <RouteLayout requireAuth redirectTo="/auth">
+              <PublicPage><CheckoutPage /></PublicPage>
             </RouteLayout>
-          }
-        >
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="products" element={<AdminProductsPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="profile" element={<MyProfile />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
+          } />
+          <Route path="/checkout/confirmation" element={
+            <RouteLayout requireAuth redirectTo="/auth">
+              <PublicPage><OrderConfirmationPage /></PublicPage>
+            </RouteLayout>
+          } />
+          <Route path="/account" element={
+            <RouteLayout requireAuth redirectTo="/auth">
+              <PublicPage><AccountPage /></PublicPage>
+            </RouteLayout>
+          } />
+          <Route path="/compte" element={<Navigate to="/account" replace />} />
 
-        {/* 404 */}
-        <Route path="*" element={<ErrorPage />} />
+          {/* ── Auth ── */}
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/email-confirmation" element={<EmailConfirmation />} />
+          <Route path="/2FA" element={<TwoFactor />} />
+
+          {/* ── Pages légales ── */}
+          <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />
+          <Route path="/privacy-policy" element={<PublicPage><PrivacyPolicyComponent /></PublicPage>} />
+          <Route path="/cookie-policy" element={<PublicPage><CookiePolicyComponent /></PublicPage>} />
+
+          {/* ── Admin (rôle ADMIN obligatoire) ── */}
+          <Route
+            path="/admin"
+            element={
+              <RouteLayout requireAuth allowedRoles={["ADMIN"]}>
+                <AdminLayout />
+              </RouteLayout>
+            }
+          >
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="products" element={<AdminProductsPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="profile" element={<MyProfile />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+
+          {/* 404 */}
+          <Route path="*" element={<ErrorPage />} />
         </Routes>
 
         <AuthOnlyThemeToggle />

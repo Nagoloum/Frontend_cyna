@@ -1,99 +1,106 @@
 // src/components/admin/products/ProductModal.jsx
 import { createPortal } from 'react-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { X, Upload, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { productsAPI, buildImageUrl, getImagePath } from '../../../services/api';
 import AdminSelect from '../Shared/AdminSelect';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import {
+  setProductFormLoading,
+  setProductFormError,
+  addProductFormPreviews,
+  removeProductFormPreview,
+  removeProductFormExistingImage,
+  updateProductForm,
+  resetProductForm,
+  initProductForm,
+} from '../../../store/slices/productFormSlice';
 
 export default function ProductModal({ product = null, services = [], onClose, onSaved }) {
+  const dispatch     = useAppDispatch();
+  const { loading, error, previews, existingImages, form } = useAppSelector((s) => s.productForm);
   const isEdit       = !!product;
   const fileInputRef = useRef(null);
+  // File objects are not Redux-serializable — kept in a ref
+  const imageFilesRef = useRef([]);
 
-  const [loading, setLoading]               = useState(false);
-  const [error, setError]                   = useState(null);
-  const [previews, setPreviews]             = useState([]);
-  const [imageFiles, setImageFiles]         = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
-
-  const [form, setForm] = useState({
-    name:        '',
-    serviceId:   '',
-    priceMonth:  '',
-    priceYear:   '',
-    stock:       '',
-    is_selected: false,
-  });
-
+  // Initialise form when product changes (edit mode)
   useEffect(() => {
-    if (!product) return;
-    const rawService = product.service ?? product.serviceId;
-    const serviceId  = typeof rawService === 'string' ? rawService : rawService?._id ?? '';
+    if (product) {
+      const rawService = product.service ?? product.serviceId;
+      const serviceId  = typeof rawService === 'string' ? rawService : rawService?._id ?? '';
+      const paths      = (product.images ?? []).map(getImagePath).filter(Boolean);
+      dispatch(initProductForm({
+        serviceId,
+        existingImages: paths,
+        previews: paths.map(buildImageUrl).filter(Boolean),
+        form: {
+          name:        product.name        ?? '',
+          serviceId,
+          priceMonth:  product.priceMonth  ?? '',
+          priceYear:   product.priceYear   ?? '',
+          stock:       product.stock       ?? '',
+          is_selected: product.is_selected ?? false,
+        },
+      }));
+    } else {
+      dispatch(resetProductForm());
+    }
+    imageFilesRef.current = [];
+  }, [product, dispatch]);
 
-    const paths = (product.images ?? []).map(getImagePath).filter(Boolean);
-    setExistingImages(paths);
-    setPreviews(paths.map(buildImageUrl).filter(Boolean));
-
-    setForm({
-      name:        product.name        ?? '',
-      serviceId,
-      priceMonth:  product.priceMonth  ?? '',
-      priceYear:   product.priceYear   ?? '',
-      stock:       product.stock       ?? '',
-      is_selected: product.is_selected ?? false,
-    });
-  }, [product]);
-
+  // Revoke blob URLs on unmount
   useEffect(() => {
     return () => {
       previews.forEach((url) => {
         if (url.startsWith('blob:')) URL.revokeObjectURL(url);
       });
+      dispatch(resetProductForm());
     };
-  }, [previews]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    dispatch(updateProductForm({ [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleImageAdd = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     const newPreviews = files.map((f) => URL.createObjectURL(f));
-    setImageFiles((prev) => [...prev, ...files]);
-    setPreviews((prev) => [...prev, ...newPreviews]);
+    imageFilesRef.current = [...imageFilesRef.current, ...files];
+    dispatch(addProductFormPreviews(newPreviews));
     e.target.value = '';
   };
 
   const handleRemoveImage = (index) => {
     if (index < existingImages.length) {
-      setExistingImages((prev) => prev.filter((_, i) => i !== index));
-      setPreviews((prev) => prev.filter((_, i) => i !== index));
+      dispatch(removeProductFormExistingImage(index));
+      dispatch(removeProductFormPreview(index));
     } else {
       const fileIndex = index - existingImages.length;
-      setImageFiles((prev) => prev.filter((_, i) => i !== fileIndex));
-      setPreviews((prev) => {
-        const url = prev[index];
-        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
-        return prev.filter((_, i) => i !== index);
-      });
+      const url = previews[index];
+      if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+      imageFilesRef.current = imageFilesRef.current.filter((_, i) => i !== fileIndex);
+      dispatch(removeProductFormPreview(index));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    dispatch(setProductFormError(null));
 
-    if (!form.name.trim())                            { setError('Product name is required.'); return; }
-    if (!form.serviceId)                              { setError('Please select a service.'); return; }
-    if (form.priceMonth === '' || isNaN(Number(form.priceMonth))) { setError('Monthly price is required.'); return; }
-    if (form.priceYear  === '' || isNaN(Number(form.priceYear)))  { setError('Yearly price is required.'); return; }
-    if (!isEdit && imageFiles.length === 0)           { setError('At least one image is required.'); return; }
+    if (!form.name.trim())                            { dispatch(setProductFormError('Product name is required.')); return; }
+    if (!form.serviceId)                              { dispatch(setProductFormError('Please select a service.')); return; }
+    if (form.priceMonth === '' || isNaN(Number(form.priceMonth))) { dispatch(setProductFormError('Monthly price is required.')); return; }
+    if (form.priceYear  === '' || isNaN(Number(form.priceYear)))  { dispatch(setProductFormError('Yearly price is required.')); return; }
+    if (!isEdit && imageFilesRef.current.length === 0) { dispatch(setProductFormError('At least one image is required.')); return; }
 
-    setLoading(true);
+    dispatch(setProductFormLoading(true));
     try {
       let payload;
-      if (imageFiles.length > 0) {
+      if (imageFilesRef.current.length > 0) {
         payload = new FormData();
         payload.append('serviceId',   form.serviceId);
         payload.append('name',        form.name.trim());
@@ -101,7 +108,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
         payload.append('priceYear',   String(Number(form.priceYear)  || 0));
         payload.append('stock',       String(Number(form.stock)      || 0));
         payload.append('is_selected', String(form.is_selected));
-        imageFiles.forEach((f) => payload.append('images', f));
+        imageFilesRef.current.forEach((f) => payload.append('images', f));
         existingImages.forEach((u) => payload.append('existingImages', u));
       } else {
         payload = {
@@ -123,9 +130,9 @@ export default function ProductModal({ product = null, services = [], onClose, o
       onSaved();
     } catch (err) {
       const msg = err.response?.data?.message ?? err.message ?? 'An error occurred.';
-      setError(Array.isArray(msg) ? msg.join(' · ') : msg);
+      dispatch(setProductFormError(Array.isArray(msg) ? msg.join(' · ') : msg));
     } finally {
-      setLoading(false);
+      dispatch(setProductFormLoading(false));
     }
   };
 

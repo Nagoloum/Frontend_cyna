@@ -1,20 +1,17 @@
 // src/components/BrowserTranslateToggle.jsx
-import { useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { toggleLanguage } from '../../store/slices/uiSlice';
 
 export default function BrowserTranslateToggle() {
-  const [isFrench, setIsFrench] = useState(true);
+  const dispatch  = useAppDispatch();
+  const isFrench  = useAppSelector((s) => s.ui.languageIsFrench);
 
   const toggleTranslation = () => {
     const targetLang = isFrench ? 'en' : 'fr';
-
-    // Change la langue HTML
     document.documentElement.lang = targetLang;
-
-    // Force Chrome à proposer la traduction en rechargeant avec un paramètre
+    dispatch(toggleLanguage());
     const separator = window.location.search ? '&' : '?';
     window.location.href = window.location.href + separator + '_translate_to=' + targetLang + '&_t=' + Date.now();
-
-    setIsFrench(!isFrench);
   };
 
   return (

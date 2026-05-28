@@ -1,32 +1,20 @@
 // Unified, theme-aware notification system (toasts + confirm dialogs).
-// Renders into <body> via portal so it floats above any layout.
+// Renders into <body> via portal. State is now managed entirely by Redux.
 //
 // Usage:
-//   const { notify, confirm } = useNotify();
+//   const { notify, confirmDialog } = from '@/components/ui/feedback';
 //   notify.success('Saved', 'Profile updated');
-//   const ok = await confirm({ title: 'Delete?', message: '...', variant: 'danger' });
-//
-// Or, from anywhere (after the provider mounted):
-//   import { notify, confirmDialog } from '@/components/ui/feedback';
-//   notify.error('Oops', err.message);
+//   const ok = await confirmDialog({ title: 'Delete?', message: '...', variant: 'danger' });
 
-import {
-  createContext, useCallback, useContext, useEffect,
-  useMemo, useRef, useState,
-} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertTriangle, CheckCircle2, Info, Loader2, X, XCircle,
 } from 'lucide-react';
-import { setNotifyHandler, setConfirmHandler } from './notify';
-
-const NotifyContext = createContext(null);
-
-export function useNotify() {
-  const ctx = useContext(NotifyContext);
-  if (!ctx) throw new Error('useNotify must be used within <NotifyProvider>');
-  return ctx;
-}
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../../../store/hooks';
+import { removeToast } from '../../../store/slices/notificationsSlice';
+import { resolveConfirm } from './notify';
 
 // ─── Visual config ──────────────────────────────────────────────────────────
 const ICONS = {
@@ -36,7 +24,6 @@ const ICONS = {
   info:    Info,
 };
 
-// Each variant returns inline style overrides mapped to CSS variables.
 const variantTone = (type) => {
   switch (type) {
     case 'success': return { fg: 'var(--success)', glow: 'rgba(16,185,129,0.18)' };
@@ -91,21 +78,19 @@ function Toast({ toast, onRemove }) {
 }
 
 // ─── Confirm dialog ─────────────────────────────────────────────────────────
-function ConfirmDialog({ state, onResolve }) {
+function ConfirmDialog({ state }) {
   const [busy, setBusy] = useState(false);
 
-  // Reset busy whenever a new dialog opens.
   useEffect(() => { setBusy(false); }, [state?.id]);
 
-  // ESC closes the dialog as a "cancel".
   useEffect(() => {
     if (!state) return;
     const onKey = (e) => {
-      if (e.key === 'Escape' && !busy) onResolve(false);
+      if (e.key === 'Escape' && !busy) resolveConfirm(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [state, busy, onResolve]);
+  }, [state, busy]);
 
   if (!state) return null;
   const {
@@ -121,13 +106,13 @@ function ConfirmDialog({ state, onResolve }) {
     ? XCircle
     : ICONS[variant] ?? AlertTriangle;
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     setBusy(true);
-    onResolve(true);
+    resolveConfirm(true);
   };
 
   return (
-    <div className="cyna-modal-backdrop" onClick={() => !busy && onResolve(false)}>
+    <div className="cyna-modal-backdrop" onClick={() => !busy && resolveConfirm(false)}>
       <div
         role="dialog"
         aria-modal="true"
@@ -139,7 +124,7 @@ function ConfirmDialog({ state, onResolve }) {
         <button
           type="button"
           className="cyna-modal-close"
-          onClick={() => !busy && onResolve(false)}
+          onClick={() => !busy && resolveConfirm(false)}
           aria-label="Close"
           disabled={busy}
         >
@@ -157,7 +142,7 @@ function ConfirmDialog({ state, onResolve }) {
           <button
             type="button"
             className="cyna-btn-cancel"
-            onClick={() => onResolve(false)}
+            onClick={() => resolveConfirm(false)}
             disabled={busy}
           >
             {cancelLabel}
@@ -178,71 +163,31 @@ function ConfirmDialog({ state, onResolve }) {
 }
 
 // ─── Provider ───────────────────────────────────────────────────────────────
+// Reads all state from Redux — no local useState for toasts or confirm.
 export function NotifyProvider({ children }) {
-  const [toasts, setToasts]   = useState([]);
-  const [pending, setPending] = useState(null); // { id, ...opts, resolve }
-  const idRef = useRef(0);
+  const dispatch = useAppDispatch();
+  const toasts   = useSelector((s) => s.notifications.toasts);
+  const confirm  = useSelector((s) => s.notifications.confirm);
 
-  const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const pushToast = useCallback((data) => {
-    const id = ++idRef.current;
-    setToasts((prev) => [...prev, { id, ...data }]);
-    return id;
-  }, []);
-
-  const notify = useMemo(() => ({
-    success: (title, message, opts) => pushToast({ type: 'success', title, message, ...opts }),
-    error:   (title, message, opts) => pushToast({ type: 'error',   title, message, ...opts }),
-    warning: (title, message, opts) => pushToast({ type: 'warning', title, message, ...opts }),
-    info:    (title, message, opts) => pushToast({ type: 'info',    title, message, ...opts }),
-  }), [pushToast]);
-
-  const confirm = useCallback((opts) => {
-    return new Promise((resolve) => {
-      const id = ++idRef.current;
-      setPending({ id, ...opts, resolve });
-    });
-  }, []);
-
-  const resolveConfirm = useCallback((value) => {
-    if (pending) {
-      pending.resolve(value);
-      setPending(null);
-    }
-  }, [pending]);
-
-  // Expose handlers globally so non-hook code can call them.
-  useEffect(() => {
-    setNotifyHandler(notify);
-    setConfirmHandler(confirm);
-    return () => {
-      setNotifyHandler(null);
-      setConfirmHandler(null);
-    };
-  }, [notify, confirm]);
-
-  const ctx = useMemo(() => ({ notify, confirm }), [notify, confirm]);
+  const onRemove = useCallback((id) => dispatch(removeToast(id)), [dispatch]);
 
   return (
-    <NotifyContext.Provider value={ctx}>
+    <>
       {children}
       <Portal>
         <div className="cyna-toast-stack" aria-live="polite">
           {toasts.map((t) => (
-            <Toast key={t.id} toast={t} onRemove={removeToast} />
+            <Toast key={t.id} toast={t} onRemove={onRemove} />
           ))}
         </div>
-        <ConfirmDialog state={pending} onResolve={resolveConfirm} />
+        <ConfirmDialog state={confirm} />
       </Portal>
       <NotifyStyles />
-    </NotifyContext.Provider>
+    </>
   );
 }
 
-// ─── Portal (lazy: only mounts when document is ready) ──────────────────────
+// ─── Portal ──────────────────────────────────────────────────────────────────
 function Portal({ children }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setReady(true); }, []);
@@ -250,7 +195,7 @@ function Portal({ children }) {
   return createPortal(children, document.body);
 }
 
-// ─── Styles (scoped via classnames, fully driven by CSS vars) ───────────────
+// ─── Styles ──────────────────────────────────────────────────────────────────
 function NotifyStyles() {
   return (
     <style>{`
@@ -311,10 +256,7 @@ function NotifyStyles() {
         color: var(--tone-fg);
       }
 
-      .cyna-toast-body {
-        flex: 1;
-        min-width: 0;
-      }
+      .cyna-toast-body { flex: 1; min-width: 0; }
       .cyna-toast-title {
         margin: 0;
         font-size: 0.875rem;
@@ -342,10 +284,7 @@ function NotifyStyles() {
         color: var(--text-muted);
         transition: background 0.15s ease, color 0.15s ease;
       }
-      .cyna-toast-close:hover {
-        background: var(--bg-muted);
-        color: var(--text-primary);
-      }
+      .cyna-toast-close:hover { background: var(--bg-muted); color: var(--text-primary); }
 
       .cyna-toast-progress {
         position: absolute;
@@ -375,10 +314,7 @@ function NotifyStyles() {
         padding: 1rem;
         animation: cyna-fade 180ms ease;
       }
-      @keyframes cyna-fade {
-        from { opacity: 0; }
-        to   { opacity: 1; }
-      }
+      @keyframes cyna-fade { from { opacity: 0; } to { opacity: 1; } }
 
       .cyna-modal-panel {
         position: relative;
@@ -412,10 +348,7 @@ function NotifyStyles() {
         color: var(--text-muted);
         transition: background 0.15s, color 0.15s;
       }
-      .cyna-modal-close:hover:not(:disabled) {
-        background: var(--bg-muted);
-        color: var(--text-primary);
-      }
+      .cyna-modal-close:hover:not(:disabled) { background: var(--bg-muted); color: var(--text-primary); }
 
       .cyna-modal-icon {
         width: 48px;
@@ -470,24 +403,16 @@ function NotifyStyles() {
         color: var(--text-primary);
         border: 1px solid var(--border);
       }
-      .cyna-btn-cancel:hover:not(:disabled) {
-        border-color: var(--text-muted);
-      }
+      .cyna-btn-cancel:hover:not(:disabled) { border-color: var(--text-muted); }
       .cyna-btn-confirm {
         background: var(--tone-fg);
         color: #fff;
         border: 1px solid var(--tone-fg);
         box-shadow: 0 6px 16px var(--tone-glow);
       }
-      .cyna-btn-confirm:hover:not(:disabled) {
-        filter: brightness(1.08);
-        transform: translateY(-1px);
-      }
+      .cyna-btn-confirm:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
       .cyna-btn-cancel:disabled,
-      .cyna-btn-confirm:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+      .cyna-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
 
       @media (max-width: 480px) {
         .cyna-modal-panel { padding: 1.25rem 1.125rem 1rem; border-radius: 18px; }

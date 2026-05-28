@@ -1,8 +1,15 @@
 import { ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "../Kit/ThemeToggle";
 import { authAPI } from "@/services/api";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  toggleNavbarMobile,
+  setNavbarMobileOpen,
+  setNavbarScrolled,
+  setNavbarSearch,
+} from "@/store/slices/uiSlice";
 
 const getUser = () => {
   try {
@@ -28,47 +35,30 @@ const NavLink = ({ to, children, active }) => (
   </Link>
 );
 
-const readCartCount = () => {
-  try {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    if (!Array.isArray(cart)) return 0;
-    return cart.reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
-  } catch {
-    return 0;
-  }
-};
-
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [scrolled, setScrolled] = useState(false);
-  const [cartCount, setCartCount] = useState(readCartCount);
+  const dispatch   = useAppDispatch();
+  const mobileOpen = useAppSelector((s) => s.ui.navbarMobileOpen);
+  const search     = useAppSelector((s) => s.ui.navbarSearch);
+  const scrolled   = useAppSelector((s) => s.ui.navbarScrolled);
+  const cartItems  = useAppSelector((s) => s.cart.items);
+  const cartCount  = cartItems.reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getUser();
+  const user     = getUser();
   const isLoggedIn = !!user;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => dispatch(setNavbarScrolled(window.scrollY > 8));
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
-    const refresh = () => setCartCount(readCartCount());
-    window.addEventListener("cart-updated", refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener("cart-updated", refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, []);
-
-  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+    dispatch(setNavbarMobileOpen(false));
+  }, [location.pathname, dispatch]);
 
   const handleLogout = () => {
-    // Routes through authAPI.logout so the user's cart is archived under
-    // their user id (and the active anonymous cart is cleared).
     authAPI.logout();
   };
 
@@ -120,7 +110,7 @@ export default function Navbar() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => dispatch(setNavbarSearch(e.target.value))}
               placeholder="Search for a solution..."
               className="w-full pl-4 pr-10 h-10 rounded-full border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:bg-[var(--bg-card)] transition-all"
               style={{ fontFamily: "'Kumbh Sans', sans-serif" }}
@@ -138,7 +128,6 @@ export default function Navbar() {
           <div className="flex items-center gap-1 ml-auto lg:ml-0 shrink-0">
             <ThemeToggle variant="inline" />
 
-            {/* Cart — visible whether or not the user is logged in */}
             <Link
               to="/cart"
               className="relative p-2.5 rounded-xl transition-colors hover:bg-[var(--bg-muted)]"
@@ -189,7 +178,7 @@ export default function Navbar() {
 
             {/* Burger */}
             <button
-              onClick={() => setMobileOpen((v) => !v)}
+              onClick={() => dispatch(toggleNavbarMobile())}
               className="lg:hidden p-2.5 rounded-xl ml-1 transition-colors hover:bg-[var(--bg-muted)]"
               style={{ color: "var(--text-primary)" }}
               aria-label="Menu"
@@ -207,7 +196,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 lg:hidden"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => dispatch(setNavbarMobileOpen(false))}
         >
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <nav
@@ -221,7 +210,7 @@ export default function Navbar() {
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => dispatch(setNavbarSearch(e.target.value))}
                   placeholder="Search..."
                   className="w-full pl-4 pr-10 h-11 rounded-full border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all"
                 />
