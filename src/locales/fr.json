@@ -583,5 +583,31 @@
   "error": {
     "not_found": "Page introuvable",
     "go_home": "Aller à l'accueil"
+  },
+  "chatbot": {
+    "title": "Assistant Cyna",
+    "subtitle": "En ligne — réponse instantanée",
+    "open": "Ouvrir l'assistant",
+    "close": "Fermer l'assistant",
+    "welcome": "Bonjour ! Je suis l'assistant Cyna. Sélectionnez une question ci-dessous et je vous répondrai instantanément.",
+    "questions_label": "Questions fréquentes",
+    "back": "Retour aux questions",
+    "powered_by": "Propulsé par",
+    "q1": "Comment fonctionne le SOC ?",
+    "q2": "Qu'est-ce que l'EDR et le XDR ?",
+    "q3": "Comment contacter le support ?",
+    "q4": "Comment m'abonner à une solution ?",
+    "q5": "Comment résilier mon abonnement ?",
+    "q6": "Mes données sont-elles sécurisées ?",
+    "q7": "Quels sont vos tarifs ?",
+    "q8": "Avez-vous une période d'essai ?",
+    "a1": "Notre SOC (Security Operations Center) surveille votre infrastructure 24h/24, 7j/7. Des analystes experts détectent, analysent et répondent aux incidents de sécurité en temps réel, réduisant drastiquement le délai de réponse aux menaces.",
+    "a2": "L'EDR (Endpoint Detection & Response) protège chaque poste de travail et serveur contre les menaces avancées grâce à l'intelligence artificielle. Le XDR (Extended Detection & Response) offre une vision unifiée en corrélant les données de l'ensemble de votre infrastructure — endpoints, réseau et cloud.",
+    "a3": "Notre équipe support est disponible 24h/24. Contactez-nous via le formulaire de contact sur le site, par email à support@cyna-it.fr ou directement depuis votre espace client dans la section \"Support\".",
+    "a4": "Pour vous abonner, parcourez notre catalogue de produits, ajoutez votre solution au panier et finalisez votre commande en quelques clics. Votre accès est activé immédiatement après validation du paiement.",
+    "a5": "Vous pouvez résilier votre abonnement à tout moment depuis votre espace client, section \"Abonnements\". La résiliation prend effet à la fin de la période de facturation en cours, sans frais supplémentaires.",
+    "a6": "Absolument. Nous appliquons les standards de sécurité les plus stricts : chiffrement TLS en transit, données hébergées dans l'UE, conformité RGPD, et nous protégeons nos propres infrastructures avec nos technologies EDR/XDR. Votre sécurité est notre priorité.",
+    "a7": "Nos tarifs sont affichés directement sur chaque fiche produit (par mois ou par an). Pour un devis personnalisé ou des offres entreprise avec des besoins spécifiques, contactez-nous via le formulaire de contact.",
+    "a8": "Certaines de nos solutions incluent une période d'évaluation. Contactez notre équipe commerciale via le formulaire de contact pour discuter des options d'essai adaptées à la taille et aux besoins de votre organisation."
   }
 }

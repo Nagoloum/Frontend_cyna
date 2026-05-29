@@ -261,10 +261,9 @@ export default function SearchPage() {
             <button type="submit" className="btn-primary px-6">{t("search.search_btn")}</button>
           </form>
           {(q || hasActiveFilters) && (
-            <p className="text-sm mb-1" style={{ color: "var(--text-muted)" }}>
+            <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>
               {loading ? t("search.searching") : (
                 <>
-                  <strong style={{ color: "var(--text-primary)" }}>{total}</strong>{" "}
                   {total <= 1 ? t("search.result", { count: total }) : t("search.result_plural", { count: total })}
                   {q && <> {t("search.for_query", { query: q })}</>}
                 </>
@@ -274,11 +273,11 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div className="cyna-container py-8">
+      <div className="cyna-container cyna-container-custom py-8">
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* ── Sidebar filters (desktop) / collapse (mobile) ── */}
-          <aside className="lg:w-60 flex-shrink-0">
+          <aside className="lg:w-72 flex-shrink-0">
             {/* Mobile toggle */}
             <button
               onClick={() => setShowFilters((v) => !v)}

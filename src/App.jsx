@@ -41,6 +41,7 @@ import TwoFactor from "./pages/Auth/TwoFactor";
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
 import { NotifyProvider } from "./components/ui/feedback";
+import ChatBot from "./components/ui/ChatBot";
 
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>
@@ -125,6 +126,7 @@ function App() {
         </Routes>
 
         <AuthOnlyThemeToggle />
+        <ChatBot />
       </BrowserRouter>
     </NotifyProvider>
   );

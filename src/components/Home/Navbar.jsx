@@ -142,13 +142,11 @@ export default function Navbar() {
             {/* Language toggle FR/EN */}
             <button
               onClick={toggleLang}
-              className="hidden sm:flex items-center px-2 py-1.5 rounded-xl text-xs font-[Kumbh Sans] font-700 border border-[var(--border)] transition-all hover:border-[var(--accent)]"
-              style={{ color: "var(--text-secondary)" }}
+              className="hidden sm:flex items-center p-2.5 rounded-xl font-semibold transition-all hover:bg-[var(--bg-muted)]"
+              style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
               title={isFr ? "Switch to English" : "Passer en français"}
             >
-              <span style={{ color: isFr ? "var(--accent)" : "var(--text-muted)" }}>FR</span>
-              <span className="mx-0.5" style={{ color: "var(--text-muted)" }}>/</span>
-              <span style={{ color: !isFr ? "var(--accent)" : "var(--text-muted)" }}>EN</span>
+              {isFr ? "EN" : "FR"}
             </button>
 
             <Link
@@ -271,11 +269,10 @@ export default function Navbar() {
               </span>
               <button
                 onClick={toggleLang}
-                className="flex items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-[Kumbh Sans] font-700 border border-[var(--border)] transition-all hover:border-[var(--accent)]"
+                className="flex items-center px-3 py-1.5 rounded-xl text-sm font-semibold border border-[var(--border)] transition-all hover:border-[var(--accent)]"
+                style={{ color: "var(--accent)", fontFamily: "'Kumbh Sans', sans-serif" }}
               >
-                <span style={{ color: isFr ? "var(--accent)" : "var(--text-muted)" }}>FR</span>
-                <span className="mx-0.5" style={{ color: "var(--text-muted)" }}>/</span>
-                <span style={{ color: !isFr ? "var(--accent)" : "var(--text-muted)" }}>EN</span>
+                {isFr ? "EN" : "FR"}
               </button>
             </div>
 
