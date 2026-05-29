@@ -4,12 +4,12 @@ import {
   Package, Tag, Users, TrendingUp, Layers,
   BarChart3, AlertCircle, ShoppingBag,
 } from 'lucide-react';
-import KPICard from '../../components/admin/dashboard/KPICard';
-import PeriodSelector from '../../components/admin/dashboard/PeriodSelector';
-import RevenueLineChart from '../../components/admin/dashboard/RevenueLineChart';
-import SalesPieChart from '../../components/admin/dashboard/SalesPieChart';
-import TopProductsChart from '../../components/admin/dashboard/TopProductsChart';
-import QuickActions from '../../components/admin/dashboard/QuickActions';
+import KPICard from '../../components/Admin/Dashboard/KPICard';
+import PeriodSelector from '../../components/Admin/Dashboard/PeriodSelector';
+import RevenueLineChart from '../../components/Admin/Dashboard/RevenueLineChart';
+import SalesPieChart from '../../components/Admin/Dashboard/SalesPieChart';
+import TopProductsChart from '../../components/Admin/Dashboard/TopProductsChart';
+import QuickActions from '../../components/Admin/Dashboard/QuickActions';
 import { dashboardAPI, buildImageUrl } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 import {
@@ -17,7 +17,7 @@ import {
   revenueByCategory,
   topProductsByRevenue,
   totalPaidRevenue,
-} from '../../components/admin/dashboard/analytics';
+} from '../../components/Admin/Dashboard/analytics';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
