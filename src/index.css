@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght,YOPQ@100..900,300&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght,YOPQ@100..900,300&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -102,18 +102,36 @@ h6 {
 
 .cyna-container {
   width: 100%;
-  max-width: 1280px;
+  max-width: 1380px;
   margin: 0 auto;
-  padding: 0 1rem;
 }
+
+@media (min-width: 320px) {
+  .cyna-container {
+    padding: 0 1.5rem;
+  }
+
+  .cyna-container.cyna-container-custom {
+    padding: 1rem 0.5rem 3rem 4.5rem;
+  }
+}
+
 @media (min-width: 640px) {
   .cyna-container {
     padding: 0 1.5rem;
+  }
+
+  .cyna-container.cyna-container-custom {
+    padding: 3rem 1.5rem 3rem 4.5rem;
   }
 }
 @media (min-width: 1024px) {
   .cyna-container {
     padding: 0 2.5rem;
+  }
+
+  .cyna-container.cyna-container-custom {
+    padding: 3rem 1.5rem 3rem 4.5rem;
   }
 }
 

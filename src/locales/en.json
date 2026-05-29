@@ -583,5 +583,31 @@
   "error": {
     "not_found": "Page not found",
     "go_home": "Go to homepage"
+  },
+  "chatbot": {
+    "title": "Cyna Assistant",
+    "subtitle": "Online — instant reply",
+    "open": "Open assistant",
+    "close": "Close assistant",
+    "welcome": "Hello! I'm the Cyna assistant. Select a question below and I'll answer instantly.",
+    "questions_label": "Frequently asked questions",
+    "back": "Back to questions",
+    "powered_by": "Powered by",
+    "q1": "How does the SOC work?",
+    "q2": "What are EDR and XDR?",
+    "q3": "How do I contact support?",
+    "q4": "How do I subscribe to a solution?",
+    "q5": "How do I cancel my subscription?",
+    "q6": "Is my data secure?",
+    "q7": "What are your pricing plans?",
+    "q8": "Do you offer a free trial?",
+    "a1": "Our SOC (Security Operations Center) monitors your infrastructure 24/7. Expert analysts detect, analyze, and respond to security incidents in real time, dramatically reducing your threat response time.",
+    "a2": "EDR (Endpoint Detection & Response) protects every workstation and server against advanced threats using AI. XDR (Extended Detection & Response) provides a unified view by correlating data across your entire infrastructure — endpoints, network, and cloud.",
+    "a3": "Our support team is available 24/7. You can reach us via the contact form on the website, by email at support@cyna-it.fr, or directly from your customer portal under the \"Support\" section.",
+    "a4": "To subscribe, browse our product catalog, add your solution to the cart, and complete your order in a few clicks. Your access is activated immediately after payment confirmation.",
+    "a5": "You can cancel your subscription at any time from your customer portal under \"Subscriptions\". Cancellation takes effect at the end of your current billing period, with no additional fees.",
+    "a6": "Absolutely. We apply the strictest security standards: TLS encryption in transit, EU-hosted data, GDPR compliance, and we protect our own infrastructure with our EDR/XDR technologies. Your security is our priority.",
+    "a7": "Our pricing is displayed directly on each product page (monthly or annually). For a custom quote or enterprise plans with specific requirements, contact us via the contact form.",
+    "a8": "Some of our solutions include an evaluation period. Contact our sales team via the contact form to discuss trial options tailored to the size and needs of your organization."
   }
 }
