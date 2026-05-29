@@ -1,4 +1,12 @@
-import { ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import {
+  ChevronRight,
+  LogOut,
+  Menu,
+  Search,
+  ShoppingBag,
+  User,
+  X,
+} from "lucide-react";
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,8 +25,12 @@ const getUser = () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) return null;
-    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-  } catch { return null; }
+    return JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+  } catch {
+    return null;
+  }
 };
 
 const NavLink = ({ to, children, active }) => (
@@ -39,16 +51,19 @@ const NavLink = ({ to, children, active }) => (
 
 export default function Navbar() {
   const { t, i18n } = useTranslation();
-  const dispatch   = useAppDispatch();
+  const dispatch = useAppDispatch();
   const mobileOpen = useAppSelector((s) => s.ui.navbarMobileOpen);
-  const search     = useAppSelector((s) => s.ui.navbarSearch);
-  const scrolled   = useAppSelector((s) => s.ui.navbarScrolled);
-  const cartItems  = useAppSelector((s) => s.cart.items);
-  const cartCount  = cartItems.reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+  const search = useAppSelector((s) => s.ui.navbarSearch);
+  const scrolled = useAppSelector((s) => s.ui.navbarScrolled);
+  const cartItems = useAppSelector((s) => s.cart.items);
+  const cartCount = cartItems.reduce(
+    (sum, item) => sum + (Number(item?.qty) || 1),
+    0,
+  );
 
   const navigate = useNavigate();
   const location = useLocation();
-  const user     = getUser();
+  const user = getUser();
   const isLoggedIn = !!user;
 
   const isFr = i18n.language === "fr";
@@ -75,7 +90,8 @@ export default function Navbar() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+    if (search.trim())
+      navigate(`/search?q=${encodeURIComponent(search.trim())}`);
   };
 
   const navLinks = [
@@ -97,14 +113,17 @@ export default function Navbar() {
         <div className="cyna-container h-full flex items-center gap-3">
           {/* Logo */}
           <Link to="/home" className="flex items-center gap-2.5 shrink-0 mr-2">
-            <img src="/logo.png" alt="Cyna" className="h-8 w-auto object-contain" />
+            <img
+              src="/logo.png"
+              alt="Cyna"
+              className="h-8 w-auto object-contain"
+            />
             <span
-              className="hidden sm:block font-[Kumbh Sans] font-800 text-lg tracking-tight"
+              className="hidden sm:block font-[Kumbh Sans] font-800 font-bold text-lg tracking-tight"
               style={{ color: "var(--text-primary)" }}
             >
               Cyna
             </span>
-            <span className="badge badge-accent text-[10px] hidden sm:inline-flex">Security</span>
           </Link>
 
           {/* Nav links desktop */}
@@ -117,7 +136,10 @@ export default function Navbar() {
           </nav>
 
           {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-auto hidden sm:flex relative">
+          <form
+            onSubmit={handleSearch}
+            className="flex-1 max-w-md mx-auto hidden sm:flex relative"
+          >
             <input
               type="text"
               value={search}
@@ -143,7 +165,10 @@ export default function Navbar() {
             <button
               onClick={toggleLang}
               className="hidden sm:flex items-center p-2.5 rounded-xl font-semibold transition-all hover:bg-[var(--bg-muted)]"
-              style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
+              style={{
+                color: "var(--text-secondary)",
+                fontFamily: "'Kumbh Sans', sans-serif",
+              }}
               title={isFr ? "Switch to English" : "Passer en français"}
             >
               {isFr ? "EN" : "FR"}
@@ -160,7 +185,11 @@ export default function Navbar() {
                 <span
                   className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-[Kumbh Sans] font-700 text-white shadow-[var(--shadow-md)]"
                   style={{ background: "var(--accent)" }}
-                  aria-label={cartCount > 1 ? t("nav.items_in_cart_plural", { count: cartCount }) : t("nav.items_in_cart", { count: cartCount })}
+                  aria-label={
+                    cartCount > 1
+                      ? t("nav.items_in_cart_plural", { count: cartCount })
+                      : t("nav.items_in_cart", { count: cartCount })
+                  }
                 >
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
@@ -180,7 +209,7 @@ export default function Navbar() {
                 <button
                   onClick={handleLogout}
                   className="hidden sm:flex p-2.5 rounded-xl transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--danger)" }}
                   title={t("nav.logout")}
                 >
                   <LogOut size={20} strokeWidth={1.75} />
@@ -188,12 +217,15 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link to="/auth" className="btn-ghost hidden sm:inline-flex py-2 px-4 text-sm">
+                {/* Show "Sign In" on mobile, "Sign In" + "Sign Up" on desktop */}
+                <Link
+                  to="/auth"
+                  className="btn-ghost inline-flex py-1.5 px-3 sm:py-2 sm:px-4 text-xs sm:text-sm"
+                >
                   {t("nav.sign_in")}
                 </Link>
-                <Link to="/auth" className="btn-primary py-2 px-4 text-sm">
-                  {t("nav.sign_up")}
-                </Link>
+
+
               </>
             )}
 
@@ -253,24 +285,36 @@ export default function Navbar() {
                   to={l.to}
                   className="flex items-center justify-between px-5 py-3.5 text-sm font-semibold font-[Kumbh Sans] transition-colors hover:bg-[var(--bg-subtle)]"
                   style={{
-                    color: location.pathname === l.to ? "var(--accent)" : "var(--text-primary)",
+                    color:
+                      location.pathname === l.to
+                        ? "var(--accent)"
+                        : "var(--text-primary)",
                   }}
                 >
                   {l.label}
-                  <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+                  <ChevronRight
+                    size={16}
+                    style={{ color: "var(--text-muted)" }}
+                  />
                 </Link>
               ))}
             </div>
 
             {/* Language toggle mobile */}
             <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-between">
-              <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>
+              <span
+                className="text-xs font-[Kumbh Sans] font-600"
+                style={{ color: "var(--text-muted)" }}
+              >
                 {isFr ? "Langue" : "Language"}
               </span>
               <button
                 onClick={toggleLang}
                 className="flex items-center px-3 py-1.5 rounded-xl text-sm font-semibold border border-[var(--border)] transition-all hover:border-[var(--accent)]"
-                style={{ color: "var(--accent)", fontFamily: "'Kumbh Sans', sans-serif" }}
+                style={{
+                  color: "var(--accent)",
+                  fontFamily: "'Kumbh Sans', sans-serif",
+                }}
               >
                 {isFr ? "EN" : "FR"}
               </button>
@@ -287,10 +331,16 @@ export default function Navbar() {
                     {user?.email?.[0]?.toUpperCase() || "U"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                    <p
+                      className="text-sm font-semibold truncate"
+                      style={{ color: "var(--text-primary)" }}
+                    >
                       {user?.email}
                     </p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
                       {user?.role}
                     </p>
                   </div>
@@ -304,10 +354,16 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  <Link to="/auth" className="btn-ghost py-2.5 text-sm justify-center">
+                  <Link
+                    to="/auth"
+                    className="btn-ghost py-2.5 text-sm justify-center"
+                  >
                     {t("nav.sign_in")}
                   </Link>
-                  <Link to="/auth" className="btn-primary py-2.5 text-sm justify-center">
+                  <Link
+                    to="/auth"
+                    className="btn-primary py-2.5 text-sm justify-center"
+                  >
                     {t("nav.sign_up")}
                   </Link>
                 </div>
@@ -325,7 +381,12 @@ export default function Navbar() {
                 { key: "nav.contact", to: "/contact" },
                 { key: "nav.about", to: "/about" },
               ].map((l) => (
-                <Link key={l.key} to={l.to} className="text-xs transition-colors hover:text-[var(--accent)]" style={{ color: "var(--text-muted)" }}>
+                <Link
+                  key={l.key}
+                  to={l.to}
+                  className="text-xs transition-colors hover:text-[var(--accent)]"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   {t(l.key)}
                 </Link>
               ))}
