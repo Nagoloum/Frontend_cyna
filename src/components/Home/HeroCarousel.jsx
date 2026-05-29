@@ -23,7 +23,7 @@ function normaliseSlider(s, idx) {
 
 function DbSlide({ slide }) {
   return (
-    <div className="relative py-4 max-h-[420px] sm:min-h-[480px] lg:min-h-[540px] flex items-center overflow-hidden">
+    <div className="relative py-4 min-h-[360px] sm:min-h-[480px] lg:min-h-[540px] flex items-center overflow-hidden">
       {slide.image && (
         <img
           src={slide.image}
@@ -49,16 +49,16 @@ function DbSlide({ slide }) {
           zIndex: 2,
         }}
       />
-      <div className="cyna-container relative py-16 sm:py-20" style={{ zIndex: 3 }}>
+      <div className="cyna-container relative py-8 sm:py-14 lg:py-20" style={{ zIndex: 3 }}>
         <div className="max-w-xl">
           <h1
-            className="font-[Kumbh Sans] font-extrabold mb-6 leading-[1.1] text-white"
-            style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", whiteSpace: "pre-line" }}
+            className="font-[Kumbh Sans] font-extrabold mb-4 sm:mb-6 leading-[1.1] text-white"
+            style={{ fontSize: "clamp(1.4rem, 5vw, 3rem)", whiteSpace: "pre-line" }}
           >
             {slide.title}
           </h1>
           {slide.linkUrl && (
-            <Link to={slide.linkUrl} className="btn-primary inline-flex items-center mt-2">
+            <Link to={slide.linkUrl} className="btn-primary inline-flex items-center mt-2 text-sm sm:text-base py-2 px-4 sm:py-3 sm:px-6">
               {slide.nameUrl}
             </Link>
           )}
@@ -70,7 +70,7 @@ function DbSlide({ slide }) {
 
 function FallbackSlide({ slide }) {
   return (
-    <div className="relative py-4 max-h-[420px] sm:min-h-[480px] lg:min-h-[540px] flex items-center overflow-hidden">
+    <div className="relative py-4 min-h-[360px] sm:min-h-[480px] lg:min-h-[540px] flex items-center overflow-hidden">
       <div
         className="absolute inset-0"
         style={{
@@ -85,21 +85,21 @@ function FallbackSlide({ slide }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="cyna-container relative z-10 py-16 sm:py-20">
+      <div className="cyna-container relative z-10 py-8 sm:py-14 lg:py-20">
         <div className="max-w-xl">
           <h1
-            className="font-[Kumbh Sans] font-extrabold mb-4 leading-[1.1]"
-            style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", color: "var(--text-primary)", whiteSpace: "pre-line" }}
+            className="font-[Kumbh Sans] font-extrabold mb-3 sm:mb-4 leading-[1.1]"
+            style={{ fontSize: "clamp(1.4rem, 5vw, 3rem)", color: "var(--text-primary)", whiteSpace: "pre-line" }}
           >
             {slide.title}
           </h1>
           <p
-            className="text-base sm:text-lg mb-8 leading-relaxed"
+            className="text-sm sm:text-lg mb-5 sm:mb-8 leading-relaxed"
             style={{ color: "var(--text-secondary)", maxWidth: "480px" }}
           >
             {slide.description}
           </p>
-          <Link to={slide.linkUrl} className="btn-primary inline-flex items-center">
+          <Link to={slide.linkUrl} className="btn-primary inline-flex items-center text-sm sm:text-base py-2 px-4 sm:py-3 sm:px-6">
             {slide.cta}
           </Link>
         </div>
@@ -171,30 +171,34 @@ export function HeroCarousel() {
           ))}
         </CarouselContent>
 
-        <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-6 z-10">
+        <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3 sm:gap-6 z-10">
           <button
             onClick={() => api?.scrollPrev()}
-            className="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
             style={{ background: "var(--bg-card)", color: "var(--text-secondary)" }}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {slides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
-                className={`rounded-full transition-all duration-300 ${i === current ? "w-6 h-2" : "w-2 h-2 hover:opacity-70"}`}
-                style={{ background: i === current ? "var(--accent)" : "var(--border)" }}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === current ? "20px" : "8px",
+                  height: "8px",
+                  background: i === current ? "var(--accent)" : "var(--border)",
+                }}
               />
             ))}
           </div>
           <button
             onClick={() => api?.scrollNext()}
-            className="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
             style={{ background: "var(--bg-card)", color: "var(--text-secondary)" }}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={14} />
           </button>
         </div>
       </Carousel>

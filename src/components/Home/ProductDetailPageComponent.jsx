@@ -1,22 +1,13 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Shield, ShoppingBag, Star, Users, XCircle, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-
-const FEATURES = [
-  { icon: Shield, label: "Advanced Protection", desc: "Real-time multi-vector detection" },
-  { icon: Zap, label: "Fast Deployment", desc: "Operational in less than 48 hours" },
-  { icon: Clock, label: "24/7 Support", desc: "Dedicated team available at all times" },
-  { icon: Users, label: "Multi-user Access", desc: "Centralized access management" },
-];
+import { useTranslation } from "react-i18next";
 
 const ImageGallery = ({ images }) => {
   const [idx, setIdx] = useState(0);
   const [errored, setErrored] = useState({});
-  // Backend stores image subdocs as { _id, url } — buildImageUrl already handles
-  // path/url/src plus raw strings, so just pass each entry through directly.
   const urls = (images ?? []).map((i) => buildImageUrl(i)).filter(Boolean);
 
   if (!urls.length) {
@@ -42,14 +33,14 @@ const ImageGallery = ({ images }) => {
         />
         {urls.length > 1 && (
           <>
-            <button 
+            <button
               onClick={() => setIdx(i => (i - 1 + urls.length) % urls.length)}
               className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border)] shadow-[var(--shadow-md)]"
               style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}
             >
               <ChevronLeft size={18} />
             </button>
-            <button 
+            <button
               onClick={() => setIdx(i => (i + 1) % urls.length)}
               className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border)] shadow-[var(--shadow-md)]"
               style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}
@@ -62,8 +53,8 @@ const ImageGallery = ({ images }) => {
       {urls.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {urls.map((u, i) => (
-            <button 
-              key={i} 
+            <button
+              key={i}
               onClick={() => setIdx(i)}
               className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${i === idx ? "border-[var(--accent)]" : "border-[var(--border)] opacity-60 hover:opacity-100"}`}
             >
@@ -77,6 +68,7 @@ const ImageGallery = ({ images }) => {
 };
 
 export default function ProductDetailPage() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -85,13 +77,19 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
+  const FEATURES = [
+    { icon: Shield, label: t("product.feat1_label"), desc: t("product.feat1_desc") },
+    { icon: Zap,    label: t("product.feat2_label"), desc: t("product.feat2_desc") },
+    { icon: Clock,  label: t("product.feat3_label"), desc: t("product.feat3_desc") },
+    { icon: Users,  label: t("product.feat4_label"), desc: t("product.feat4_desc") },
+  ];
+
   useEffect(() => {
     setLoading(true);
     productsAPI.getBySlug(slug)
       .then(res => {
         const p = res.data?.data ?? res.data;
         setProduct(p);
-        // Load related products from the public ordered list
         return productsAPI.getAllByOrder();
       })
       .then(res => {
@@ -113,9 +111,9 @@ export default function ProductDetailPage() {
       window.dispatchEvent(new Event("cart-updated"));
       setAdded(true);
       setTimeout(() => setAdded(false), 2500);
-      notify.success("Added to cart", `${product.name} × ${qty}`);
+      notify.success(t("product.added_notif"), `${product.name} × ${qty}`);
     } catch {
-      notify.error("Cart error", "Could not add this product to your cart.");
+      notify.error(t("product.cart_error"), t("product.cart_error_msg"));
     }
   };
 
@@ -133,45 +131,44 @@ export default function ProductDetailPage() {
   if (!product) return (
     <div className="cyna-container py-24 text-center">
       <p className="font-[Kumbh Sans] font-700 text-lg mb-4" style={{ color: "var(--text-secondary)" }}>
-        Product not found
+        {t("product.not_found")}
       </p>
-      <Link to="/products" className="btn-primary">Back to Products</Link>
+      <Link to="/products" className="btn-primary">{t("product.back_to_products")}</Link>
     </div>
   );
 
   const isOut = product.stock === 0;
   const price = billing === "monthly" ? product.priceMonth : product.priceYear;
-  const pricePer = billing === "monthly" ? "/month" : "/year";
+  const pricePer = billing === "monthly" ? t("product.per_month") : t("product.per_year");
 
   return (
     <div className="page-enter" style={{ background: "var(--bg-base)" }}>
       <div className="cyna-container py-8 sm:py-12">
+
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs mb-8 flex-wrap" style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-          <Link to="/home" className="hover:text-[var(--accent)] transition-colors">Home</Link>
+          <Link to="/home" className="hover:text-[var(--accent)] transition-colors">{t("product.breadcrumb_home")}</Link>
           <span>/</span>
-          <Link to="/products" className="hover:text-[var(--accent)] transition-colors">Products</Link>
+          <Link to="/products" className="hover:text-[var(--accent)] transition-colors">{t("product.breadcrumb_products")}</Link>
           <span>/</span>
           <span style={{ color: "var(--text-primary)" }}>{product.name}</span>
         </nav>
 
         {/* Main layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-14 mb-16">
-          {/* Gallery */}
           <div><ImageGallery images={product.images} /></div>
 
-          {/* Info */}
           <div>
             {/* Badges */}
             <div className="flex flex-wrap gap-2 mb-4">
               {product.is_selected && (
                 <span className="badge badge-accent gap-1">
-                  <Star size={10} fill="currentColor" /> Top Product
+                  <Star size={10} fill="currentColor" /> {t("product.top_product")}
                 </span>
               )}
               {isOut
-                ? <span className="badge badge-danger gap-1"><XCircle size={10} /> Out of Stock</span>
-                : <span className="badge badge-success gap-1"><CheckCircle2 size={10} /> Available immediately</span>
+                ? <span className="badge badge-danger gap-1"><XCircle size={10} /> {t("product.out_of_stock")}</span>
+                : <span className="badge badge-success gap-1"><CheckCircle2 size={10} /> {t("product.available")}</span>
               }
             </div>
 
@@ -181,7 +178,7 @@ export default function ProductDetailPage() {
             </h1>
             {product.service?.name && (
               <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-                Service: <span style={{ color: "var(--accent)" }}>{product.service.name}</span>
+                {t("product.service_label")} <span style={{ color: "var(--accent)" }}>{product.service.name}</span>
               </p>
             )}
 
@@ -195,14 +192,16 @@ export default function ProductDetailPage() {
             {/* Billing toggle */}
             {product.priceYear != null && (
               <div className="mb-6">
-                <p className="text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>BILLING</p>
+                <p className="text-xs font-[Kumbh Sans] font-600 mb-2" style={{ color: "var(--text-muted)" }}>
+                  {t("product.billing")}
+                </p>
                 <div className="inline-flex rounded-xl border border-[var(--border)] p-1" style={{ background: "var(--bg-subtle)" }}>
                   {[
-                    { v: "monthly", label: "Monthly" }, 
-                    { v: "yearly", label: "Yearly" }
+                    { v: "monthly", label: t("product.billing_monthly") },
+                    { v: "yearly",  label: t("product.billing_yearly")  },
                   ].map(({ v, label }) => (
-                    <button 
-                      key={v} 
+                    <button
+                      key={v}
                       onClick={() => setBilling(v)}
                       className={`px-4 py-1.5 rounded-lg text-sm font-[Kumbh Sans] font-600 transition-all ${billing === v ? "text-white shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
                       style={billing === v ? { background: "var(--accent)" } : {}}
@@ -229,64 +228,63 @@ export default function ProductDetailPage() {
                   <span className="text-base" style={{ color: "var(--text-muted)" }}>{pricePer}</span>
                 </div>
               ) : (
-                <p className="font-[Kumbh Sans] font-600 text-lg" style={{ color: "var(--text-muted)" }}>Price on request</p>
+                <p className="font-[Kumbh Sans] font-600 text-lg" style={{ color: "var(--text-muted)" }}>
+                  {t("product.price_on_request")}
+                </p>
               )}
             </div>
 
             {/* Qty + CTA */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
-              {/* Quantity */}
               <div className="flex items-center rounded-xl border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-subtle)" }}>
-                <button 
-                  onClick={() => setQty(q => Math.max(1, q - 1))} 
-                  className="w-10 h-11 flex items-center justify-center text-lg transition-colors hover:bg-[var(--bg-muted)]" 
+                <button
+                  onClick={() => setQty(q => Math.max(1, q - 1))}
+                  className="w-10 h-11 flex items-center justify-center text-lg transition-colors hover:bg-[var(--bg-muted)]"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   −
                 </button>
                 <span className="w-10 text-center font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>{qty}</span>
-                <button 
-                  onClick={() => setQty(q => q + 1)} 
-                  className="w-10 h-11 flex items-center justify-center text-lg transition-colors hover:bg-[var(--bg-muted)]" 
+                <button
+                  onClick={() => setQty(q => q + 1)}
+                  className="w-10 h-11 flex items-center justify-center text-lg transition-colors hover:bg-[var(--bg-muted)]"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   +
                 </button>
               </div>
 
-              {/* Add to cart */}
-              <button 
-                onClick={handleAddToCart} 
+              <button
+                onClick={handleAddToCart}
                 disabled={isOut}
                 className={`flex-1 btn-primary gap-2 py-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none ${added ? "bg-[var(--success)] hover:bg-[var(--success)]" : ""}`}
               >
                 <ShoppingBag size={18} />
-                {isOut 
-                  ? "Service unavailable" 
-                  : added 
-                    ? "Added to cart ✓" 
-                    : "Subscribe Now"
+                {isOut
+                  ? t("product.service_unavailable")
+                  : added
+                    ? t("product.added_to_cart")
+                    : t("product.subscribe")
                 }
               </button>
             </div>
 
-            {/* Cart link */}
             {added && (
-              <Link 
-                to="/cart" 
-                className="block text-center text-sm font-[Kumbh Sans] font-600 transition-colors hover:text-[var(--accent-hover)]" 
+              <Link
+                to="/cart"
+                className="block text-center text-sm font-[Kumbh Sans] font-600 transition-colors hover:text-[var(--accent-hover)]"
                 style={{ color: "var(--accent)" }}
               >
-                View Cart →
+                {t("product.view_cart")}
               </Link>
             )}
 
             {/* Features */}
             <div className="mt-8 grid grid-cols-2 gap-3">
               {FEATURES.map(({ icon: Icon, label, desc }) => (
-                <div 
-                  key={label} 
-                  className="flex items-start gap-2.5 p-3 rounded-xl" 
+                <div
+                  key={label}
+                  className="flex items-start gap-2.5 p-3 rounded-xl"
                   style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
                 >
                   <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: "var(--accent-light)" }}>
@@ -306,11 +304,11 @@ export default function ProductDetailPage() {
         {related.length > 0 && (
           <div>
             <div className="cyna-divider mb-12" />
-            <p className="section-label">You may also like</p>
+            <p className="section-label">{t("product.you_may_also_like")}</p>
             <h2 className="font-[Kumbh Sans] font-800 text-xl mb-6" style={{ color: "var(--text-primary)" }}>
-              Similar Services
+              {t("product.similar_services")}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {related.map(p => {
                 const img = getProductImage(p);
                 return (
@@ -321,11 +319,7 @@ export default function ProductDetailPage() {
                     style={{ textDecoration: "none" }}
                   >
                     <div className="overflow-hidden" style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}>
-                      <img
-                        src={img}
-                        alt={p.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+                      <img src={img} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     </div>
                     <div className="p-3">
                       <p className="text-xs font-[Kumbh Sans] font-700 line-clamp-2 mb-1" style={{ color: "var(--text-primary)" }}>
@@ -333,7 +327,7 @@ export default function ProductDetailPage() {
                       </p>
                       {p.priceMonth != null && (
                         <p className="text-xs" style={{ color: "var(--accent)" }}>
-                          {Number(p.priceMonth).toFixed(2)} €/month
+                          {Number(p.priceMonth).toFixed(2)} {t("product.per_month_short")}
                         </p>
                       )}
                     </div>
