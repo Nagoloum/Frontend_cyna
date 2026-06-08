@@ -185,7 +185,7 @@ export default function CartPage() {
 
       {/* Hero header */}
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
-        <div className="cyna-container py-10 sm:py-14 ">
+        <div className="cyna-container py-10 sm:py-14">
           <p className="section-label">{t("cart.badge")}</p>
           <h1 className="section-title mb-2">{t("cart.title")}</h1>
           <p
@@ -200,10 +200,10 @@ export default function CartPage() {
       </div>
 
       {/* Body */}
-      <div className="cyna-container py-10 mt-10 mb-10">
+      <div className="cyna-container py-10 ">
         {cart.length === 0 ? (
           <div
-            className="rounded-2xl border border-dashed border-[var(--border)] p-10 sm:p-16 text-center max-w-lg mx-auto"
+            className="rounded-2xl border mb-10 mt-10 border-dashed border-[var(--border)] p-10 sm:p-16 text-center max-w-lg mx-auto"
             style={{ background: "var(--bg-subtle)" }}
           >
             <div

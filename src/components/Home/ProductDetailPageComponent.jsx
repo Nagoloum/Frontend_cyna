@@ -4,6 +4,8 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Shield, ShoppingBag, St
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAppDispatch } from "@/store/hooks";
+import { addToCart } from "@/store/slices/cartSlice";
 
 const ImageGallery = ({ images }) => {
   const [idx, setIdx] = useState(0);
@@ -69,6 +71,7 @@ const ImageGallery = ({ images }) => {
 
 export default function ProductDetailPage() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -103,12 +106,8 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product || product.stock === 0) return;
     try {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const ex = cart.find(i => i._id === product._id && i.billingPeriod === billing);
-      if (ex) ex.qty = (ex.qty || 1) + qty;
-      else cart.push({ ...product, qty, billingPeriod: billing });
-      localStorage.setItem("cart", JSON.stringify(cart));
-      window.dispatchEvent(new Event("cart-updated"));
+      // Source unique : Redux (le middleware persiste dans localStorage["cart"]).
+      dispatch(addToCart({ ...product, qty, billingPeriod: billing }));
       setAdded(true);
       setTimeout(() => setAdded(false), 2500);
       notify.success(t("product.added_notif"), `${product.name} × ${qty}`);
@@ -143,10 +142,10 @@ export default function ProductDetailPage() {
 
   return (
     <div className="page-enter" style={{ background: "var(--bg-base)" }}>
-      <div className="cyna-container py-8 sm:py-12">
+      <div className="cyna-container py-8 sm:py-8">
 
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs mb-8 flex-wrap" style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}>
+        <nav className="flex items-center lg:mt-0 mt-6 gap-2 text-xs mb-8 flex-wrap" style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}>
           <Link to="/home" className="hover:text-[var(--accent)] transition-colors">{t("product.breadcrumb_home")}</Link>
           <span>/</span>
           <Link to="/products" className="hover:text-[var(--accent)] transition-colors">{t("product.breadcrumb_products")}</Link>

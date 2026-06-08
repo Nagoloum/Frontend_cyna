@@ -1,7 +1,4 @@
-import {
-  categoriesAPI,
-  productsAPI,
-} from "@/services/api";
+import { categoriesAPI, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
 import {
   CheckCircle2,
@@ -159,13 +156,12 @@ export default function ProductsPage() {
                 </span>
               )}
             </button>
-
           </div>
 
           {/* Filter panel */}
           {filtersOpen && (
             <div
-              className="mt-4 p-5 rounded-2xl border border-[var(--border)] max-w-2xl"
+              className="mt-4 mb-8 lg:mb-0 p-5 rounded-2xl border border-[var(--border)] max-w-3xl"
               style={{ background: "var(--bg-card)" }}
             >
               <div className="flex flex-wrap gap-4">
@@ -226,6 +222,20 @@ export default function ProductsPage() {
                     <CheckCircle2 size={14} /> {t("products.available_only")}
                   </button>
                 </div>
+
+                <div className="flex flex-col justify-center lg:mb-3">
+                  {activeFilters.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setSelCat("");
+                        setShowAvail(false);
+                      }}
+                      className="flex items-center mt-8 gap-1 text-xs text-[var(--danger)] hover:underline"
+                    >
+                      <X size={12} /> {t("products.clear_filters")}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -234,29 +244,17 @@ export default function ProductsPage() {
 
       {/* Results */}
       <div className="cyna-container py-10">
-        <div className="flex items-center justify-between mb-6">
-          {activeFilters.length > 0 && (
-            <button
-              onClick={() => {
-                setSelCat("");
-                setShowAvail(false);
-              }}
-              className="flex items-center gap-1 text-xs text-[var(--danger)] hover:underline"
-            >
-              <X size={12} /> {t("products.clear_filters")}
-            </button>
-          )}
-        </div>
+        <div className="flex items-center justify-between mb-6"></div>
 
         {loading ? (
-          <div className="products-grid">
+          <div className="products-grid mb-10">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div
-            className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center"
+            className="rounded-2xl mb-10 border border-dashed border-[var(--border)] p-16 text-center"
             style={{ background: "var(--bg-subtle)" }}
           >
             <Package
@@ -271,7 +269,7 @@ export default function ProductsPage() {
             </p>
           </div>
         ) : (
-          <div className="products-grid">
+          <div className="products-grid mb-10">
             {filtered.map((p) => (
               <Card
                 key={p._id ?? p.id}

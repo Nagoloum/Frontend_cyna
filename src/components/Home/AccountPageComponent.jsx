@@ -62,36 +62,6 @@ const DefaultToggle = ({ checked, onChange, label }) => (
   </label>
 );
 
-// ─── Mock data (UI only backend integration pending) ───────────────────────
-const MOCK_SUBSCRIPTIONS = [
-  {
-    _id: "sub_demo_1",
-    reference: "SUB-2026-04127",
-    product: { name: "EDR Pro Plan", slug: "edr-pro-plan" },
-    licenseCode: "CYNA-EDR-7F9K-3X2P-LM84",
-    dateDebut: "2026-01-15T00:00:00.000Z",
-    dateFin:   "2026-07-15T00:00:00.000Z",
-    periode: "MOIS",
-    statut: "ACTIVE",
-    price: 49.90,
-    quantity: 1,
-    autoRenew: true,
-  },
-  {
-    _id: "sub_demo_2",
-    reference: "SUB-2026-04098",
-    product: { name: "SOC Monitoring", slug: "soc-monitoring" },
-    licenseCode: "CYNA-SOC-X42M-9KQ7-VB13",
-    dateDebut: "2025-11-01T00:00:00.000Z",
-    dateFin:   "2026-11-01T00:00:00.000Z",
-    periode: "ANNEE",
-    statut: "ACTIVE",
-    price: 1490.00,
-    quantity: 3,
-    autoRenew: true,
-  },
-];
-
 // ─── Utils ───────────────────────────────────────────────────────────────────
 const fmtDateLong = (iso) => {
   if (!iso) return "—";
@@ -439,20 +409,6 @@ function AddressesTab() {
 
       {modal?.type === "create" && <AddressModal onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
       {modal?.type === "edit"   && <AddressModal address={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
-    </div>
-  );
-}
-
-// ── Reusable info banner (backend integration pending) ───────────────────────
-function MockBanner() {
-  const { t } = useTranslation();
-  return (
-    <div
-      className="flex items-start gap-2.5 p-3 rounded-xl text-xs mb-4"
-      style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
-    >
-      <AlertCircle size={13} className="flex-shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
-      <span>{t("account.preview_note")}</span>
     </div>
   );
 }

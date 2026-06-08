@@ -458,7 +458,6 @@
     "billing_method": "Moyen de paiement",
     "billing_plan": "Plan",
     "billing_amount": "Montant facturé",
-    "preview_note": "Interface de prévisualisation les données réelles apparaîtront ici une fois vos achats traités.",
     "orders_title": "Mes commandes",
     "no_orders": "Pas encore de commandes",
     "no_orders_hint": "Vos commandes apparaîtront ici une fois que vous aurez effectué un achat.",
