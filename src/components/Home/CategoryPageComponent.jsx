@@ -1,8 +1,8 @@
-import { buildImageUrl, categoriesAPI } from "@/services/api";
-import { ArrowRight, Layers, Search } from "lucide-react";
+import { categoriesAPI } from "@/services/api";
+import { Layers, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import Card from "@/components/ui/Card";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -14,67 +14,6 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
-
-const CategoryCard = ({ cat }) => {
-  const { t } = useTranslation();
-  const img = buildImageUrl(cat.image?.path ?? cat.image);
-  return (
-    <Link
-      to={`/categories/${cat.slug}`}
-      className="cyna-card group overflow-hidden flex flex-col"
-      style={{ textDecoration: "none" }}
-    >
-      {/* Image */}
-      <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: "16/9", background: "var(--bg-muted)" }}>
-        {img ? (
-          <img
-            src={img}
-            alt={cat.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Layers size={40} style={{ color: "var(--text-muted)" }} />
-          </div>
-        )}
-        {/* Overlay gradient */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          style={{ background: "linear-gradient(to top, rgba(124,58,237,.65), transparent)" }}
-        />
-        <div className="absolute bottom-3 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span className="text-white text-xs font-[Kumbh Sans] font-700 flex items-center gap-1">
-            {t("categories.view_products")} <ArrowRight size={12} />
-          </span>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="p-5 flex flex-col flex-1">
-        <h3
-          className="font-[Kumbh Sans] font-700 text-base mb-1.5 group-hover:text-[var(--accent)] transition-colors"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {cat.name}
-        </h3>
-        {cat.description && (
-          <p
-            className="text-sm leading-relaxed line-clamp-2 flex-1"
-            style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
-          >
-            {cat.description}
-          </p>
-        )}
-        <div
-          className="mt-4 flex items-center gap-1.5 text-xs font-[Kumbh Sans] font-600"
-          style={{ color: "var(--accent)" }}
-        >
-          {t("categories.explore")} <ArrowRight size={12} />
-        </div>
-      </div>
-    </Link>
-  );
-};
 
 export default function CategoriesPage() {
   const { t } = useTranslation();
@@ -154,7 +93,7 @@ export default function CategoriesPage() {
         ) : (
           <div className="categories-grid">
             {filtered.map(cat => (
-              <CategoryCard key={cat._id ?? cat.slug} cat={cat} />
+              <Card key={cat._id ?? cat.slug} variant="category" item={cat} aspectRatio="16 / 9" />
             ))}
           </div>
         )}
