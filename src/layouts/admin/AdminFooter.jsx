@@ -19,7 +19,7 @@ export default function AdminFooter() {
 
       {/* Center: copyright */}
       <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
-        © {year} Cyna — Internal use only
+        © {year} Cyna Internal use only
       </span>
 
       {/* Droite : liens */}

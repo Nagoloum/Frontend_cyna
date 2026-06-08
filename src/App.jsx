@@ -1,47 +1,47 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 // Layouts
+import AdminLayout from "./layouts/AdminLayout";
 import Layout from "./layouts/Layout";
 import RouteLayout from "./layouts/RouteLayout";
-import AdminLayout from "./layouts/AdminLayout";
 
 // Pages publiques
+import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
+import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
+import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
 import AuthPage from "./pages/Auth/Auth";
+import EmailConfirmation from "./pages/Auth/EmailConfirmation";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
-import EmailConfirmation from "./pages/Auth/EmailConfirmation";
-import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
-import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
-import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
 import ErrorPage from "./pages/ErrorPage";
 
 // Pages utilisateur
-import HomePage from "./pages/User/Home";
+import AccountPage from "./pages/User/AccountPage";
+import CartPage from "./pages/User/CartPage";
 import CategoriesPage from "./pages/User/CategoriesPage";
 import CategoryDetailPage from "./pages/User/CategoryDetailPage";
-import ProductsPage from "./pages/User/ProductsPage";
-import ProductDetailPage from "./pages/User/ProductDetailPage";
-import CartPage from "./pages/User/CartPage";
 import CheckoutPage from "./pages/User/CheckoutPage";
-import OrderConfirmationPage from "./pages/User/OrderConfirmationPage";
-import SearchPage from "./pages/User/SearchPage";
-import AccountPage from "./pages/User/AccountPage";
 import ContactPage from "./pages/User/ContactPage";
+import HomePage from "./pages/User/Home";
+import OrderConfirmationPage from "./pages/User/OrderConfirmationPage";
+import ProductDetailPage from "./pages/User/ProductDetailPage";
+import ProductsPage from "./pages/User/ProductsPage";
+import SearchPage from "./pages/User/SearchPage";
 
 // Pages admin
 import Dashboard from "./pages/Admin/Dashboard";
-import AdminProductsPage from "./pages/Admin/ProductsPage";
-import OrdersPage from "./pages/Admin/OrdersPage";
 import MyProfile from "./pages/Admin/MyProfilePage";
+import OrdersPage from "./pages/Admin/OrdersPage";
+import AdminProductsPage from "./pages/Admin/ProductsPage";
 import Settings from "./pages/Admin/SettingsPage";
 
-// Auth — admin-only 2FA verification step
+// Auth admin-only 2FA verification step
 import TwoFactor from "./pages/Auth/TwoFactor";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
-import { NotifyProvider } from "./components/ui/feedback";
 import ChatBot from "./components/ui/ChatBot";
+import { NotifyProvider } from "./components/ui/feedback";
 
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>

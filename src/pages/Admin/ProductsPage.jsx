@@ -1,25 +1,38 @@
 /* eslint-disable no-unused-vars */
 // src/pages/admin/ProductsPage.jsx
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import {
-  Plus, AlertCircle, Search,
-  Edit2, Trash2, Package, Tag, Layers,
-  ChevronLeft, ChevronRight, ChevronsUpDown,
-  ChevronUp, ChevronDown, X, Loader2, Upload,
-  Image as ImageIcon, AlertTriangle,
-  ToggleLeft, ToggleRight,
-  LayoutDashboard, GripVertical,
-  ExternalLink,
-} from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import {
-  productsAPI, categoriesAPI, servicesAPI,
-  slidersAPI, buildImageUrl, extractList, getImagePath,
-} from '../../services/api';
 import { notify } from '@/components/ui/feedback';
+import {
+    AlertCircle,
+    AlertTriangle,
+    ChevronDown,
+    ChevronLeft, ChevronRight, ChevronsUpDown,
+    ChevronUp,
+    Edit2,
+    Image as ImageIcon,
+    Layers,
+    LayoutDashboard,
+    Loader2,
+    Package,
+    Plus,
+    Search,
+    Tag,
+    Trash2,
+    Upload,
+    X
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import AdminSelect from '../../components/Admin/Shared/AdminSelect';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
+import {
+    buildImageUrl,
+    categoriesAPI,
+    extractList, getImagePath,
+    productsAPI,
+    servicesAPI,
+    slidersAPI,
+} from '../../services/api';
 
 /**
  * Cross-tab signal so any list that depends on a shared resource
@@ -174,7 +187,7 @@ function DeleteModal({ name, onClose, onConfirm }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Slider form modal — supports create & edit.
+ * Slider form modal supports create & edit.
  * Backend: POST/PATCH /sliders  (multipart/form-data, field: newImage)
  * DTO: { title (required), newImage (file), linkUrl?, NameUrl (required), order? }
  */
@@ -245,7 +258,7 @@ function SliderFormModal({ slider, onClose, onSaved }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? 'Edit Slide' : 'New Slide'}</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hero carousel — home page</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hero carousel home page</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={15} /></button>
         </div>
@@ -284,7 +297,7 @@ function SliderFormModal({ slider, onClose, onSaved }) {
             <input name="title" value={form.title} onChange={handleChange} placeholder="e.g. Next-Generation SOC Protection" className={inp} />
           </div>
 
-          {/* NameUrl — used as the carousel CTA button label */}
+          {/* NameUrl used as the carousel CTA button label */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Button label <span className="text-red-500">*</span></label>
             <input name="NameUrl" value={form.NameUrl} onChange={handleChange} placeholder="e.g. Discover, Learn more" className={inp} />
@@ -362,7 +375,7 @@ function SlidersTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm text-gray-500 dark:text-gray-400 flex-1">
-          {sliders.length} slide{sliders.length !== 1 ? 's' : ''} — displayed in homepage hero carousel
+          {sliders.length} slide{sliders.length !== 1 ? 's' : ''} displayed in homepage hero carousel
         </p>
         <button onClick={() => setModal({ type: 'create' })}
           className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all">
@@ -483,7 +496,7 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
       stock:       product?.stock       ?? '',
       is_selected: product?.is_selected ?? false,
     });
-    // We intentionally do not include `previews` in the dep array — the previews
+    // We intentionally do not include `previews` in the dep array the previews
     // we just set will trigger the cleanup effect below when the modal unmounts.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
@@ -802,7 +815,7 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
   });
 
   // Pre-fill / reset on prop change. `category` may be a populated doc, an
-  // ObjectId string, or absent (with `categoryId` instead) — handle all cases.
+  // ObjectId string, or absent (with `categoryId` instead) handle all cases.
   useEffect(() => {
     setError(null);
     setForm({
@@ -1130,7 +1143,7 @@ function CategoriesTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE  — 4 tabs: Products · Services · Categories · Sliders
+// MAIN PAGE  4 tabs: Products · Services · Categories · Sliders
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TABS = [

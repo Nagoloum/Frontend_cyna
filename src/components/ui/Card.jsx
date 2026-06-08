@@ -1,24 +1,24 @@
-import * as React from "react";
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Layers,
-  Package,
-  ShoppingBag,
-  Star,
-  XCircle,
-} from "lucide-react";
-import {
-  DEFAULT_PRODUCT_IMAGE,
-  buildImageUrl,
-  getProductImage,
-} from "@/services/api";
 import { cn } from "@/lib/utils";
+import {
+    DEFAULT_PRODUCT_IMAGE,
+    buildImageUrl,
+    getProductImage,
+} from "@/services/api";
+import {
+    ArrowRight,
+    CheckCircle2,
+    Layers,
+    Package,
+    ShoppingBag,
+    Star,
+    XCircle,
+} from "lucide-react";
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 /**
- * Card — composant UNIQUE et réutilisable pour toutes les cartes du site.
+ * Card composant UNIQUE et réutilisable pour toutes les cartes du site.
  *
  * La carte est ENTIÈREMENT cliquable et redirige vers la page de détail :
  *   - variant="product"  → /products/:slug   (image carrée, prix, ajout au panier)
@@ -54,7 +54,7 @@ export default function Card({
 
   const isCategory = variant === "category";
 
-  // Destination — toute la carte pointe vers la page de détail
+  // Destination toute la carte pointe vers la page de détail
   const href =
     to ?? (isCategory ? `/categories/${item.slug}` : `/products/${item.slug}`);
 

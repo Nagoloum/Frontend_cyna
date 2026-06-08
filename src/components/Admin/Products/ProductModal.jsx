@@ -1,27 +1,27 @@
 // src/components/admin/products/ProductModal.jsx
-import { createPortal } from 'react-dom';
+import { AlertCircle, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { X, Upload, Trash2, AlertCircle, Loader2 } from 'lucide-react';
-import { productsAPI, buildImageUrl, getImagePath } from '../../../services/api';
-import AdminSelect from '../Shared/AdminSelect';
+import { createPortal } from 'react-dom';
+import { buildImageUrl, getImagePath, productsAPI } from '../../../services/api';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
-  setProductFormLoading,
-  setProductFormError,
-  addProductFormPreviews,
-  removeProductFormPreview,
-  removeProductFormExistingImage,
-  updateProductForm,
-  resetProductForm,
-  initProductForm,
+    addProductFormPreviews,
+    initProductForm,
+    removeProductFormExistingImage,
+    removeProductFormPreview,
+    resetProductForm,
+    setProductFormError,
+    setProductFormLoading,
+    updateProductForm,
 } from '../../../store/slices/productFormSlice';
+import AdminSelect from '../Shared/AdminSelect';
 
 export default function ProductModal({ product = null, services = [], onClose, onSaved }) {
   const dispatch     = useAppDispatch();
   const { loading, error, previews, existingImages, form } = useAppSelector((s) => s.productForm);
   const isEdit       = !!product;
   const fileInputRef = useRef(null);
-  // File objects are not Redux-serializable — kept in a ref
+  // File objects are not Redux-serializable kept in a ref
   const imageFilesRef = useRef([]);
 
   // Initialise form when product changes (edit mode)

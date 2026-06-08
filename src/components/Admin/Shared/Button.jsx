@@ -2,7 +2,7 @@
 import { Loader2 } from 'lucide-react';
 
 /**
- * Button — Bouton réutilisable
+ * Button Bouton réutilisable
  *
  * Props :
  *   variant   {'primary'|'secondary'|'danger'|'ghost'|'success'}

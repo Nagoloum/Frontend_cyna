@@ -1,9 +1,9 @@
 // src/components/admin/shared/ConfirmDialog.jsx
-import { AlertTriangle, Info, CheckCircle, XCircle, Loader2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, Loader2, X, XCircle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 /**
- * ConfirmDialog — Dialog de confirmation action
+ * ConfirmDialog Dialog de confirmation action
  *
  * Props :
  *   open       {boolean}

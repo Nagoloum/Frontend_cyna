@@ -2,7 +2,7 @@
 //
 // Pure helpers that turn raw `commandes` (and the products map for category
 // resolution) into the series the Dashboard charts consume. Only PAID orders
-// are counted as revenue — pending/cancelled are ignored.
+// are counted as revenue pending/cancelled are ignored.
 
 const PAID = 'PAID';
 

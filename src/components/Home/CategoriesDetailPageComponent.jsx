@@ -138,9 +138,8 @@ export default function CategoryDetailPage() {
       {/* Filters + grid */}
       <div className="cyna-container py-10">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-7">
+        <div className="flex flex-wrap items-center justify-between gap-3 my-6">
           <p className="text-sm" style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}>
-            <strong style={{ color: "var(--text-primary)" }}>{sortedProducts.length}</strong>{" "}
             {sortedProducts.length <= 1
               ? t("categoryDetail.count", { count: sortedProducts.length })
               : t("categoryDetail.count_plural", { count: sortedProducts.length })}
@@ -171,18 +170,18 @@ export default function CategoryDetailPage() {
 
         {/* Grid */}
         {loading ? (
-          <div className="products-grid">
+          <div className="products-grid mb-6 lg:mb-10">
             {Array.from({ length: 8 }).map((_, i) => <SkeletonProduct key={i} />)}
           </div>
         ) : sortedProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center" style={{ background: "var(--bg-subtle)" }}>
+          <div className="rounded-2xl mb-6 lg:mb-10 border border-dashed border-[var(--border)] p-16 text-center" style={{ background: "var(--bg-subtle)" }}>
             <Package size={36} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
             <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>
               {t("categoryDetail.empty")}
             </p>
           </div>
         ) : (
-          <div className="products-grid">
+          <div className="products-grid mb-6 lg:mb-10">
             {sortedProducts.map(p => (
               <Card key={p._id ?? p.id} variant="product" item={p} onAddToCart={handleAddToCart} />
             ))}

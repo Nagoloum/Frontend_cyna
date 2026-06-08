@@ -1,12 +1,12 @@
 // src/components/admin/dashboard/SalesPieChart.jsx
-import { useEffect, useRef, useState } from 'react';
 import {
-  Chart,
-  DoughnutController,
-  ArcElement,
-  Tooltip,
-  Legend,
+    ArcElement,
+    Chart,
+    DoughnutController,
+    Legend,
+    Tooltip,
 } from 'chart.js';
+import { useEffect, useRef, useState } from 'react';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -19,7 +19,7 @@ const COLORS = [
 ];
 
 /**
- * SalesPieChart — Doughnut chart showing sales distribution
+ * SalesPieChart Doughnut chart showing sales distribution
  *
  * Props:
  *   data    {Array}   – [{ label: 'EDR', value: 4500 }, ...]

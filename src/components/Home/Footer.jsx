@@ -1,6 +1,6 @@
 import { Github, Linkedin, Mail, Shield, Twitter } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 const CynaLogo = () => (
   <svg
@@ -155,7 +155,7 @@ export default function Footer() {
               fontFamily: "'Kumbh Sans', sans-serif",
             }}
           >
-            © {new Date().getFullYear()} Cyna-IT — 10 Rue de Penthièvre, 75008
+            © {new Date().getFullYear()} Cyna-IT 10 Rue de Penthièvre, 75008
             Paris
           </p>
           <div className="flex items-center gap-1.5">
