@@ -1,7 +1,5 @@
 import {
-  DEFAULT_PRODUCT_IMAGE,
   categoriesAPI,
-  getProductImage,
   productsAPI,
 } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
@@ -9,18 +7,15 @@ import {
   CheckCircle2,
   Package,
   Search,
-  ShoppingBag,
   SlidersHorizontal,
-  Star,
   X,
-  XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
+import Card from "@/components/ui/Card";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -35,118 +30,6 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
-
-const ProductCard = ({ product, onAddToCart }) => {
-  const { t } = useTranslation();
-  const [imgErr, setImgErr] = useState(false);
-  const img = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
-  const isOut = product.stock === 0;
-
-  return (
-    <div
-      className={`cyna-card overflow-hidden group flex flex-col ${isOut ? "opacity-55" : ""}`}
-    >
-      <div
-        className="relative overflow-hidden flex-shrink-0"
-        style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}
-      >
-        <img
-          src={img}
-          alt={product.name}
-          onError={() => setImgErr(true)}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        {product.is_selected && (
-          <div className="absolute top-2 left-2">
-            <span className="badge badge-accent gap-1 text-[10px]">
-              <Star size={8} fill="currentColor" /> {t("products.badge_top")}
-            </span>
-          </div>
-        )}
-        {isOut && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,.45)" }}
-          >
-            <span className="badge badge-danger gap-1">
-              <XCircle size={11} /> {t("products.badge_out_of_stock")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 flex flex-col flex-1 gap-2.5">
-        <h3
-          className="font-[Kumbh Sans] font-700 text-sm leading-tight line-clamp-2"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {product.name}
-        </h3>
-
-        <div className="flex items-center gap-1.5 text-xs">
-          {isOut ? (
-            <>
-              <XCircle size={12} style={{ color: "var(--danger)" }} />
-              <span style={{ color: "var(--danger)" }}>
-                {t("products.status_out_of_stock")}
-              </span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 size={12} style={{ color: "var(--success)" }} />
-              <span style={{ color: "var(--success)" }}>
-                {t("products.status_available")}
-              </span>
-            </>
-          )}
-        </div>
-
-        <div
-          className="mt-auto flex items-end justify-between gap-2 pt-2.5"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <div>
-            {product.priceMonth != null && (
-              <p
-                className="font-[Kumbh Sans] font-700 text-sm"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {Number(product.priceMonth).toFixed(2)} €
-                <span
-                  className="text-[11px] font-normal ml-1"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {t("products.per_month")}
-                </span>
-              </p>
-            )}
-            {product.priceYear != null && (
-              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {Number(product.priceYear).toFixed(2)} €{t("products.per_year")}
-              </p>
-            )}
-          </div>
-
-          <div className="flex gap-1.5">
-            <Link
-              to={`/products/${product.slug}`}
-              className="btn-ghost py-1.5 px-2.5 text-xs"
-            >
-              {t("products.view")}
-            </Link>
-            <button
-              onClick={() => !isOut && onAddToCart(product)}
-              disabled={isOut}
-              className="btn-primary py-1.5 px-2.5 text-xs gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              <ShoppingBag size={12} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function ProductsPage() {
   const { t } = useTranslation();
@@ -390,9 +273,10 @@ export default function ProductsPage() {
         ) : (
           <div className="products-grid">
             {filtered.map((p) => (
-              <ProductCard
+              <Card
                 key={p._id ?? p.id}
-                product={p}
+                variant="product"
+                item={p}
                 onAddToCart={handleAddToCart}
               />
             ))}

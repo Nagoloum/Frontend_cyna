@@ -1,4 +1,8 @@
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
@@ -10,13 +14,13 @@ const COLORS_CYCLE = ["#7c3aed", "#6d28d9", "#5b21b6", "#4c1d95", "#7e22ce"];
 
 function normaliseSlider(s, idx) {
   return {
-    _id:     s._id,
-    title:   s.title,
-    image:   buildImageUrl(s.image),
+    _id: s._id,
+    title: s.title,
+    image: buildImageUrl(s.image),
     linkUrl: s.linkUrl || null,
     nameUrl: s.NameUrl || s.nameUrl || "Discover",
-    order:   s.order ?? idx,
-    color:   COLORS_CYCLE[idx % COLORS_CYCLE.length],
+    order: s.order ?? idx,
+    color: COLORS_CYCLE[idx % COLORS_CYCLE.length],
     isFallback: false,
   };
 }
@@ -30,7 +34,9 @@ function DbSlide({ slide }) {
           alt={slide.title}
           className="absolute inset-0 w-full h-full object-cover"
           style={{ zIndex: 0 }}
-          onError={(e) => { e.target.style.display = "none"; }}
+          onError={(e) => {
+            e.target.style.display = "none";
+          }}
         />
       )}
       <div
@@ -49,16 +55,25 @@ function DbSlide({ slide }) {
           zIndex: 2,
         }}
       />
-      <div className="cyna-container relative py-8 sm:py-14 lg:py-20" style={{ zIndex: 3 }}>
+      <div
+        className="cyna-container relative py-8 sm:py-14 lg:py-20"
+        style={{ zIndex: 3 }}
+      >
         <div className="max-w-xl">
           <h1
             className="font-[Kumbh Sans] font-extrabold mb-4 sm:mb-6 leading-[1.1] text-white"
-            style={{ fontSize: "clamp(1.4rem, 5vw, 3rem)", whiteSpace: "pre-line" }}
+            style={{
+              fontSize: "clamp(1.4rem, 5vw, 3rem)",
+              whiteSpace: "pre-line",
+            }}
           >
             {slide.title}
           </h1>
           {slide.linkUrl && (
-            <Link to={slide.linkUrl} className="btn-primary inline-flex items-center mt-2 text-sm sm:text-base py-2 px-4 sm:py-3 sm:px-6">
+            <Link
+              to={slide.linkUrl}
+              className="btn-primary inline-flex items-center mt-2 text-sm sm:text-base py-2 px-4 sm:py-3 sm:px-6"
+            >
               {slide.nameUrl}
             </Link>
           )}
@@ -89,7 +104,11 @@ function FallbackSlide({ slide }) {
         <div className="max-w-xl">
           <h1
             className="font-[Kumbh Sans] font-extrabold mb-3 sm:mb-4 leading-[1.1]"
-            style={{ fontSize: "clamp(1.4rem, 5vw, 3rem)", color: "var(--text-primary)", whiteSpace: "pre-line" }}
+            style={{
+              fontSize: "clamp(1.4rem, 5vw, 3rem)",
+              color: "var(--text-primary)",
+              whiteSpace: "pre-line",
+            }}
           >
             {slide.title}
           </h1>
@@ -99,7 +118,10 @@ function FallbackSlide({ slide }) {
           >
             {slide.description}
           </p>
-          <Link to={slide.linkUrl} className="btn-primary inline-flex items-center text-sm sm:text-base py-2 px-4 sm:py-3 sm:px-6">
+          <Link
+            to={slide.linkUrl}
+            className="btn-primary inline-flex items-center text-sm sm:text-base py-2 px-4 sm:py-3 sm:px-6"
+          >
             {slide.cta}
           </Link>
         </div>
@@ -110,17 +132,43 @@ function FallbackSlide({ slide }) {
 
 export function HeroCarousel() {
   const { t } = useTranslation();
-  const [api, setApi]         = React.useState();
+  const [api, setApi] = React.useState();
   const [current, setCurrent] = React.useState(0);
-  const [slides, setSlides]   = React.useState([]);
+  const [slides, setSlides] = React.useState([]);
   const [useFallback, setUseFallback] = React.useState(false);
-  const plugin = React.useRef(Autoplay({ delay: 5500, stopOnInteraction: true }));
+  const plugin = React.useRef(
+    Autoplay({ delay: 5500, stopOnInteraction: true }),
+  );
 
-  const buildFallback = React.useCallback(() => [
-    { title: t("hero.slide0_title"), description: t("hero.slide0_desc"), color: "#7c3aed", cta: t("hero.slide0_cta"), linkUrl: "/categories", isFallback: true },
-    { title: t("hero.slide1_title"), description: t("hero.slide1_desc"), color: "#6d28d9", cta: t("hero.slide1_cta"), linkUrl: "/categories", isFallback: true },
-    { title: t("hero.slide2_title"), description: t("hero.slide2_desc"), color: "#5b21b6", cta: t("hero.slide2_cta"), linkUrl: "/categories", isFallback: true },
-  ], [t]);
+  const buildFallback = React.useCallback(
+    () => [
+      {
+        title: t("hero.slide0_title"),
+        description: t("hero.slide0_desc"),
+        color: "#7c3aed",
+        cta: t("hero.slide0_cta"),
+        linkUrl: "/categories",
+        isFallback: true,
+      },
+      {
+        title: t("hero.slide1_title"),
+        description: t("hero.slide1_desc"),
+        color: "#6d28d9",
+        cta: t("hero.slide1_cta"),
+        linkUrl: "/categories",
+        isFallback: true,
+      },
+      {
+        title: t("hero.slide2_title"),
+        description: t("hero.slide2_desc"),
+        color: "#5b21b6",
+        cta: t("hero.slide2_cta"),
+        linkUrl: "/categories",
+        isFallback: true,
+      },
+    ],
+    [t],
+  );
 
   React.useEffect(() => {
     slidersAPI
@@ -140,7 +188,7 @@ export function HeroCarousel() {
         setUseFallback(true);
         setSlides(buildFallback());
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -156,52 +204,76 @@ export function HeroCarousel() {
   if (slides.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden" style={{ background: "var(--bg-subtle)" }}>
-      <Carousel
-        setApi={setApi}
-        plugins={[plugin.current]}
-        className="w-full"
-        opts={{ loop: true }}
+    <>
+      <section
+        className="relative overflow-hidden"
+        style={{ background: "var(--bg-subtle)" }}
       >
-        <CarouselContent>
-          {slides.map((slide, i) => (
-            <CarouselItem key={slide._id ?? i}>
-              {useFallback ? <FallbackSlide slide={slide} /> : <DbSlide slide={slide} />}
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-
-        <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3 sm:gap-6 z-10">
-          <button
-            onClick={() => api?.scrollPrev()}
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
-            style={{ background: "var(--bg-card)", color: "var(--text-secondary)" }}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => api?.scrollTo(i)}
-                className="rounded-full transition-all duration-300"
-                style={{
-                  width: i === current ? "20px" : "8px",
-                  height: "8px",
-                  background: i === current ? "var(--accent)" : "var(--border)",
-                }}
-              />
+        <Carousel
+          setApi={setApi}
+          plugins={[plugin.current]}
+          className="w-full"
+          opts={{ loop: true }}
+        >
+          <CarouselContent>
+            {slides.map((slide, i) => (
+              <CarouselItem key={slide._id ?? i}>
+                {useFallback ? (
+                  <FallbackSlide slide={slide} />
+                ) : (
+                  <DbSlide slide={slide} />
+                )}
+              </CarouselItem>
             ))}
+          </CarouselContent>
+
+          <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3 sm:gap-6 z-10">
+            <button
+              onClick={() => api?.scrollPrev()}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+              style={{
+                background: "var(--bg-card)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => api?.scrollTo(i)}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === current ? "20px" : "8px",
+                    height: "8px",
+                    background:
+                      i === current ? "var(--accent)" : "var(--border)",
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => api?.scrollNext()}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+              style={{
+                background: "var(--bg-card)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-          <button
-            onClick={() => api?.scrollNext()}
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
-            style={{ background: "var(--bg-card)", color: "var(--text-secondary)" }}
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      </Carousel>
-    </section>
+        </Carousel>
+      </section>
+      <div className="text-center py-4 sm:py-4 dark:text-white dark:bg-gray-900 bg-gray-200">
+        <h2
+          className="font-[Kumbh Sans] font-extrabold text-2xl sm:text-3xl "
+          style={{ color: "var(--text-primary)" }}
+        >
+          {t("home.welcome")}
+        </h2>
+      </div>
+    </>
   );
 }

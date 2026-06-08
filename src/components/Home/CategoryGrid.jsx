@@ -1,9 +1,10 @@
-import { buildImageUrl, categoriesAPI } from "@/services/api";
+import { categoriesAPI } from "@/services/api";
 import { ArrowRight, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import Card from "@/components/ui/Card";
 
 const SkeletonCard = () => (
   <div className="cyna-card p-0 overflow-hidden">
@@ -14,60 +15,6 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
-
-const CategoryCard = ({ category }) => {
-  const { t } = useTranslation();
-  const imageUrl = buildImageUrl(category.image?.path || category.image);
-  return (
-    <Link
-      to={`/categories/${category.slug}`}
-      className="cyna-card group overflow-hidden block"
-      style={{ textDecoration: "none" }}
-    >
-      <div
-        className="relative overflow-hidden"
-        style={{ aspectRatio: "4/3", background: "var(--bg-muted)" }}
-      >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={category.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Layers size={28} style={{ color: "var(--text-muted)" }} />
-          </div>
-        )}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3"
-          style={{ background: "linear-gradient(to top, rgba(124,58,237,.7), transparent)" }}
-        >
-          <span className="text-white text-xs font-semibold font-[Kumbh Sans] flex items-center gap-1">
-            {t("categoryGrid.view_products")} <ArrowRight size={12} />
-          </span>
-        </div>
-      </div>
-
-      <div className="p-3 sm:p-3.5">
-        <h3
-          className="font-[Kumbh Sans] font-700 text-xs sm:text-sm leading-snug mb-1 group-hover:text-[var(--accent)] transition-colors"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {category.name}
-        </h3>
-        {category.description && (
-          <p
-            className="text-[11px] sm:text-xs line-clamp-2 leading-relaxed"
-            style={{ color: "var(--text-muted)", fontFamily: "'Kumbh Sans', sans-serif" }}
-          >
-            {category.description}
-          </p>
-        )}
-      </div>
-    </Link>
-  );
-};
 
 const NavButton = ({ onClick, children }) => (
   <button
@@ -167,7 +114,7 @@ export default function CategoryGrid() {
                       key={cat._id || cat.id || cat.slug}
                       className="basis-[65%] pr-3"
                     >
-                      <CategoryCard category={cat} />
+                      <Card variant="category" item={cat} />
                     </CarouselItem>
                   ))}
                 </CarouselContent>
@@ -204,7 +151,7 @@ export default function CategoryGrid() {
             <div className="hidden sm:block">
               <div className="categories-grid">
                 {categories.map((cat) => (
-                  <CategoryCard key={cat._id || cat.id || cat.slug} category={cat} />
+                  <Card key={cat._id || cat.id || cat.slug} variant="category" item={cat} />
                 ))}
               </div>
             </div>

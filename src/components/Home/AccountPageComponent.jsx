@@ -18,6 +18,45 @@ const getUser = () => {
   } catch { return null; }
 };
 
+/**
+ * Extract a clean, user-facing message from an axios error.
+ * Falls back to a generic message so users never see raw/technical errors.
+ */
+const apiMessage = (err, fallback) => {
+  const m = err?.response?.data?.message;
+  if (Array.isArray(m)) return m[0] || fallback;
+  if (typeof m === "string" && m.trim()) return m;
+  return fallback;
+};
+
+// ── Card input formatters (digits only + auto spacing) ────────────────────────
+/** "1234567812345678" → "1234 5678 1234 5678" (max 19 digits) */
+const formatCardNumber = (v) =>
+  String(v ?? "").replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ");
+/** "1227" → "12/27" (max 4 digits, MM/YY) */
+const formatExpiry = (v) => {
+  const d = String(v ?? "").replace(/\D/g, "").slice(0, 4);
+  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+};
+/** Keep digits only, capped at `max` characters. */
+const onlyDigits = (v, max) => String(v ?? "").replace(/\D/g, "").slice(0, max);
+
+// ── Reusable "set as default" switch (addresses / cards) ──────────────────────
+const DefaultToggle = ({ checked, onChange, label }) => (
+  <label className="flex items-center gap-2.5 cursor-pointer pt-1">
+    <div className="relative">
+      <input
+        type="checkbox"
+        checked={!!checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
+    </div>
+    <span className="text-sm" style={{ color: "var(--text-primary)" }}>{label}</span>
+  </label>
+);
+
 // ─── Mock data (UI only — backend integration pending) ───────────────────────
 const MOCK_SUBSCRIPTIONS = [
   {
@@ -48,49 +87,6 @@ const MOCK_SUBSCRIPTIONS = [
   },
 ];
 
-const MOCK_HISTORY = [
-  {
-    _id: "pay_demo_1",
-    reference: "INV-2026-04127",
-    product: { name: "EDR Pro Plan" },
-    date:    "2026-04-15T10:14:00.000Z",
-    method:  "Visa •••• 4242",
-    periode: "MOIS",
-    amount:  49.90,
-    statut:  "PAID",
-  },
-  {
-    _id: "pay_demo_2",
-    reference: "INV-2026-03127",
-    product: { name: "EDR Pro Plan" },
-    date:    "2026-03-15T10:14:00.000Z",
-    method:  "Visa •••• 4242",
-    periode: "MOIS",
-    amount:  49.90,
-    statut:  "PAID",
-  },
-  {
-    _id: "pay_demo_3",
-    reference: "INV-2025-11098",
-    product: { name: "SOC Monitoring" },
-    date:    "2025-11-01T08:32:00.000Z",
-    method:  "Mastercard •••• 8129",
-    periode: "ANNEE",
-    amount:  4470.00,
-    statut:  "PAID",
-  },
-  {
-    _id: "pay_demo_4",
-    reference: "INV-2025-09017",
-    product: { name: "XDR Starter" },
-    date:    "2025-09-12T09:05:00.000Z",
-    method:  "Visa •••• 4242",
-    periode: "MOIS",
-    amount:  79.00,
-    statut:  "REFUNDED",
-  },
-];
-
 // ─── Utils ───────────────────────────────────────────────────────────────────
 const fmtDateLong = (iso) => {
   if (!iso) return "—";
@@ -111,11 +107,12 @@ const daysBetween = (from, to) => {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 };
 
-const Field = ({ label, type = "text", value, onChange, placeholder, disabled }) => (
+const Field = ({ label, type = "text", value, onChange, placeholder, disabled, inputMode }) => (
   <div>
     <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>{label}</label>
     <input
       type={type}
+      inputMode={inputMode}
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
@@ -157,6 +154,7 @@ function AddressModal({ address, onClose, onSaved }) {
     country:          address?.country          ?? "",
     codePostal:       address?.codePostal       ?? "",
     phone:            address?.phone            ?? "",
+    isDefault:        address?.isDefault        ?? false,
   });
 
   const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
@@ -164,16 +162,20 @@ function AddressModal({ address, onClose, onSaved }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const required = ["firstName","lastName","adresse","city","region","country","codePostal","phone"];
-    const missing = required.find(k => !form[k].trim());
-    if (missing) { setError(t("account.field_required", { field: missing })); return; }
+    const missing = required.find(k => !String(form[k] ?? "").trim());
+    if (missing) { setError(t("account.fill_required")); return; }
     setSaving(true);
     try {
-      isEdit
+      const res = isEdit
         ? await adressesAPI.update(address._id, form)
         : await adressesAPI.create(form);
+      if (res?.data?.success === false) {
+        setError(res.data.message || t("account.address_error"));
+        return;
+      }
       onSaved();
     } catch (err) {
-      setError(err.response?.data?.message ?? t("account.address_error"));
+      setError(apiMessage(err, t("account.address_error")));
     } finally { setSaving(false); }
   };
 
@@ -188,20 +190,21 @@ function AddressModal({ address, onClose, onSaved }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_fn")} value={form.firstName} onChange={set("firstName")} />
-            <Field label={t("account.field_ln")} value={form.lastName}  onChange={set("lastName")}  />
+            <Field label={t("account.field_fn")} value={form.firstName} onChange={set("firstName")} placeholder={t("account.ph_fn")} />
+            <Field label={t("account.field_ln")} value={form.lastName}  onChange={set("lastName")}  placeholder={t("account.ph_ln")} />
           </div>
-          <Field label={t("account.field_addr")}       value={form.adresse}    onChange={set("adresse")}   />
-          <Field label={t("account.field_complement")} value={form.complementAdresse} onChange={set("complementAdresse")} />
+          <Field label={t("account.field_addr")}       value={form.adresse}    onChange={set("adresse")}   placeholder={t("account.ph_addr")} />
+          <Field label={t("account.field_complement")} value={form.complementAdresse} onChange={set("complementAdresse")} placeholder={t("account.ph_complement")} />
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_city")}   value={form.city}   onChange={set("city")}   />
-            <Field label={t("account.field_region")} value={form.region} onChange={set("region")} />
+            <Field label={t("account.field_city")}   value={form.city}   onChange={set("city")}   placeholder={t("account.ph_city")} />
+            <Field label={t("account.field_region")} value={form.region} onChange={set("region")} placeholder={t("account.ph_region")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_postal")}  value={form.codePostal} onChange={set("codePostal")} />
-            <Field label={t("account.field_country")} value={form.country}    onChange={set("country")}   />
+            <Field label={t("account.field_postal")}  value={form.codePostal} onChange={set("codePostal")} placeholder={t("account.ph_postal")} inputMode="numeric" />
+            <Field label={t("account.field_country")} value={form.country}    onChange={set("country")}   placeholder={t("account.ph_country")} />
           </div>
-          <Field label={t("account.field_phone")} value={form.phone} onChange={set("phone")} />
+          <Field label={t("account.field_phone")} value={form.phone} onChange={set("phone")} placeholder={t("account.ph_phone")} inputMode="tel" />
+          <DefaultToggle checked={form.isDefault} onChange={set("isDefault")} label={t("account.default_address")} />
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
             <button type="button" onClick={onClose} disabled={saving}
               className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
@@ -230,6 +233,7 @@ function CardModal({ card, onClose, onSaved }) {
     carteNumber: card?.carteNumber ?? "",
     carteDate:   card?.carteDate   ?? "",
     carteCVV:    card?.carteCVV    ?? "",
+    isDefault:   card?.isDefault   ?? false,
   });
 
   const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
@@ -242,12 +246,16 @@ function CardModal({ card, onClose, onSaved }) {
     if (!form.carteCVV.trim())    { setError(t("checkout.error_cvv")); return; }
     setSaving(true);
     try {
-      isEdit
+      const res = isEdit
         ? await cartesAPI.update(card._id, form)
         : await cartesAPI.create(form);
+      if (res?.data?.success === false) {
+        setError(t("account.card_error"));
+        return;
+      }
       onSaved();
-    } catch (err) {
-      setError(err.response?.data?.message ?? t("account.address_error"));
+    } catch {
+      setError(t("account.card_error"));
     } finally { setSaving(false); }
   };
 
@@ -265,20 +273,19 @@ function CardModal({ card, onClose, onSaved }) {
           <div className="relative">
             <Field
               label={t("account.field_card_number")}
-              type={show ? "text" : "password"}
+              type="text"
+              inputMode="numeric"
               value={form.carteNumber}
-              onChange={set("carteNumber")}
-              placeholder="•••• •••• •••• ••••"
+              onChange={(v) => set("carteNumber")(formatCardNumber(v))}
+              placeholder="1234 5678 9012 3456"
             />
-            <button type="button" onClick={() => setShow(v => !v)}
-              className="absolute right-3 top-8 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-              {show ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
+
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_expiry")} value={form.carteDate} onChange={set("carteDate")} placeholder="12/27" />
-            <Field label={t("account.field_cvv")} type="password" value={form.carteCVV} onChange={set("carteCVV")} placeholder="•••" />
+            <Field label={t("account.field_expiry")} inputMode="numeric" value={form.carteDate} onChange={(v) => set("carteDate")(formatExpiry(v))} placeholder="12/27" />
+            <Field label={t("account.field_cvv")} type="password" inputMode="numeric" value={form.carteCVV} onChange={(v) => set("carteCVV")(onlyDigits(v, 4))} placeholder="123" />
           </div>
+          <DefaultToggle checked={form.isDefault} onChange={set("isDefault")} label={t("account.default_card")} />
           <p className="text-xs text-[var(--text-muted)]">🔒 {t("account.card_security")}</p>
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
             <button type="button" onClick={onClose} disabled={saving}
@@ -317,7 +324,7 @@ function AddressesTab() {
   const handleDelete = async (id) => {
     try {
       await adressesAPI.delete(id);
-      setMsg({ type: "success", text: t("account.cancel") });
+      setMsg({ type: "success", text: t("account.address_removed") });
       load();
     } catch {
       setMsg({ type: "error", text: t("account.address_error") });
@@ -348,7 +355,10 @@ function AddressesTab() {
             <div key={a._id} className="cyna-card p-4 flex items-start gap-3">
               <MapPin size={16} style={{ color: "var(--accent)", marginTop: 2, flexShrink: 0 }} />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-[var(--text-primary)]">{a.firstName} {a.lastName}</p>
+                <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
+                  {a.firstName} {a.lastName}
+                  {a.isDefault && <span className="badge badge-accent text-[10px] px-2 py-0.5">{t("account.default_badge")}</span>}
+                </p>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">{a.adresse}{a.complementAdresse ? `, ${a.complementAdresse}` : ""}</p>
                 <p className="text-xs text-[var(--text-secondary)]">{a.codePostal} {a.city}, {a.region}, {a.country}</p>
                 <p className="text-xs text-[var(--text-muted)]">{a.phone}</p>
@@ -628,136 +638,6 @@ function SubscriptionsTab() {
   );
 }
 
-// ── Billing history detail modal ─────────────────────────────────────────────
-function PaymentDetailModal({ payment, onClose }) {
-  const { t } = useTranslation();
-  const periodeLabel = (p) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
-        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-[var(--border)]">
-          <div className="min-w-0">
-            <p className="text-[10px] font-mono mb-1" style={{ color: "var(--text-muted)" }}>{payment.reference}</p>
-            <h3 className="font-semibold text-[var(--text-primary)] truncate">{payment.product?.name}</h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors flex-shrink-0">
-            <X size={15} />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-3">
-          <DetailCell icon={Calendar}   label={t("account.billing_date")}   value={fmtDateLong(payment.date)} />
-          <DetailCell icon={CreditCard} label={t("account.billing_method")} value={payment.method ?? "—"} />
-          <DetailCell icon={Receipt}    label={t("account.billing_plan")}   value={periodeLabel(payment.periode)} />
-
-          <div className="flex items-center justify-between p-4 rounded-xl"
-            style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
-            <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>{t("account.billing_amount")}</span>
-            <span className="font-[Kumbh Sans] font-700 text-lg" style={{ color: "var(--accent)" }}>{fmtEur(payment.amount)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Billing history tab ──────────────────────────────────────────────────────
-function HistoryTab() {
-  const { t } = useTranslation();
-  const [history] = useState(MOCK_HISTORY);
-  const [selected, setSelected] = useState(null);
-
-  const statusPill = (statut) => {
-    const map = {
-      PAID:     { label: "Paid",     cls: "bg-green-50 text-green-600 border-green-200" },
-      REFUNDED: { label: "Refunded", cls: "bg-blue-50 text-blue-600 border-blue-200"   },
-      FAILED:   { label: "Failed",   cls: "bg-red-50 text-red-600 border-red-200"      },
-      PENDING:  { label: "Pending",  cls: "bg-amber-50 text-amber-600 border-amber-200" },
-    };
-    const m = map[statut] ?? { label: statut, cls: "bg-gray-50 text-gray-600 border-gray-200" };
-    return (
-      <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}>
-        {m.label}
-      </span>
-    );
-  };
-
-  if (history.length === 0) {
-    return (
-      <div className="cyna-card p-6">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.billing_title")}</h2>
-        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
-          <Receipt size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_billing")}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const totalPaid = history
-    .filter((p) => p.statut === "PAID")
-    .reduce((s, p) => s + Number(p.amount ?? 0), 0);
-
-  return (
-    <div>
-      <MockBanner />
-      <div className="cyna-card p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="font-semibold text-[var(--text-primary)]">{t("account.billing_title")}</h2>
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {t("account.total_paid")} · <strong style={{ color: "var(--accent)" }}>{fmtEur(totalPaid)}</strong>
-          </span>
-        </div>
-
-        <div className="rounded-2xl overflow-hidden border border-[var(--border)]">
-          {history.map((p, i) => (
-            <button
-              key={p._id}
-              type="button"
-              onClick={() => setSelected(p)}
-              className={`w-full text-left p-4 flex items-center gap-3 transition-colors hover:bg-[var(--bg-subtle)] ${i > 0 ? "border-t border-[var(--border)]" : ""}`}
-              style={{ background: "var(--bg-card)" }}
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--bg-subtle)" }}
-              >
-                <Receipt size={14} style={{ color: "var(--accent)" }} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-sm text-[var(--text-primary)] truncate">{p.product?.name}</p>
-                  {statusPill(p.statut)}
-                </div>
-                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  <span className="font-mono">{p.reference}</span>
-                  <span className="mx-1.5">·</span>
-                  {fmtDateLong(p.date)}
-                  <span className="mx-1.5">·</span>
-                  {p.method}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>
-                  {fmtEur(p.amount)}
-                </span>
-                <ChevronRight size={13} style={{ color: "var(--text-muted)" }} />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {selected && (
-        <PaymentDetailModal payment={selected} onClose={() => setSelected(null)} />
-      )}
-    </div>
-  );
-}
-
 // ── Orders tab ────────────────────────────────────────────────────────────────
 function OrdersTab() {
   const { t } = useTranslation();
@@ -918,7 +798,10 @@ function CardsTab() {
                 <CreditCard size={18} style={{ color: "var(--accent)" }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-[var(--text-primary)]">{mask(c.carteNumber)}</p>
+                <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
+                  {mask(c.carteNumber)}
+                  {c.isDefault && <span className="badge badge-accent text-[10px] px-2 py-0.5">{t("account.default_badge")}</span>}
+                </p>
                 <p className="text-xs text-[var(--text-muted)]">{c.carteName} — {t("account.card_expires")} {c.carteDate}</p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
@@ -949,10 +832,12 @@ export default function AccountPage() {
   const tokenUser  = getUser();
   const [tab, setTab]       = useState("profile");
   const [profile, setProfile] = useState({ firstName: "", lastName: "", email: "" });
-  const [pwd, setPwd]       = useState({ new: "", confirm: "" });
+  const [pwd, setPwd]       = useState({ current: "", new: "", confirm: "" });
   const [showPwd, setShowPwd] = useState(false);
   const [msg, setMsg]       = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const TABS = [
     { id: "profile",       label: t("account.tab_profile"),       icon: User       },
@@ -960,12 +845,14 @@ export default function AccountPage() {
     { id: "addresses",     label: t("account.tab_addresses"),     icon: MapPin     },
     { id: "cards",         label: t("account.tab_payment"),       icon: CreditCard },
     { id: "subscriptions", label: t("account.tab_subscriptions"), icon: Sparkles   },
-    { id: "history",       label: t("account.tab_billing"),       icon: Receipt    },
     { id: "orders",        label: t("account.tab_orders"),        icon: Package    },
   ];
 
+  // Load the profile once on mount. We must NOT depend on `tokenUser`: getUser()
+  // returns a fresh object every render, which would re-run this effect in a loop
+  // and overwrite the fields with server data on every keystroke.
   useEffect(() => {
-    if (!tokenUser) { navigate("/auth"); return; }
+    if (!getUser()) { navigate("/auth"); return; }
     authAPI.me()
       .then(u => setProfile({
         firstName: u.firstName || "",
@@ -973,7 +860,7 @@ export default function AccountPage() {
         email:     u.email     || "",
       }))
       .catch(() => {});
-  }, [navigate, tokenUser]);
+  }, [navigate]);
 
   const notify = (type, text) => {
     setMsg({ type, text });
@@ -982,32 +869,68 @@ export default function AccountPage() {
 
   const handleSaveProfile = async () => {
     if (!tokenUser?.id) return;
+    const email = profile.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      notify("error", t("account.invalid_email"));
+      return;
+    }
     setSaving(true);
     try {
-      await usersAPI.updateProfile(tokenUser.id, {
-        firstName: profile.firstName,
-        lastName:  profile.lastName,
+      const res = await usersAPI.updateProfile(tokenUser.id, {
+        firstName: profile.firstName.trim(),
+        lastName:  profile.lastName.trim(),
+        email,
       });
-      notify("success", t("account.profile_success"));
-    } catch {
-      notify("error", t("account.profile_error"));
+      if (res?.data?.success === false) {
+        notify("error", res.data.message || t("account.profile_error"));
+      } else {
+        notify("success", t("account.profile_success"));
+      }
+    } catch (err) {
+      notify("error", apiMessage(err, t("account.profile_error")));
     }
     setSaving(false);
   };
 
   const handleChangePassword = async () => {
+    if (!pwd.current || !pwd.new || !pwd.confirm) { notify("error", t("account.fill_required")); return; }
     if (pwd.new !== pwd.confirm) { notify("error", t("account.password_mismatch")); return; }
     if (pwd.new.length < 8)      { notify("error", t("account.password_too_short")); return; }
-    if (!tokenUser?.id) return;
     setSaving(true);
     try {
-      await usersAPI.updateProfile(tokenUser.id, { password: pwd.new });
-      notify("success", t("account.password_success"));
-      setPwd({ new: "", confirm: "" });
-    } catch {
-      notify("error", t("account.password_error"));
+      const res = await usersAPI.changePassword({
+        currentPassword: pwd.current,
+        newPassword:     pwd.new,
+        confirmPassword: pwd.confirm,
+      });
+      if (res?.data?.success === false) {
+        notify("error", res.data.message || t("account.password_error"));
+      } else {
+        notify("success", t("account.password_success"));
+        setPwd({ current: "", new: "", confirm: "" });
+      }
+    } catch (err) {
+      notify("error", apiMessage(err, t("account.password_error")));
     }
     setSaving(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!tokenUser?.id) return;
+    setDeleting(true);
+    try {
+      const res = await usersAPI.delete(tokenUser.id);
+      if (res?.data?.success === false) {
+        notify("error", res.data.message || t("account.delete_account_error"));
+        setDeleting(false);
+        return;
+      }
+      // Session cleared + redirect to /auth.
+      authAPI.logout();
+    } catch (err) {
+      notify("error", apiMessage(err, t("account.delete_account_error")));
+      setDeleting(false);
+    }
   };
 
   return (
@@ -1059,20 +982,35 @@ export default function AccountPage() {
 
             {/* ── Profile ── */}
             {tab === "profile" && (
-              <div className="cyna-card p-6 space-y-4">
-                <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.personal_info")}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label={t("account.field_first_name")} value={profile.firstName} onChange={v => setProfile(p => ({ ...p, firstName: v }))} />
-                  <Field label={t("account.field_last_name")}  value={profile.lastName}  onChange={v => setProfile(p => ({ ...p, lastName:  v }))} />
+              <div className="space-y-6">
+                <div className="cyna-card p-6 space-y-4">
+                  <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.personal_info")}</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label={t("account.field_first_name")} value={profile.firstName} onChange={v => setProfile(p => ({ ...p, firstName: v }))} />
+                    <Field label={t("account.field_last_name")}  value={profile.lastName}  onChange={v => setProfile(p => ({ ...p, lastName:  v }))} />
+                  </div>
+                  <Field label={t("account.field_email")} type="email" value={profile.email} onChange={v => setProfile(p => ({ ...p, email: v }))} />
+                  <div className="flex justify-end">
+                    <button onClick={handleSaveProfile} disabled={saving} className="btn-primary gap-2">
+                      <Save size={14} />
+                      {saving ? t("account.saving") : t("account.save")}
+                    </button>
+                  </div>
                 </div>
-                <Field label={t("account.field_email")} value={profile.email} onChange={() => {}} disabled />
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {t("account.email_hint")}
-                </p>
-                <div className="flex justify-end">
-                  <button onClick={handleSaveProfile} disabled={saving} className="btn-primary gap-2">
-                    <Save size={14} />
-                    {saving ? t("account.saving") : t("account.save")}
+
+                {/* Danger zone */}
+                <div className="cyna-card p-6" style={{ borderColor: "rgba(239,68,68,0.4)" }}>
+                  <h2 className="font-semibold mb-1 flex items-center gap-2" style={{ color: "var(--danger)" }}>
+                    <AlertCircle size={16} /> {t("account.danger_zone")}
+                  </h2>
+                  <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+                    {t("account.delete_account_desc")}
+                  </p>
+                  <button
+                    onClick={() => setDeleteOpen(true)}
+                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-medium border border-red-300 dark:border-red-500/40 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                  >
+                    <Trash2 size={14} /> {t("account.delete_account")}
                   </button>
                 </div>
               </div>
@@ -1082,6 +1020,13 @@ export default function AccountPage() {
             {tab === "password" && (
               <div className="cyna-card p-6 space-y-4">
                 <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.change_password")}</h2>
+                <Field
+                  label={t("account.current_password")}
+                  type={showPwd ? "text" : "password"}
+                  value={pwd.current}
+                  onChange={v => setPwd(p => ({ ...p, current: v }))}
+                  placeholder={t("account.current_password_placeholder")}
+                />
                 <Field
                   label={t("account.new_password")}
                   type={showPwd ? "text" : "password"}
@@ -1104,7 +1049,7 @@ export default function AccountPage() {
                   {t("account.password_requirement")}
                 </p>
                 <div className="flex justify-end">
-                  <button onClick={handleChangePassword} disabled={saving || !pwd.new || !pwd.confirm} className="btn-primary gap-2">
+                  <button onClick={handleChangePassword} disabled={saving || !pwd.current || !pwd.new || !pwd.confirm} className="btn-primary gap-2">
                     <Lock size={14} />
                     {saving ? t("account.saving") : t("account.change_password_btn")}
                   </button>
@@ -1121,14 +1066,45 @@ export default function AccountPage() {
             {/* ── Active subscriptions ── */}
             {tab === "subscriptions" && <SubscriptionsTab />}
 
-            {/* ── Billing history ── */}
-            {tab === "history" && <HistoryTab />}
-
             {/* ── Orders ── */}
             {tab === "orders" && <OrdersTab />}
           </div>
         </div>
       </div>
+
+      {/* ── Delete account confirmation ── */}
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !deleting && setDeleteOpen(false)} />
+          <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl p-6">
+            <div className="flex items-center gap-2 mb-2" style={{ color: "var(--danger)" }}>
+              <AlertCircle size={18} />
+              <h3 className="font-semibold">{t("account.delete_account_confirm_title")}</h3>
+            </div>
+            <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
+              {t("account.delete_account_confirm_body")}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+                className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all"
+              >
+                {t("account.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 h-10 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-all inline-flex items-center justify-center gap-2"
+              >
+                <Trash2 size={14} /> {deleting ? t("account.deleting") : t("account.delete_account")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

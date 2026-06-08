@@ -1,100 +1,13 @@
-import { buildImageUrl, categoriesAPI, extractList, searchAPI, servicesAPI } from "@/services/api";
+import { categoriesAPI, extractList, searchAPI, servicesAPI } from "@/services/api";
 import {
-  CheckCircle2, ChevronDown, Filter, Package,
-  Search, SlidersHorizontal, X, XCircle,
+  ChevronDown, Filter, Package,
+  Search, SlidersHorizontal, X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "react-i18next";
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const fmtPrice = (n) =>
-  n !== undefined && n !== null
-    ? `${Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`
-    : null;
-
-// ── Product card ─────────────────────────────────────────────────────────────
-function ProductCard({ product }) {
-  const { t } = useTranslation();
-  const [imgErr, setImgErr] = useState(false);
-  const images = product.images ?? [];
-  const firstImg = images[0];
-  const imageUrl = !imgErr ? buildImageUrl(firstImg?.path ?? firstImg) : null;
-  const isOut = product.stock === 0;
-  const priceMonth = product.priceMonth ?? product.price;
-
-  return (
-    <Link
-      to={`/products/${product.slug}`}
-      className={`cyna-card overflow-hidden group flex flex-col ${isOut ? "opacity-60" : ""}`}
-      style={{ textDecoration: "none" }}
-    >
-      <div
-        className="relative overflow-hidden flex-shrink-0"
-        style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}
-      >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={product.name}
-            onError={() => setImgErr(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package size={36} style={{ color: "var(--text-muted)" }} />
-          </div>
-        )}
-        {isOut && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,.45)" }}
-          >
-            <span className="text-white font-semibold text-xs px-3 py-1 rounded-full bg-red-500/80">
-              {t("search.unavailable")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 flex flex-col flex-1">
-        <h3
-          className="font-[Kumbh Sans] font-semibold text-sm leading-snug mb-1 group-hover:text-[var(--accent)] transition-colors"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {product.name}
-        </h3>
-        {product.service?.name && (
-          <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
-            {product.service.name}
-          </p>
-        )}
-        <div className="mt-auto flex items-center justify-between">
-          <div>
-            {priceMonth ? (
-              <span className="font-bold text-sm" style={{ color: "var(--accent)" }}>
-                {fmtPrice(priceMonth)}<span className="text-xs font-normal text-[var(--text-muted)]">/mo</span>
-              </span>
-            ) : (
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("search.price_on_request")}</span>
-            )}
-          </div>
-          {isOut ? (
-            <span className="flex items-center gap-1 text-xs text-red-500">
-              <XCircle size={12} /> {t("search.out_of_stock")}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-xs text-green-500">
-              <CheckCircle2 size={12} /> {t("search.available")}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
+import Card from "@/components/ui/Card";
 
 // ── Skeleton card ─────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
@@ -426,7 +339,7 @@ export default function SearchPage() {
               <>
                 <div className="products-grid">
                   {results.map((p) => (
-                    <ProductCard key={p._id ?? p.slug} product={p} />
+                    <Card key={p._id ?? p.slug} variant="product" item={p} />
                   ))}
                 </div>
 

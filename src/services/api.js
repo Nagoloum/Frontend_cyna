@@ -214,10 +214,17 @@ export const usersAPI = {
 
   /**
    * PATCH /users/profil/:id
-   * Backend DTO accepts only { firstName, lastName, email, password } (whitelisted).
-   * Any other field (phone, timezone, language…) is silently dropped server-side.
+   * Backend DTO accepts only { firstName, lastName, email }.
+   * Password changes go through `changePassword` (it verifies the current password).
    */
   updateProfile: (id, data) => api.patch(`/users/profil/${id}`, data),
+
+  /**
+   * PATCH /users/profil/change-password
+   * Body: { currentPassword, newPassword, confirmPassword }
+   * The backend verifies the current password (bcrypt) and the new-password strength.
+   */
+  changePassword: (data) => api.patch('/users/profil/change-password', data),
 
   /** DELETE /users/:id */
   delete: (id) => api.delete(`/users/${id}`),

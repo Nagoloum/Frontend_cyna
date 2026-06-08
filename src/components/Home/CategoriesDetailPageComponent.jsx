@@ -1,12 +1,13 @@
-import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, categoriesAPI, getProductImage, productsAPI } from "@/services/api";
+import { buildImageUrl, categoriesAPI, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
-import { ArrowLeft, CheckCircle2, Filter, Package, ShoppingBag, Star, XCircle } from "lucide-react";
+import { ArrowLeft, Filter, Package } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
+import Card from "@/components/ui/Card";
 
 const SkeletonProduct = () => (
   <div className="cyna-card overflow-hidden">
@@ -21,89 +22,6 @@ const SkeletonProduct = () => (
     </div>
   </div>
 );
-
-const ProductCard = ({ product, onAddToCart }) => {
-  const { t } = useTranslation();
-  const [imgErr, setImgErr] = useState(false);
-  const img = imgErr ? DEFAULT_PRODUCT_IMAGE : getProductImage(product);
-  const isOut = product.stock === 0;
-
-  return (
-    <div className={`cyna-card overflow-hidden group flex flex-col ${isOut ? "opacity-55" : ""}`}>
-      {/* Image */}
-      <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: "1/1", background: "var(--bg-muted)" }}>
-        <img
-          src={img}
-          alt={product.name}
-          onError={() => setImgErr(true)}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        {product.is_selected && (
-          <div className="absolute top-2.5 left-2.5">
-            <span className="badge badge-accent gap-1 text-[10px]">
-              <Star size={9} fill="currentColor" /> Top
-            </span>
-          </div>
-        )}
-        {isOut && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }}>
-            <span className="badge badge-danger gap-1">
-              <XCircle size={12} /> {t("categoryDetail.status_out_of_stock")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="p-4 flex flex-col flex-1 gap-2.5">
-        <div>
-          <h3 className="font-[Kumbh Sans] font-700 text-sm leading-tight line-clamp-2 mb-1" style={{ color: "var(--text-primary)" }}>
-            {product.name}
-          </h3>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs">
-          {isOut
-            ? <><XCircle size={12} style={{ color: "var(--danger)" }} /><span style={{ color: "var(--danger)" }}>{t("categoryDetail.status_out_of_stock")}</span></>
-            : <><CheckCircle2 size={12} style={{ color: "var(--success)" }} /><span style={{ color: "var(--success)" }}>{t("categoryDetail.status_available")}</span></>
-          }
-        </div>
-
-        {/* Price + CTA */}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
-          <div>
-            {product.priceMonth != null && (
-              <p className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>
-                {Number(product.priceMonth).toFixed(2)} €
-                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-muted)" }}>{t("categoryDetail.per_month")}</span>
-              </p>
-            )}
-            {product.priceYear != null && (
-              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {t("categoryDetail.or_per_year", { price: Number(product.priceYear).toFixed(2) })}
-              </p>
-            )}
-          </div>
-
-          <Link
-            to={`/products/${product.slug}`}
-            className="btn-ghost py-1.5 px-3 text-xs"
-          >
-            {t("categoryDetail.details")}
-          </Link>
-
-          <button
-            onClick={() => !isOut && onAddToCart(product)}
-            disabled={isOut}
-            className="btn-primary py-1.5 px-3 text-xs gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            <ShoppingBag size={12} /> {t("categoryDetail.add_to_cart")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function CategoryDetailPage() {
   const { t } = useTranslation();
@@ -266,7 +184,7 @@ export default function CategoryDetailPage() {
         ) : (
           <div className="products-grid">
             {sortedProducts.map(p => (
-              <ProductCard key={p._id ?? p.id} product={p} onAddToCart={handleAddToCart} />
+              <Card key={p._id ?? p.id} variant="product" item={p} onAddToCart={handleAddToCart} />
             ))}
           </div>
         )}
