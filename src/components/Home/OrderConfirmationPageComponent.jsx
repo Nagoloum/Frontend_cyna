@@ -7,7 +7,7 @@ export default function OrderConfirmationPage() {
   return (
     <div className="page-enter cyna-container py-20 flex flex-col items-center text-center" style={{ minHeight: "70vh" }}>
       <div
-        className="w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-[var(--shadow-accent)]"
+        className="w-20 h-20 rounded-full flex items-center mt-20 justify-center mb-6 shadow-[var(--shadow-accent)]"
         style={{ background: "linear-gradient(135deg, var(--accent), #a78bfa)" }}
       >
         <CheckCircle2 size={36} color="#fff" />
@@ -34,7 +34,7 @@ export default function OrderConfirmationPage() {
         {t("orderConfirmation.activation")}
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 mb-20 lg:mb-0">
         <Link to="/account" className="btn-primary gap-2">
           <ShoppingBag size={16} /> {t("orderConfirmation.my_orders")}
         </Link>

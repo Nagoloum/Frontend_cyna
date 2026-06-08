@@ -458,7 +458,6 @@
     "billing_method": "Payment method",
     "billing_plan": "Plan",
     "billing_amount": "Amount charged",
-    "preview_note": "Preview interface real data will appear here once your purchases are processed.",
     "orders_title": "My orders",
     "no_orders": "No orders yet",
     "no_orders_hint": "Your orders will appear here once you have made a purchase.",

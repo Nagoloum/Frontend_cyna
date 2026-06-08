@@ -9,6 +9,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Elements, CardNumberElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe";
 import StripeCardFields from "@/components/ui/StripeCardFields";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { clearCart } from "@/store/slices/cartSlice";
 
 const billingPeriodToPeriode = (bp) =>
   String(bp).toLowerCase() === "yearly" ? "ANNEE" : "MOIS";
@@ -41,6 +43,7 @@ export default function CheckoutPage() {
 function CheckoutForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const stripe = useStripe();
   const elements = useElements();
 
@@ -70,10 +73,8 @@ function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  const cart = (() => {
-    try { return JSON.parse(localStorage.getItem("cart") || "[]"); }
-    catch { return []; }
-  })();
+  // Source unique : Redux (synchronisé avec localStorage par le middleware).
+  const cart = useAppSelector((s) => s.cart.items);
 
   const total = cart.reduce((s, i) => {
     const price = i.billingPeriod === "monthly" ? i.priceMonth : i.priceYear;
@@ -230,9 +231,8 @@ function CheckoutForm() {
         throw new Error(body?.message || t("checkout.error_payment_failed"));
       }
 
-      // 4) Succès → vider le panier et afficher la confirmation.
-      localStorage.removeItem("cart");
-      window.dispatchEvent(new Event("cart-updated"));
+      // 4) Succès → vider le panier (Redux + localStorage via middleware) et confirmer.
+      dispatch(clearCart());
       navigate("/checkout/confirmation");
     } catch (err) {
       const msg = err.response?.data?.message ?? err.message ?? t("checkout.error_order_generic");
