@@ -6,11 +6,11 @@
 //   notify.success('Saved', 'Profile updated');
 //   const ok = await confirmDialog({ title: 'Delete?', message: '...', variant: 'danger' });
 
+import {
+    AlertTriangle, CheckCircle2, Info, Loader2, X, XCircle,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  AlertTriangle, CheckCircle2, Info, Loader2, X, XCircle,
-} from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../../store/hooks';
 import { removeToast } from '../../../store/slices/notificationsSlice';
@@ -163,7 +163,7 @@ function ConfirmDialog({ state }) {
 }
 
 // ─── Provider ───────────────────────────────────────────────────────────────
-// Reads all state from Redux — no local useState for toasts or confirm.
+// Reads all state from Redux no local useState for toasts or confirm.
 export function NotifyProvider({ children }) {
   const dispatch = useAppDispatch();
   const toasts   = useSelector((s) => s.notifications.toasts);

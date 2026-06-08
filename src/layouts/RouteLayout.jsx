@@ -1,15 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { Loader2, Lock, ShieldAlert, ShieldOff } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation } from 'react-router-dom';
-import { ShieldAlert, ShieldOff, Loader2, Lock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-  setAuthStatus, setRedirectTarget, setCountdown, decrementCountdown, resetAuth,
+    decrementCountdown, resetAuth,
+    setAuthStatus, setRedirectTarget
 } from '../store/slices/authSlice';
-import { useTranslation } from 'react-i18next';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// JWT utilities (client-side read only — real validation stays on backend)
+// JWT utilities (client-side read only real validation stays on backend)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const decodeToken = (token) => {
@@ -156,7 +157,7 @@ function AccessDeniedScreen({ countdown }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RouteLayout — Universal route guard with Redux state management
+// RouteLayout Universal route guard with Redux state management
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RouteLayout({

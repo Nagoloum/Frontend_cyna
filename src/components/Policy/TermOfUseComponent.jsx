@@ -1,10 +1,8 @@
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import LegalLayout from './LegalLayout';
 
 export default function TermsOfUseComponent() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const sections = [
     { title: t('terms.s1_title'),  body: t('terms.s1_body')  },
@@ -19,21 +17,8 @@ export default function TermsOfUseComponent() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-10 flex items-center gap-3 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors duration-200 group"
-        >
-          <ArrowLeft className="w-6 h-6 transition-transform group-hover:-translate-x-1" />
-          {t('terms.back')}
-        </button>
-
-        <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white text-center mb-12">
-          {t('terms.title')}
-        </h1>
-
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-10 lg:p-14 space-y-12">
+    <LegalLayout badge={t('terms.badge')} title={t('terms.title')} subtitle={t('terms.subtitle')}>
+      <div className="cyna-card p-6 sm:p-8 legal-prose">
           {sections.map((s) => (
             <section key={s.title}>
               <h2 className="text-2xl lg:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
@@ -57,13 +42,12 @@ export default function TermsOfUseComponent() {
             </p>
           </section>
 
-          <div className="pt-12 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="pt-8 mt-4 border-t border-[var(--border)]">
+            <p className="text-center text-sm" style={{ color: "var(--text-muted)" }}>
               {t('terms.last_updated')}
             </p>
           </div>
-        </div>
       </div>
-    </div>
+    </LegalLayout>
   );
 }

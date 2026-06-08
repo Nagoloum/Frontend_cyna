@@ -1,9 +1,9 @@
-import { Children, useEffect, useRef, useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
+import { Children, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
- * Themed select for the public site — matches the AdminSelect dropdown
+ * Themed select for the public site matches the AdminSelect dropdown
  * behaviour but is styled with the home design tokens (var(--bg-card),
  * var(--accent), var(--border)…) so it blends with the rest of the UI.
  *
@@ -14,7 +14,7 @@ import { Check, ChevronDown } from 'lucide-react';
  *
  * The placeholder convention follows the rest of the codebase: the first
  * `<option value="">…` is treated as the placeholder and hidden from the
- * dropdown list — its label is shown muted in the trigger when nothing is
+ * dropdown list its label is shown muted in the trigger when nothing is
  * picked.
  */
 export default function Select({

@@ -51,7 +51,7 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <div className="cyna-container py-10 max-w-2xl">
+      <div className="cyna-container max-w-2xl">
         <form onSubmit={handleSubmit} className="cyna-card p-6 space-y-4">
           {status && (
             <div

@@ -1,7 +1,7 @@
 // src/components/admin/shared/Spinner.jsx
 
 /**
- * Spinner — Loading indicator
+ * Spinner Loading indicator
  *
  * Props :
  *   size    {'sm'|'md'|'lg'|'xl'}

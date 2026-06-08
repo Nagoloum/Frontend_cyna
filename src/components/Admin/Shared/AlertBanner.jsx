@@ -1,9 +1,9 @@
 // src/components/admin/shared/AlertBanner.jsx
+import { AlertTriangle, CheckCircle, ChevronRight, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { AlertTriangle, Info, CheckCircle, XCircle, X, ChevronRight } from 'lucide-react';
 
 /**
- * AlertBanner — Bannière d'alerte système
+ * AlertBanner Bannière d'alerte système
  *
  * Props :
  *   type       {'warning'|'error'|'info'|'success'}

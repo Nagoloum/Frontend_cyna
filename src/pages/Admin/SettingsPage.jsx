@@ -1,9 +1,15 @@
 /* eslint-disable no-unused-vars */
 // src/pages/Admin/Settings.jsx
-import { useState, useEffect } from 'react';
 import {
-  Palette, CheckCircle, AlertCircle, Loader2, Sun, Moon, Monitor,
+    AlertCircle,
+    CheckCircle,
+    Loader2,
+    Monitor,
+    Moon,
+    Palette,
+    Sun,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const THEME_KEY = 'theme';
 
@@ -111,7 +117,7 @@ export default function Settings() {
       </div>
 
       {/* Appearance */}
-      <Section icon={Palette} title="Appearance" subtitle="Choose your theme — saved locally on this device">
+      <Section icon={Palette} title="Appearance" subtitle="Choose your theme saved locally on this device">
         <div className="space-y-4">
           <div>
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Theme</p>

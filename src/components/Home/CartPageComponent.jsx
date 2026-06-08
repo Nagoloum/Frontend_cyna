@@ -185,11 +185,11 @@ export default function CartPage() {
 
       {/* Hero header */}
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
-        <div className="cyna-container py-10 sm:py-14">
+        <div className="cyna-container py-10 sm:py-14 ">
           <p className="section-label">{t("cart.badge")}</p>
           <h1 className="section-title mb-2">{t("cart.title")}</h1>
           <p
-            className="text-sm max-w-xl"
+            className="text-sm max-w-xl lg:mb-0 mb-6"
             style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
           >
             {cart.length === 0
@@ -200,7 +200,7 @@ export default function CartPage() {
       </div>
 
       {/* Body */}
-      <div className="cyna-container py-10">
+      <div className="cyna-container py-10 mt-10 mb-10">
         {cart.length === 0 ? (
           <div
             className="rounded-2xl border border-dashed border-[var(--border)] p-10 sm:p-16 text-center max-w-lg mx-auto"
@@ -223,7 +223,7 @@ export default function CartPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-10 mb-10">
 
             {/* Items column */}
             <div className="lg:col-span-2">
@@ -234,13 +234,7 @@ export default function CartPage() {
                 >
                   {t("cart.items_header", { count: itemCount })}
                 </h2>
-                <Link
-                  to="/products"
-                  className="text-xs hover:text-[var(--accent)] transition-colors"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {t("cart.add_more")}
-                </Link>
+
               </div>
 
               <div className="space-y-3">

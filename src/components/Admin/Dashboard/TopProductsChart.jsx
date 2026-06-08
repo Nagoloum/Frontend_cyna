@@ -31,7 +31,7 @@ export default function TopProductsChart({ data = [], loading = false }) {
       <div className="w-full h-[260px] flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500">
         <Package size={26} className="opacity-25" />
         <p className="text-sm text-center max-w-[200px]">
-          No paid orders yet — top sellers will show here once revenue is recorded.
+          No paid orders yet top sellers will show here once revenue is recorded.
         </p>
       </div>
     );

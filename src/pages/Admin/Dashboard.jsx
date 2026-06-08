@@ -1,23 +1,27 @@
 // src/pages/admin/DashboardPage.jsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Package, Tag, Users, TrendingUp, Layers,
-  BarChart3, AlertCircle, ShoppingBag,
+    AlertCircle,
+    BarChart3,
+    Layers,
+    Package, Tag,
+    TrendingUp,
+    Users
 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    buildRevenueSeries,
+    revenueByCategory,
+    topProductsByRevenue,
+    totalPaidRevenue,
+} from '../../components/Admin/Dashboard/analytics';
 import KPICard from '../../components/Admin/Dashboard/KPICard';
 import PeriodSelector from '../../components/Admin/Dashboard/PeriodSelector';
+import QuickActions from '../../components/Admin/Dashboard/QuickActions';
 import RevenueLineChart from '../../components/Admin/Dashboard/RevenueLineChart';
 import SalesPieChart from '../../components/Admin/Dashboard/SalesPieChart';
 import TopProductsChart from '../../components/Admin/Dashboard/TopProductsChart';
-import QuickActions from '../../components/Admin/Dashboard/QuickActions';
-import { dashboardAPI, buildImageUrl } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
-import {
-  buildRevenueSeries,
-  revenueByCategory,
-  topProductsByRevenue,
-  totalPaidRevenue,
-} from '../../components/Admin/Dashboard/analytics';
+import { buildImageUrl, dashboardAPI } from '../../services/api';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -98,7 +102,7 @@ export default function DashboardPage() {
     : 0;
   const availableServices = services.filter(s => s.available !== false);
 
-  // ── Chart data — computed from real PAID commandes ────────────────────────
+  // ── Chart data computed from real PAID commandes ────────────────────────
   const revenueSeries  = useMemo(() => buildRevenueSeries(commandes, period),     [commandes, period]);
   const periodRevenue  = useMemo(() => totalPaidRevenue(commandes, period),       [commandes, period]);
   const salesPieData   = useMemo(() => revenueByCategory(commandes, products).slice(0, 5), [commandes, products]);

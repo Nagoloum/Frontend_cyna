@@ -1,6 +1,6 @@
 // src/components/admin/shared/ToastNotification.jsx
-import { useState, useCallback, useEffect } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, X, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { ToastContext } from './ToastContext';
 
 const ICONS = {
@@ -119,7 +119,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={toast}>
       {children}
 
-      {/* Conteneur des toasts — coin bas droit */}
+      {/* Conteneur des toasts coin bas droit */}
       <div className="fixed top-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto">

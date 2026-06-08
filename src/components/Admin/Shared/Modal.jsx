@@ -1,10 +1,10 @@
 // src/components/admin/shared/Modal.jsx
+import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
 
 /**
- * Modal — Generic overlay rendered via Portal (always covers full viewport)
+ * Modal Generic overlay rendered via Portal (always covers full viewport)
  *
  * Props :
  *   open       {boolean}
@@ -58,7 +58,7 @@ export default function Modal({
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
     >
-      {/* Backdrop — covers the entire viewport */}
+      {/* Backdrop covers the entire viewport */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={closable ? onClose : undefined}
@@ -109,6 +109,6 @@ export default function Modal({
         )}
       </div>
     </div>,
-    document.body  // 👈 Portal target — bypasses any parent stacking context
+    document.body  // 👈 Portal target bypasses any parent stacking context
   );
 }

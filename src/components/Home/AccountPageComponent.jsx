@@ -1,13 +1,29 @@
 import { adressesAPI, authAPI, cartesAPI, commandesAPI, usersAPI } from "@/services/api";
+import { Elements, CardNumberElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { stripePromise } from "@/lib/stripe";
+import StripeCardFields from "@/components/ui/StripeCardFields";
 import {
-  AlertCircle, CheckCircle2, ChevronRight, CreditCard,
-  Edit2, Eye, EyeOff, Lock, LogOut, MapPin, Package,
-  Plus, Save, Star, Trash2, User, X,
-  Sparkles, Receipt, Calendar, Copy, KeyRound, Clock, Check,
+    AlertCircle,
+    Ban,
+    Calendar,
+    Check,
+    CheckCircle2, ChevronRight,
+    Clock,
+    Copy,
+    CreditCard,
+    Edit2, Eye, EyeOff,
+    KeyRound,
+    Lock, LogOut, MapPin, Package,
+    Plus,
+    Receipt,
+    RefreshCw,
+    Save,
+    Sparkles,
+    Star, Trash2, User, X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 const getUser = () => {
@@ -29,17 +45,6 @@ const apiMessage = (err, fallback) => {
   return fallback;
 };
 
-// ── Card input formatters (digits only + auto spacing) ────────────────────────
-/** "1234567812345678" → "1234 5678 1234 5678" (max 19 digits) */
-const formatCardNumber = (v) =>
-  String(v ?? "").replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ");
-/** "1227" → "12/27" (max 4 digits, MM/YY) */
-const formatExpiry = (v) => {
-  const d = String(v ?? "").replace(/\D/g, "").slice(0, 4);
-  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
-};
-/** Keep digits only, capped at `max` characters. */
-const onlyDigits = (v, max) => String(v ?? "").replace(/\D/g, "").slice(0, max);
 
 // ── Reusable "set as default" switch (addresses / cards) ──────────────────────
 const DefaultToggle = ({ checked, onChange, label }) => (
@@ -57,7 +62,7 @@ const DefaultToggle = ({ checked, onChange, label }) => (
   </label>
 );
 
-// ─── Mock data (UI only — backend integration pending) ───────────────────────
+// ─── Mock data (UI only backend integration pending) ───────────────────────
 const MOCK_SUBSCRIPTIONS = [
   {
     _id: "sub_demo_1",
@@ -173,6 +178,16 @@ function AddressModal({ address, onClose, onSaved }) {
         setError(res.data.message || t("account.address_error"));
         return;
       }
+      // create()/update() ne désactivent pas les autres « par défaut » :
+      // si l'utilisateur coche « par défaut », on passe par l'endpoint dédié
+      // qui garantit une seule adresse par défaut.
+      if (form.isDefault) {
+        const saved = res.data?.data ?? res.data;
+        const savedId = saved?._id ?? address?._id;
+        if (savedId) {
+          try { await adressesAPI.setDefault(savedId); } catch { /* non-bloquant */ }
+        }
+      }
       onSaved();
     } catch (err) {
       setError(apiMessage(err, t("account.address_error")));
@@ -221,41 +236,69 @@ function AddressModal({ address, onClose, onSaved }) {
   );
 }
 
-// ── Card form modal ───────────────────────────────────────────────────────────
-function CardModal({ card, onClose, onSaved }) {
+// ── Card form modal (Stripe Elements — saves the card without charging) ───────
+function CardModal(props) {
+  return (
+    <Elements stripe={stripePromise}>
+      <CardModalForm {...props} />
+    </Elements>
+  );
+}
+
+function CardModalForm({ card, onClose, onSaved }) {
   const { t } = useTranslation();
+  const stripe = useStripe();
+  const elements = useElements();
   const isEdit = !!card;
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
-  const [show, setShow]     = useState(false);
-  const [form, setForm] = useState({
-    carteName:   card?.carteName   ?? "",
-    carteNumber: card?.carteNumber ?? "",
-    carteDate:   card?.carteDate   ?? "",
-    carteCVV:    card?.carteCVV    ?? "",
-    isDefault:   card?.isDefault   ?? false,
-  });
-
-  const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
+  const [carteName, setCarteName] = useState(card?.carteName ?? "");
+  const [isDefault, setIsDefault] = useState(card?.isDefault ?? false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.carteName.trim())   { setError(t("checkout.error_cardholder")); return; }
-    if (!form.carteNumber.trim()) { setError(t("checkout.error_card_number")); return; }
-    if (!form.carteDate.trim())   { setError(t("checkout.error_expiry")); return; }
-    if (!form.carteCVV.trim())    { setError(t("checkout.error_cvv")); return; }
+    setError(null);
+    if (!carteName.trim()) { setError(t("checkout.error_cardholder")); return; }
+
+    // En édition, la carte est déjà tokenisée chez Stripe : on ne modifie que
+    // le nom du titulaire et le statut « par défaut ».
+    if (isEdit) {
+      setSaving(true);
+      try {
+        const res = await cartesAPI.update(card._id, { carteName, isDefault });
+        if (res?.data?.success === false) { setError(res.data.message || t("account.card_error")); return; }
+        onSaved();
+      } catch (err) {
+        setError(apiMessage(err, t("account.card_error")));
+      } finally { setSaving(false); }
+      return;
+    }
+
+    // Création : SetupIntent (0 €) → confirmation Stripe → enregistrement en base.
+    if (!stripe || !elements) { setError(t("account.stripe_unavailable")); return; }
     setSaving(true);
     try {
-      const res = isEdit
-        ? await cartesAPI.update(card._id, form)
-        : await cartesAPI.create(form);
-      if (res?.data?.success === false) {
-        setError(t("account.card_error"));
-        return;
-      }
+      const si = await cartesAPI.createSetupIntent();
+      const clientSecret = si?.data?.data?.clientSecret;
+      if (!clientSecret) { setError(t("account.card_error")); return; }
+
+      const { error: stripeErr, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardNumberElement),
+          billing_details: { name: carteName },
+        },
+      });
+      if (stripeErr) { setError(stripeErr.message || t("account.card_error")); return; }
+
+      const res = await cartesAPI.create({
+        carteName,
+        stripePaymentMethodId: setupIntent.payment_method,
+        isDefault,
+      });
+      if (res?.data?.success === false) { setError(res.data.message || t("account.card_error")); return; }
       onSaved();
-    } catch {
-      setError(t("account.card_error"));
+    } catch (err) {
+      setError(apiMessage(err, t("account.card_error")));
     } finally { setSaving(false); }
   };
 
@@ -269,23 +312,16 @@ function CardModal({ card, onClose, onSaved }) {
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
-          <Field label={t("account.field_cardholder")} value={form.carteName} onChange={set("carteName")} placeholder="John Doe" />
-          <div className="relative">
-            <Field
-              label={t("account.field_card_number")}
-              type="text"
-              inputMode="numeric"
-              value={form.carteNumber}
-              onChange={(v) => set("carteNumber")(formatCardNumber(v))}
-              placeholder="1234 5678 9012 3456"
-            />
 
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_expiry")} inputMode="numeric" value={form.carteDate} onChange={(v) => set("carteDate")(formatExpiry(v))} placeholder="12/27" />
-            <Field label={t("account.field_cvv")} type="password" inputMode="numeric" value={form.carteCVV} onChange={(v) => set("carteCVV")(onlyDigits(v, 4))} placeholder="123" />
-          </div>
-          <DefaultToggle checked={form.isDefault} onChange={set("isDefault")} label={t("account.default_card")} />
+          <Field label={t("account.field_cardholder")} value={carteName} onChange={setCarteName} placeholder="John Doe" />
+
+          {isEdit ? (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("account.card_edit_hint")}</p>
+          ) : (
+            <StripeCardFields />
+          )}
+
+          <DefaultToggle checked={isDefault} onChange={setIsDefault} label={t("account.default_card")} />
           <p className="text-xs text-[var(--text-muted)]">🔒 {t("account.card_security")}</p>
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
             <button type="button" onClick={onClose} disabled={saving}
@@ -294,7 +330,7 @@ function CardModal({ card, onClose, onSaved }) {
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
-              {saving ? t("account.saving") : t("account.save_address")}
+              {saving ? t("account.saving") : t("account.save_card")}
             </button>
           </div>
         </form>
@@ -332,6 +368,23 @@ function AddressesTab() {
     setTimeout(() => setMsg(null), 3000);
   };
 
+  // Choisir l'adresse par défaut parmi les adresses existantes (le backend
+  // retire automatiquement le flag des autres → une seule par défaut).
+  const handleSetDefault = async (id) => {
+    try {
+      const res = await adressesAPI.setDefault(id);
+      if (res?.data?.success === false) {
+        setMsg({ type: "error", text: res.data.message || t("account.address_error") });
+      } else {
+        setMsg({ type: "success", text: t("account.default_updated") });
+        load();
+      }
+    } catch {
+      setMsg({ type: "error", text: t("account.address_error") });
+    }
+    setTimeout(() => setMsg(null), 3000);
+  };
+
   return (
     <div>
       <Notify msg={msg} />
@@ -343,14 +396,14 @@ function AddressesTab() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[0,1].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}</div>
+        <div className="space-y-3 mb-6 lg:mb-0">{[0,1].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}</div>
       ) : addresses.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center mb-6 lg:mb-0">
           <MapPin size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_addresses")}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 mb-6 lg:mb-0">
           {addresses.map(a => (
             <div key={a._id} className="cyna-card p-4 flex items-start gap-3">
               <MapPin size={16} style={{ color: "var(--accent)", marginTop: 2, flexShrink: 0 }} />
@@ -364,6 +417,12 @@ function AddressesTab() {
                 <p className="text-xs text-[var(--text-muted)]">{a.phone}</p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
+                {!a.isDefault && (
+                  <button onClick={() => handleSetDefault(a._id)} title={t("account.set_default")} aria-label={t("account.set_default")}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
+                    <Star size={13} />
+                  </button>
+                )}
                 <button onClick={() => setModal({ type: "edit", data: a })}
                   className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
                   <Edit2 size={13} />
@@ -398,6 +457,26 @@ function MockBanner() {
   );
 }
 
+// ── Subscription status pill ──────────────────────────────────────────────────
+const SUB_STATUS = {
+  ACTIF:    { key: "status_active",   cls: "bg-green-50 text-green-600 border-green-200" },
+  PENDING:  { key: "status_pending",  cls: "bg-amber-50 text-amber-600 border-amber-200" },
+  CANCELED: { key: "status_canceled", cls: "bg-red-50 text-red-600 border-red-200" },
+  DESACTIF: { key: "status_inactive", cls: "bg-gray-50 text-gray-600 border-gray-200" },
+  FINISHED: { key: "status_expired",  cls: "bg-gray-50 text-gray-600 border-gray-200" },
+};
+function SubStatusPill({ statut }) {
+  const { t } = useTranslation();
+  const m = SUB_STATUS[statut] ?? SUB_STATUS.ACTIF;
+  return (
+    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}>
+      {t(`account.${m.key}`)}
+    </span>
+  );
+}
+
+const subPeriodeLabel = (p, t) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
+
 // ── Subscription detail modal ────────────────────────────────────────────────
 function SubscriptionDetailModal({ subscription, onClose }) {
   const { t } = useTranslation();
@@ -410,13 +489,12 @@ function SubscriptionDetailModal({ subscription, onClose }) {
 
   const copyLicense = async () => {
     try {
-      await navigator.clipboard.writeText(subscription.licenseCode);
+      await navigator.clipboard.writeText(subscription.keyLicence);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch { /* clipboard unavailable */ }
   };
 
-  const periodeLabel = (p) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
   const daysLabel = (n) => n != null && n > 0
     ? `${n} ${n > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
     : t("account.status_expired");
@@ -428,11 +506,8 @@ function SubscriptionDetailModal({ subscription, onClose }) {
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-[var(--border)]">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-                style={{ background: "var(--bg-subtle)", color: "var(--accent)" }}>
-                <Sparkles size={10} /> {t("account.status_active")}
-              </span>
-              <span className="text-[10px] font-mono text-[var(--text-muted)]">{subscription.reference}</span>
+              <SubStatusPill statut={subscription.statut} />
+              <span className="text-[10px] font-mono text-[var(--text-muted)]">{subscription.commandeReference}</span>
             </div>
             <h3 className="font-semibold text-[var(--text-primary)] truncate">{subscription.product?.name}</h3>
           </div>
@@ -452,7 +527,7 @@ function SubscriptionDetailModal({ subscription, onClose }) {
                 className="flex-1 px-3 py-2.5 rounded-xl font-mono text-sm tracking-wider truncate"
                 style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               >
-                {subscription.licenseCode}
+                {subscription.keyLicence}
               </code>
               <button
                 onClick={copyLicense}
@@ -490,7 +565,7 @@ function SubscriptionDetailModal({ subscription, onClose }) {
           <div className="grid grid-cols-2 gap-3">
             <DetailCell icon={Calendar} label={t("account.start_date")} value={fmtDateLong(subscription.dateDebut)} />
             <DetailCell icon={Clock}    label={t("account.expires_on")} value={fmtDateLong(subscription.dateFin)} />
-            <DetailCell icon={Receipt}  label={t("account.plan_label")} value={periodeLabel(subscription.periode)} />
+            <DetailCell icon={Receipt}  label={t("account.plan_label")} value={subPeriodeLabel(subscription.periode, t)} />
             <DetailCell icon={Package}  label={t("account.quantity_label")} value={`× ${subscription.quantity ?? 1}`} />
           </div>
 
@@ -499,16 +574,9 @@ function SubscriptionDetailModal({ subscription, onClose }) {
             className="flex items-center justify-between p-4 rounded-xl"
             style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
           >
-            <div>
-              <p className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>
-                {subscription.autoRenew ? t("account.next_renewal") : t("account.subscription_cost")}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                {subscription.autoRenew
-                  ? `${t("account.auto_renews")} ${fmtDateLong(subscription.dateFin)}`
-                  : t("account.no_auto_renewal")}
-              </p>
-            </div>
+            <p className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>
+              {t("account.subscription_cost")}
+            </p>
             <span className="font-[Kumbh Sans] font-700 text-lg" style={{ color: "var(--accent)" }}>
               {fmtEur(subscription.price)}
             </span>
@@ -530,109 +598,275 @@ function DetailCell({ icon: Icon, label, value }) {
   );
 }
 
+// ── Edit subscription modal (quantity + period; price recomputed) ─────────────
+function SubEditModal({ subscription, onClose, onSaved }) {
+  const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState(null);
+  const [quantity, setQuantity] = useState(String(subscription.quantity ?? 1));
+  const [periode, setPeriode]   = useState(subscription.periode ?? "MOIS");
+
+  const unitPrice = periode === "ANNEE"
+    ? Number(subscription.product?.priceYear ?? 0)
+    : Number(subscription.product?.priceMonth ?? 0);
+  const newTotal = unitPrice * Math.max(1, Number(quantity) || 1);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    const q = Number(quantity);
+    if (!Number.isFinite(q) || q <= 0) { setError(t("account.invalid_quantity")); return; }
+    setSaving(true);
+    try {
+      const res = await commandesAPI.updateAbonnement(subscription._id, { quantity: q, periode });
+      if (res?.data?.success === false) { setError(res.data.message || t("account.subscription_error")); return; }
+      onSaved();
+    } catch (err) {
+      setError(apiMessage(err, t("account.subscription_error")));
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+          <h3 className="font-semibold text-[var(--text-primary)]">{t("account.modify_subscription")}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"><X size={15} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
+          <p className="text-sm font-medium text-[var(--text-primary)]">{subscription.product?.name}</p>
+
+          <Field label={t("account.quantity_label")} type="number" inputMode="numeric" value={quantity} onChange={setQuantity} />
+
+          <div>
+            <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>{t("account.plan_label")}</label>
+            <div className="flex gap-2">
+              {["MOIS", "ANNEE"].map((p) => (
+                <button key={p} type="button" onClick={() => setPeriode(p)}
+                  className={`flex-1 h-10 rounded-xl border text-sm font-medium transition-all ${periode === p ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]"}`}>
+                  {p === "ANNEE" ? t("account.yearly") : t("account.monthly")}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
+            <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>{t("account.new_total")}</span>
+            <span className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--accent)" }}>{fmtEur(newTotal)}</span>
+          </div>
+
+          <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
+            <button type="button" onClick={onClose} disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
+              {t("account.cancel")}
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
+              {saving ? t("account.saving") : t("account.save")}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Reusable confirm modal (résilier / renouveler) ────────────────────────────
+function ConfirmActionModal({ title, body, confirmLabel, busy, danger, onCancel, onConfirm }) {
+  const { t } = useTranslation();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !busy && onCancel()} />
+      <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl p-6">
+        <h3 className="font-semibold mb-2" style={{ color: danger ? "var(--danger)" : "var(--text-primary)" }}>{title}</h3>
+        <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>{body}</p>
+        <div className="flex gap-3">
+          <button type="button" onClick={onCancel} disabled={busy}
+            className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
+            {t("account.cancel")}
+          </button>
+          <button type="button" onClick={onConfirm} disabled={busy}
+            className={`flex-1 h-10 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition-all inline-flex items-center justify-center gap-2 ${danger ? "bg-red-600 hover:bg-red-700" : "bg-[var(--accent)] hover:opacity-90"}`}>
+            {busy ? <RefreshCw size={14} className="animate-spin" /> : null}
+            {busy ? t("account.processing") : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Subscriptions tab ─────────────────────────────────────────────────────────
 function SubscriptionsTab() {
   const { t } = useTranslation();
-  const [subs] = useState(MOCK_SUBSCRIPTIONS);
-  const [selected, setSelected] = useState(null);
+  const [subs, setSubs]       = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg]         = useState(null);
+  const [selected, setSelected] = useState(null); // detail modal
+  const [editing, setEditing]   = useState(null); // edit modal
+  const [confirm, setConfirm]   = useState(null); // { type: 'resilier' | 'renew', sub }
+  const [busy, setBusy]         = useState(false);
 
-  const periodeLabel = (p) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
+  const load = () => {
+    setLoading(true);
+    commandesAPI.getAbonnements()
+      .then(r => setSubs(r.data?.data ?? r.data ?? []))
+      .catch(() => setSubs([]))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
 
-  const statusPill = (statut) => {
-    const map = {
-      ACTIVE:  { label: t("account.status_active"),  cls: "bg-green-50 text-green-600 border-green-200" },
-      PENDING: { label: t("account.status_pending"), cls: "bg-amber-50 text-amber-600 border-amber-200" },
-      EXPIRED: { label: t("account.status_expired"), cls: "bg-red-50 text-red-600 border-red-200" },
-    };
-    const m = map[statut] ?? map.ACTIVE;
-    return (
-      <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}>
-        {m.label}
-      </span>
-    );
+  const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 3500); };
+
+  const doResilier = async (sub) => {
+    setBusy(true);
+    try {
+      const res = await commandesAPI.resilierAbonnement(sub._id);
+      if (res?.data?.success === false) flash("error", res.data.message || t("account.subscription_error"));
+      else { flash("success", t("account.resilier_success")); load(); }
+    } catch (e) {
+      flash("error", apiMessage(e, t("account.subscription_error")));
+    } finally { setBusy(false); setConfirm(null); }
   };
 
-  if (subs.length === 0) {
-    return (
-      <div className="cyna-card p-6">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.subscriptions_title")}</h2>
-        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
-          <Sparkles size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_subscriptions")}</p>
-        </div>
-      </div>
-    );
-  }
+  const doRenew = async (sub) => {
+    setBusy(true);
+    try {
+      const res = await commandesAPI.renouvelerAbonnement(sub._id);
+      const body = res?.data;
+      if (!body?.success) { flash("error", body?.message || t("account.subscription_error")); return; }
+      const payload = body.data ?? {};
+
+      if (payload.status === "REQUIRES_ACTION" && payload.clientSecret) {
+        const stripe = await stripePromise;
+        if (!stripe) { flash("error", t("account.stripe_unavailable")); return; }
+        const { error: scaErr, paymentIntent } = await stripe.confirmCardPayment(payload.clientSecret);
+        if (scaErr) { flash("error", scaErr.message || t("account.subscription_error")); return; }
+        if (paymentIntent?.status !== "succeeded") { flash("error", t("account.subscription_error")); return; }
+        const cRes = await commandesAPI.confirmRenouvellement(sub._id, paymentIntent.id);
+        if (cRes?.data?.success === false) { flash("error", cRes.data.message || t("account.subscription_error")); return; }
+      } else if (payload.status !== "PAID") {
+        flash("error", body?.message || t("account.subscription_error")); return;
+      }
+
+      flash("success", t("account.renew_success")); load();
+    } catch (e) {
+      flash("error", apiMessage(e, t("account.subscription_error")));
+    } finally { setBusy(false); setConfirm(null); }
+  };
+
+  const actionBtn = "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[var(--border)] transition-colors disabled:opacity-50";
 
   return (
     <div>
-      <MockBanner />
-      <div className="cyna-card p-6">
+      <Notify msg={msg} />
+      <div className="cyna-card p-6 mb-6 lg:mb-0">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[var(--text-primary)]">{t("account.subscriptions_title")}</h2>
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("account.subscriptions_count", { count: subs.length })}</span>
+          {!loading && subs.length > 0 && (
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("account.subscriptions_count", { count: subs.length })}</span>
+          )}
         </div>
 
-        <div className="space-y-3">
-          {subs.map((s) => {
-            const remaining = daysBetween(new Date(), s.dateFin);
-            const daysLeft = remaining != null && remaining > 0
-              ? `${remaining} ${remaining > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
-              : t("account.status_expired");
-            return (
-              <button
-                key={s._id}
-                type="button"
-                onClick={() => setSelected(s)}
-                className="w-full text-left rounded-2xl border border-[var(--border)] hover:border-[var(--accent)] transition-all p-4 group"
-                style={{ background: "var(--bg-card)" }}
-              >
-                <div className="flex items-start gap-3 flex-wrap">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "var(--bg-subtle)" }}
-                  >
-                    <Sparkles size={16} style={{ color: "var(--accent)" }} />
+        {loading ? (
+          <div className="space-y-3">{[0, 1].map(i => <div key={i} className="skeleton h-28 rounded-2xl" />)}</div>
+        ) : subs.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
+            <Sparkles size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_subscriptions")}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {subs.map((s) => {
+              const remaining = daysBetween(new Date(), s.dateFin);
+              const daysLeft = remaining != null && remaining > 0
+                ? `${remaining} ${remaining > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
+                : t("account.status_expired");
+              const isCanceled = s.statut === "CANCELED";
+              return (
+                <div key={s._id} className="rounded-2xl border border-[var(--border)] p-4" style={{ background: "var(--bg-card)" }}>
+                  <div className="flex items-start gap-3 flex-wrap">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--bg-subtle)" }}>
+                      <Sparkles size={16} style={{ color: "var(--accent)" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <p className="font-medium text-sm text-[var(--text-primary)] truncate">{s.product?.name}</p>
+                        <SubStatusPill statut={s.statut} />
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)" }}>
+                          {subPeriodeLabel(s.periode, t)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
+                        <span className="inline-flex items-center gap-1"><Clock size={11} /> {daysLeft}</span>
+                        <span style={{ color: "var(--text-muted)" }}>·</span>
+                        <span>{fmtDateLong(s.dateFin)}</span>
+                      </div>
+                    </div>
+                    <span className="font-[Kumbh Sans] font-700 text-sm flex-shrink-0" style={{ color: "var(--accent)" }}>{fmtEur(s.price)}</span>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <p className="font-medium text-sm text-[var(--text-primary)] truncate">{s.product?.name}</p>
-                      {statusPill(s.statut)}
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                        style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)" }}>
-                        {periodeLabel(s.periode)}
-                      </span>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 mt-3 pt-3 flex-wrap" style={{ borderTop: "1px solid var(--border)" }}>
+                    <button onClick={() => setSelected(s)} className="text-xs font-medium inline-flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                      {t("account.view_details")} <ChevronRight size={12} />
+                    </button>
+                    <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+                      {!isCanceled && (
+                        <button onClick={() => setEditing(s)} className={`${actionBtn} text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]`}>
+                          <Edit2 size={12} /> {t("account.modify")}
+                        </button>
+                      )}
+                      <button onClick={() => setConfirm({ type: "renew", sub: s })} className={`${actionBtn} text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]`}>
+                        <RefreshCw size={12} /> {t("account.renew")}
+                      </button>
+                      {!isCanceled && (
+                        <button onClick={() => setConfirm({ type: "resilier", sub: s })} className={`${actionBtn} text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10`}>
+                          <Ban size={12} /> {t("account.resilier")}
+                        </button>
+                      )}
                     </div>
-                    <p className="text-xs mb-2 font-mono" style={{ color: "var(--text-muted)" }}>
-                      {s.reference}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock size={11} /> {daysLeft}
-                      </span>
-                      <span style={{ color: "var(--text-muted)" }}>·</span>
-                      <span>{fmtDateLong(s.dateFin)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--accent)" }}>
-                      {fmtEur(s.price)}
-                    </span>
-                    <span className="text-[11px] flex items-center gap-1 transition-colors group-hover:text-[var(--accent)]" style={{ color: "var(--text-muted)" }}>
-                      {t("account.view_details")} <ChevronRight size={11} />
-                    </span>
                   </div>
                 </div>
-              </button>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {selected && (
-        <SubscriptionDetailModal subscription={selected} onClose={() => setSelected(null)} />
+      {selected && <SubscriptionDetailModal subscription={selected} onClose={() => setSelected(null)} />}
+
+      {editing && (
+        <SubEditModal
+          subscription={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); flash("success", t("account.modify_success")); load(); }}
+        />
+      )}
+
+      {confirm?.type === "resilier" && (
+        <ConfirmActionModal
+          title={t("account.confirm_resilier_title")}
+          body={t("account.confirm_resilier_body")}
+          confirmLabel={t("account.resilier")}
+          busy={busy}
+          danger
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => doResilier(confirm.sub)}
+        />
+      )}
+
+      {confirm?.type === "renew" && (
+        <ConfirmActionModal
+          title={t("account.confirm_renew_title")}
+          body={t("account.confirm_renew_body", { price: fmtEur(confirm.sub.price) })}
+          confirmLabel={t("account.renew")}
+          busy={busy}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => doRenew(confirm.sub)}
+        />
       )}
     </div>
   );
@@ -675,7 +909,7 @@ function OrdersTab() {
 
   if (orders.length === 0) {
     return (
-      <div className="cyna-card p-6">
+      <div className="cyna-card p-6 mb-5 lg:mb-0">
         <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.orders_title")}</h2>
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
           <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
@@ -692,7 +926,7 @@ function OrdersTab() {
   }
 
   return (
-    <div className="cyna-card p-6">
+    <div className="cyna-card p-6 mb-5 lg:mb-0">
       <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.orders_title")}</h2>
       <div className="space-y-3">
         {orders.map(order => (
@@ -771,6 +1005,23 @@ function CardsTab() {
     setTimeout(() => setMsg(null), 3000);
   };
 
+  // Choisir le moyen de paiement par défaut (le backend retire le flag des
+  // autres cartes → une seule par défaut).
+  const handleSetDefault = async (id) => {
+    try {
+      const res = await cartesAPI.update(id, { isDefault: true });
+      if (res?.data?.success === false) {
+        setMsg({ type: "error", text: res.data.message || t("account.card_error") });
+      } else {
+        setMsg({ type: "success", text: t("account.default_updated") });
+        load();
+      }
+    } catch {
+      setMsg({ type: "error", text: t("account.card_error") });
+    }
+    setTimeout(() => setMsg(null), 3000);
+  };
+
   const mask = (n) => n ? `•••• •••• •••• ${String(n).slice(-4)}` : "•••• •••• •••• ••••";
 
   return (
@@ -786,12 +1037,12 @@ function CardsTab() {
       {loading ? (
         <div className="space-y-3">{[0,1].map(i => <div key={i} className="skeleton h-20 rounded-2xl" />)}</div>
       ) : cards.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center mb-6 lg:mb-0">
           <CreditCard size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_cards")}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 mb-6 lg:mb-0">
           {cards.map(c => (
             <div key={c._id} className="cyna-card p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[var(--bg-muted)] flex items-center justify-center flex-shrink-0">
@@ -802,9 +1053,15 @@ function CardsTab() {
                   {mask(c.carteNumber)}
                   {c.isDefault && <span className="badge badge-accent text-[10px] px-2 py-0.5">{t("account.default_badge")}</span>}
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">{c.carteName} — {t("account.card_expires")} {c.carteDate}</p>
+                <p className="text-xs text-[var(--text-muted)]">{c.carteName} {t("account.card_expires")} {c.carteDate}</p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
+                {!c.isDefault && (
+                  <button onClick={() => handleSetDefault(c._id)} title={t("account.set_default")} aria-label={t("account.set_default")}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
+                    <Star size={13} />
+                  </button>
+                )}
                 <button onClick={() => setModal({ type: "edit", data: c })}
                   className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
                   <Edit2 size={13} />
@@ -950,7 +1207,7 @@ export default function AccountPage() {
         <div className="flex flex-col lg:flex-row gap-8">
 
           {/* Sidebar */}
-          <aside className="lg:w-56 flex-shrink-0">
+          <aside className="lg:w-64 flex-shrink-0 lg:mt-0 mt-8">
             <nav className="space-y-1">
               {TABS.map(({ id, label, icon: Icon }) => (
                 <button
@@ -982,7 +1239,7 @@ export default function AccountPage() {
 
             {/* ── Profile ── */}
             {tab === "profile" && (
-              <div className="space-y-6">
+              <div className="space-y-6 mb-6 lg:mb-0">
                 <div className="cyna-card p-6 space-y-4">
                   <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.personal_info")}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1018,7 +1275,7 @@ export default function AccountPage() {
 
             {/* ── Password ── */}
             {tab === "password" && (
-              <div className="cyna-card p-6 space-y-4">
+              <div className="cyna-card p-6 space-y-4 mb-6 lg:mb-0">
                 <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.change_password")}</h2>
                 <Field
                   label={t("account.current_password")}

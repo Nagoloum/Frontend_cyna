@@ -1,7 +1,7 @@
-import axios from 'axios';
 import { notify } from '@/components/ui/feedback';
+import axios from 'axios';
 import { store } from '../store';
-import { mergeOnLogin, archiveOnLogout } from '../store/slices/cartSlice';
+import { archiveOnLogout, mergeOnLogin } from '../store/slices/cartSlice';
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 export const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
@@ -34,7 +34,7 @@ export const getImagePath = (input) => {
   return input?.path ?? input?.url ?? input?.src ?? null;
 };
 
-/** Default product placeholder image — served from /public */
+/** Default product placeholder image served from /public */
 export const DEFAULT_PRODUCT_IMAGE = '/images/img.jpg';
 
 /** Resolve the first usable image URL for a product, or fall back to the default. */
@@ -79,7 +79,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-logout on 401 (only when a token was actually set — prevents redirect loops
+// Auto-logout on 401 (only when a token was actually set prevents redirect loops
 // on the public login attempt itself).
 api.interceptors.response.use(
   (response) => response,
@@ -108,7 +108,7 @@ api.interceptors.response.use(
 //        GET  /auth/email-confirmation?token=
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Decode a JWT payload (no signature check — display-only). */
+/** Decode a JWT payload (no signature check display-only). */
 const decodeJwt = (token) => {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -140,7 +140,7 @@ export const login = async (credentials) => {
 
   localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(user));
-  // Clear any prior 2FA state — a fresh login restarts the flow.
+  // Clear any prior 2FA state a fresh login restarts the flow.
   localStorage.removeItem('twoFAVerified');
   localStorage.removeItem('twoFARequired');
   setAuthToken(token);
@@ -173,7 +173,7 @@ export const authAPI = {
     window.location.href = '/auth';
   },
 
-  /** GET /auth/user/me — returns the current logged-in user */
+  /** GET /auth/user/me returns the current logged-in user */
   me: async () => {
     const res = await api.get('/auth/user/me');
     return res.data?.data ?? res.data;
@@ -182,14 +182,14 @@ export const authAPI = {
   /** POST /auth/register */
   register: (data) => api.post('/auth/register', data),
 
-  /** POST /auth/check-code  { code: "123456" } — verifies the 6-digit 2FA code */
+  /** POST /auth/check-code  { code: "123456" } verifies the 6-digit 2FA code */
   verify2FA: (code) => api.post('/auth/check-code', { code }),
 
   /** GET /auth/email-confirmation?token= */
   emailConfirmation: (token) =>
     api.get(`/auth/email-confirmation?token=${encodeURIComponent(token)}`),
 
-  /** POST /auth/forgot-password  { email } — sends a reset link */
+  /** POST /auth/forgot-password  { email } sends a reset link */
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
 
   /**
@@ -207,7 +207,7 @@ export const authAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const usersAPI = {
-  /** Admin only — list all users */
+  /** Admin only list all users */
   getAll: (params = {}) => api.get('/users', { params }),
 
   getById: (id) => api.get(`/users/${id}`),
@@ -238,7 +238,7 @@ export const usersAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const categoriesAPI = {
-  /** Paginated list — admin */
+  /** Paginated list admin */
   getAll: (params = {}) => api.get('/categories', { params }),
 
   /** Ordered list for homepage grid */
@@ -247,7 +247,7 @@ export const categoriesAPI = {
   /** Public category page with its products */
   getBySlugForUser: (slug) => api.get(`/categories/category-for-user/${slug}`),
 
-  /** Full details — admin */
+  /** Full details admin */
   getBySlug: (slug) => api.get(`/categories/${slug}`),
 
   /** Requires multipart/form-data with field `newImage` */
@@ -287,7 +287,7 @@ export const servicesAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const productsAPI = {
-  /** Paginated list — supports { page, limit, sortBy, order, search, categorySlug } */
+  /** Paginated list supports { page, limit, sortBy, order, search, categorySlug } */
   getAll: (params = {}) => api.get('/products', { params }),
 
   /** Ordered / featured list for homepage */
@@ -321,7 +321,7 @@ export const productsAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const slidersAPI = {
-  /** Full list — admin */
+  /** Full list admin */
   getAll: () => api.get('/sliders'),
 
   /** Public top sliders for homepage carousel (default limit = 3 in backend) */
@@ -363,6 +363,9 @@ export const adressesAPI = {
 
   update: (id, data) => api.patch(`/adresse-facturations/${id}`, data),
 
+  /** GET /adresse-facturations/defaut/:id — marks this address as default (unsets the others). */
+  setDefault: (id) => api.get(`/adresse-facturations/defaut/${id}`),
+
   delete: (id) => api.delete(`/adresse-facturations/${id}`),
 
   /** Admin only */
@@ -383,8 +386,15 @@ export const cartesAPI = {
   getById: (id) => api.get(`/carte-bancaires/${id}`),
 
   /**
+   * POST /carte-bancaires/setup-intent
+   * Creates a Stripe SetupIntent (usage: off_session) so a card can be saved
+   * WITHOUT being charged. Returns { clientSecret, setupIntentId, stripeCustomerId }.
+   */
+  createSetupIntent: () => api.post('/carte-bancaires/setup-intent'),
+
+  /**
    * Body: { carteName, carteNumber, carteDate, carteCVV }
-   * NOTE: Store tokens / last-4 only in production — never raw card numbers.
+   * NOTE: Store tokens / last-4 only in production never raw card numbers.
    */
   create: (data) => api.post('/carte-bancaires', data),
 
@@ -405,8 +415,9 @@ export const cartesAPI = {
 
 export const commandesAPI = {
   /**
-   * Body: { cbId: string, abonnements: [{ productId, quantity, periode: 'MOIS'|'ANNEE', dateDebut?, dateFin?, price? }] }
-   * Returns: { commande, url, sessionId }  → redirect window to `url`
+   * Body: { cbId, adresseFacturationId, abonnements: [{ productId, quantity, periode: 'MOIS'|'ANNEE' }] }
+   * Charges the saved card off-session (no redirect). Returns ApiResponse whose
+   * `data.status` is 'PAID' | 'REQUIRES_ACTION' (with clientSecret) | 'PENDING'.
    */
   create: (data) => api.post('/commandes/create', data),
 
@@ -416,12 +427,34 @@ export const commandesAPI = {
   /** Single order by reference (owner or admin) */
   getByReference: (reference) => api.get(`/commandes/${reference}`),
 
-  /** Confirm Stripe payment success */
-  paymentSuccess: (orderId, sessionId) =>
-    api.get('/commandes/payment/success', { params: { orderId, session_id: sessionId } }),
+  /** Confirm a Stripe payment (after 3-D Secure) — pass the PaymentIntent id. */
+  paymentSuccess: (orderId, sessionId, paymentIntentId) =>
+    api.get('/commandes/payment/success', {
+      params: { orderId, session_id: sessionId, payment_intent: paymentIntentId },
+    }),
 
-  /** Admin only — paginated list of all orders */
+  /** Admin only paginated list of all orders */
   getAll: (params = {}) => api.get('/commandes', { params }),
+
+  // ── Subscriptions (abonnements) ──
+  /** Current user's subscriptions (flattened across orders, raw ISO dates). */
+  getAbonnements: () => api.get('/commandes/abonnements/by-user'),
+
+  /** Cancel a subscription. */
+  resilierAbonnement: (id) => api.get(`/commandes/abonnement/resilier/${id}`),
+
+  /** Modify a subscription — body: { quantity, periode: 'MOIS'|'ANNEE' } (price recomputed, no charge). */
+  updateAbonnement: (id, data) => api.patch(`/commandes/abonnement/${id}`, data),
+
+  /**
+   * Renew a subscription — charges the saved card off-session.
+   * Returns `data.status` = 'PAID' | 'REQUIRES_ACTION' (with clientSecret) | 'PENDING'.
+   */
+  renouvelerAbonnement: (id) => api.post(`/commandes/abonnement/renouveler/${id}`),
+
+  /** Finalize a renewal after 3-D Secure — pass the confirmed PaymentIntent id. */
+  confirmRenouvellement: (id, paymentIntentId) =>
+    api.post(`/commandes/abonnement/renouveler/${id}/confirm`, { paymentIntentId }),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

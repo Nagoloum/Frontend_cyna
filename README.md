@@ -1,4 +1,4 @@
-# Cyna — Frontend
+# Cyna Frontend
 
 Interface utilisateur de la plateforme SaaS de cybersécurité **Cyna**. Construite avec React 19, Vite 7 et Tailwind CSS.
 
@@ -16,7 +16,7 @@ Interface utilisateur de la plateforme SaaS de cybersécurité **Cyna**. Constru
 | i18next | 26.3 | Internationalisation (FR / EN) |
 | Axios | 1.13 | Requêtes HTTP vers l'API |
 | Lucide React | 0.562 | Icônes |
-| Radix UI + Shadcn | — | Composants accessibles |
+| Radix UI + Shadcn | | Composants accessibles |
 
 ---
 

@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── DESIGN SYSTEM — CYNA ─────────────────────────────────────────────────── */
+/* ─── DESIGN SYSTEM CYNA ─────────────────────────────────────────────────── */
 
 :root {
   --cyna-50: #f5f3ff;
@@ -400,4 +400,32 @@ html {
 
 ::-webkit-scrollbar {
   display: none; /* Épaisseur horizontale */
+}
+
+/* ===== LEGAL PAGES (prose styled with the design tokens) ===== */
+.legal-prose section + section {
+  margin-top: 2rem;
+}
+.legal-prose h2 {
+  font-family: "Kumbh Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+.legal-prose p,
+.legal-prose li {
+  color: var(--text-secondary);
+  font-family: "Kumbh Sans", sans-serif;
+  line-height: 1.7;
+}
+.legal-prose ul {
+  margin-top: 0.5rem;
+}
+.legal-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.legal-prose strong {
+  color: var(--text-primary);
 }

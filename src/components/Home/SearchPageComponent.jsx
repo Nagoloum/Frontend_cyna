@@ -158,8 +158,15 @@ export default function SearchPage() {
 
       {/* Header / search bar */}
       <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
-        <div className="cyna-container py-10">
-          <p className="section-label mt-5">{t("search.badge")}</p>
+        <div className="cyna-container py-10 sm:py-14">
+          <p className="section-label">{t("search.badge")}</p>
+          <h1 className="section-title mb-2">{t("search.title")}</h1>
+          <p
+            className="text-sm max-w-xl mb-6"
+            style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
+          >
+            {t("search.subtitle")}
+          </p>
           <form onSubmit={handleSearch} className="flex gap-2 max-w-lg mb-2">
             <div className="relative flex-1">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />

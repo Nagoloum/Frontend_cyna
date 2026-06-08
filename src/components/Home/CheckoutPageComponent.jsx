@@ -1,11 +1,14 @@
+import { adressesAPI, cartesAPI, commandesAPI } from "@/services/api";
 import {
-  AlertCircle, ArrowLeft, CheckCircle, ChevronRight, CreditCard,
-  Loader2, Lock, MapPin, Plus, Shield,
+    AlertCircle, ArrowLeft, CheckCircle, ChevronRight, CreditCard,
+    Loader2, Lock, MapPin, Plus, Shield,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { adressesAPI, cartesAPI, commandesAPI } from "@/services/api";
 import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
+import { Elements, CardNumberElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { stripePromise } from "@/lib/stripe";
+import StripeCardFields from "@/components/ui/StripeCardFields";
 
 const billingPeriodToPeriode = (bp) =>
   String(bp).toLowerCase() === "yearly" ? "ANNEE" : "MOIS";
@@ -28,7 +31,18 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
 );
 
 export default function CheckoutPage() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
+  );
+}
+
+function CheckoutForm() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
 
   const STEPS = [t("checkout.step_address"), t("checkout.step_payment"), t("checkout.step_confirmation")];
 
@@ -49,7 +63,8 @@ export default function CheckoutPage() {
   const [loadingCards, setLoadingCards] = useState(true);
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [newCard, setNewCard] = useState(false);
-  const [pay, setPay] = useState({ carteName: "", carteNumber: "", carteDate: "", carteCVV: "" });
+  const [savingCard, setSavingCard] = useState(false);
+  const [pay, setPay] = useState({ carteName: "" });
 
   // ── Submission ────────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
@@ -99,36 +114,82 @@ export default function CheckoutPage() {
   const validatePayment = () => {
     if (selectedCardId && !newCard) return null;
     if (!pay.carteName.trim()) return t("checkout.error_cardholder");
-    if (!pay.carteNumber.trim()) return t("checkout.error_card_number");
-    if (!pay.carteDate.trim()) return t("checkout.error_expiry");
-    if (!pay.carteCVV.trim()) return t("checkout.error_cvv");
-    return null;
+    return null; // Stripe Elements validates the card itself on confirmation.
   };
 
-  const goNext = () => {
-    const err = step === 0 ? validateAddress() : validatePayment();
+  const goNext = async () => {
+    if (step === 0) {
+      const err = validateAddress();
+      if (err) { setError(err); return; }
+      setError(null);
+      setStep(1);
+      return;
+    }
+
+    // Step 1 (payment). Validate, then — for a NEW card — save it to Stripe
+    // (SetupIntent, no charge) + DB now, while the Stripe fields are still mounted.
+    const err = validatePayment();
     if (err) { setError(err); return; }
     setError(null);
-    setStep(s => s + 1);
+
+    if (newCard || !selectedCardId) {
+      if (!stripe || !elements) { setError(t("account.stripe_unavailable")); return; }
+      setSavingCard(true);
+      try {
+        const si = await cartesAPI.createSetupIntent();
+        const clientSecret = si?.data?.data?.clientSecret;
+        if (!clientSecret) throw new Error(t("checkout.error_save_card"));
+
+        const { error: stripeErr, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+          payment_method: {
+            card: elements.getElement(CardNumberElement),
+            billing_details: { name: pay.carteName },
+          },
+        });
+        if (stripeErr) { setError(stripeErr.message || t("checkout.error_save_card")); setSavingCard(false); return; }
+
+        const res = await cartesAPI.create({
+          carteName: pay.carteName,
+          stripePaymentMethodId: setupIntent.payment_method,
+          isDefault: savedCards.length === 0,
+        });
+        const created = res.data?.data ?? res.data;
+        if (res?.data?.success === false || !created?._id) {
+          setError(res?.data?.message || t("checkout.error_save_card"));
+          setSavingCard(false);
+          return;
+        }
+        setSavedCards(prev => [...prev, created]);
+        setSelectedCardId(created._id);
+        setNewCard(false);
+      } catch (e) {
+        setError(e.response?.data?.message ?? e.message ?? t("checkout.error_save_card"));
+        setSavingCard(false);
+        return;
+      }
+      setSavingCard(false);
+    }
+
+    setStep(2);
   };
 
   // ── Confirm purchase ──────────────────────────────────────────────────────
   const handleConfirm = async () => {
     if (!cart.length) { setError(t("checkout.empty_cart")); return; }
+    if (!selectedCardId) { setError(t("checkout.error_save_card")); return; }
     setSubmitting(true);
     setError(null);
 
     try {
-      if (newAddress) {
-        try { await adressesAPI.create(addr); } catch { /* ignore — non-blocking */ }
-      }
-
-      let cbId = selectedCardId;
-      if (newCard || !cbId) {
-        const res = await cartesAPI.create(pay);
-        const created = res.data?.data ?? res.data;
-        cbId = created?._id;
-        if (!cbId) throw new Error(t("checkout.error_save_card"));
+      // 1) Résoudre l'adresse de facturation (la créer si l'utilisateur en a saisi une).
+      let adresseFacturationId = selectedAddressId;
+      if (newAddress || !adresseFacturationId) {
+        const aRes = await adressesAPI.create(addr);
+        const createdAddr = aRes.data?.data ?? aRes.data;
+        if (aRes?.data?.success === false || !createdAddr?._id) {
+          throw new Error(aRes?.data?.message || t("checkout.error_address"));
+        }
+        adresseFacturationId = createdAddr._id;
       }
 
       const abonnements = cart.map(item => ({
@@ -142,16 +203,37 @@ export default function CheckoutPage() {
         throw new Error(t("checkout.mixed_billing"));
       }
 
-      const orderRes = await commandesAPI.create({ cbId, abonnements });
-      const payload = orderRes.data?.data ?? orderRes.data;
+      // 2) Créer la commande → débit direct de la carte enregistrée (off-session).
+      const orderRes = await commandesAPI.create({
+        cbId: selectedCardId,
+        adresseFacturationId,
+        abonnements,
+      });
+      const body = orderRes.data;
+      if (!body?.success) {
+        throw new Error(body?.message || t("checkout.error_create_order"));
+      }
+      const payload = body.data ?? {};
 
-      if (!orderRes.data?.success || !payload?.url) {
-        throw new Error(orderRes.data?.message || t("checkout.error_create_order"));
+      // 3) Carte nécessitant une authentification 3-D Secure → confirmation on-session.
+      if (payload.status === "REQUIRES_ACTION" && payload.clientSecret) {
+        if (!stripe) throw new Error(t("account.stripe_unavailable"));
+        const { error: scaErr, paymentIntent } = await stripe.confirmCardPayment(payload.clientSecret);
+        if (scaErr) throw new Error(scaErr.message || t("checkout.error_payment_failed"));
+        if (paymentIntent?.status !== "succeeded") throw new Error(t("checkout.error_payment_failed"));
+        const confirmRes = await commandesAPI.paymentSuccess(payload.orderId, undefined, paymentIntent.id);
+        if (confirmRes?.data?.success === false) {
+          throw new Error(confirmRes.data.message || t("checkout.error_payment_failed"));
+        }
+      } else if (payload.status !== "PAID") {
+        // PENDING / processing / statut inattendu.
+        throw new Error(body?.message || t("checkout.error_payment_failed"));
       }
 
+      // 4) Succès → vider le panier et afficher la confirmation.
       localStorage.removeItem("cart");
       window.dispatchEvent(new Event("cart-updated"));
-      window.location.href = payload.url;
+      navigate("/checkout/confirmation");
     } catch (err) {
       const msg = err.response?.data?.message ?? err.message ?? t("checkout.error_order_generic");
       setError(msg);
@@ -167,16 +249,29 @@ export default function CheckoutPage() {
 
   return (
     <div className="page-enter" style={{ background: "var(--bg-base)", minHeight: "70vh" }}>
-      <div className="cyna-container py-10 max-w-5xl">
-        {/* Header */}
+      {/* Standard header */}
+      <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
+        <div className="cyna-container py-10 sm:py-14">
+          <p className="section-label">{t("checkout.badge")}</p>
+          <h1 className="section-title mb-2">{t("checkout.complete_order")}</h1>
+          <p
+            className="text-sm max-w-xl lg:mb-0 mb-6"
+            style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}
+          >
+            {t("checkout.subtitle")}
+          </p>
+        </div>
+      </div>
+
+      <div className="cyna-container py-10 max-w-5xl ">
+        {/* Back to cart */}
         <Link
           to="/cart"
-          className="inline-flex items-center gap-1.5 text-sm mb-8 hover:text-[var(--accent)] transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm mb-8 mt-8 hover:text-[var(--accent)] transition-colors"
           style={{ color: "var(--text-muted)" }}
         >
           <ArrowLeft size={15} /> {t("checkout.back_to_cart")}
         </Link>
-        <h1 className="section-title mb-8">{t("checkout.complete_order")}</h1>
 
         {/* Stepper */}
         <div className="flex items-center mb-10">
@@ -203,7 +298,7 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 lg:mb-8 mb-0">
             {/* ── Step 0: Address ── */}
             {step === 0 && (
               <div className="cyna-card p-6">
@@ -302,7 +397,7 @@ export default function CheckoutPage() {
                             <CreditCard size={18} style={{ color: "var(--accent)" }} />
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm text-[var(--text-primary)]">{maskCard(c.carteNumber)}</p>
-                              <p className="text-xs text-[var(--text-muted)]">{c.carteName} — {c.carteDate}</p>
+                              <p className="text-xs text-[var(--text-muted)]">{c.carteName} {c.carteDate}</p>
                             </div>
                           </button>
                         ))}
@@ -320,11 +415,9 @@ export default function CheckoutPage() {
                     )}
 
                     {(newCard || savedCards.length === 0) && (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-3">
                         <InputField label={t("checkout.field_cardholder")} value={pay.carteName} onChange={v => setPay({ ...pay, carteName: v })} placeholder={t("checkout.placeholder_cardholder")} required />
-                        <InputField label={t("checkout.field_card_number")} value={pay.carteNumber} onChange={v => setPay({ ...pay, carteNumber: v })} placeholder={t("checkout.placeholder_card_number")} required />
-                        <InputField label={t("checkout.field_expiry")} value={pay.carteDate} onChange={v => setPay({ ...pay, carteDate: v })} placeholder={t("checkout.placeholder_expiry")} required half />
-                        <InputField label={t("checkout.field_cvv")} type="password" value={pay.carteCVV} onChange={v => setPay({ ...pay, carteCVV: v })} placeholder={t("checkout.placeholder_cvv")} required half />
+                        <StripeCardFields />
                       </div>
                     )}
                   </>
@@ -338,11 +431,13 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <button onClick={() => { setError(null); setStep(0); }} className="btn-ghost py-3 gap-1.5">
+                  <button onClick={() => { setError(null); setStep(0); }} disabled={savingCard} className="btn-ghost py-3 gap-1.5 disabled:opacity-50">
                     <ArrowLeft size={16} /> {t("checkout.back")}
                   </button>
-                  <button onClick={goNext} className="btn-primary py-3 gap-2 flex-1 justify-center">
-                    {t("checkout.review_order")} <ChevronRight size={16} />
+                  <button onClick={goNext} disabled={savingCard} className="btn-primary py-3 gap-2 flex-1 justify-center disabled:opacity-50">
+                    {savingCard
+                      ? <><Loader2 size={16} className="animate-spin" /> {t("checkout.saving_card")}</>
+                      : <>{t("checkout.review_order")} <ChevronRight size={16} /></>}
                   </button>
                 </div>
               </div>
@@ -387,9 +482,7 @@ export default function CheckoutPage() {
                   </p>
                   <p className="text-sm flex items-center gap-2" style={{ color: "var(--text-primary)", fontFamily: "'DM Sans',sans-serif" }}>
                     <CreditCard size={14} />
-                    {selectedCard && !newCard
-                      ? maskCard(selectedCard.carteNumber)
-                      : maskCard(pay.carteNumber)}
+                    {maskCard(selectedCard?.carteNumber)}
                   </p>
                 </div>
 
@@ -403,7 +496,7 @@ export default function CheckoutPage() {
                     className="btn-primary py-3 gap-2 flex-1 justify-center text-base disabled:opacity-50"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Shield size={18} />}
-                    {submitting ? t("checkout.redirecting_stripe") : t("checkout.pay_btn", { total: total.toFixed(2) })}
+                    {submitting ? t("checkout.processing_payment") : t("checkout.pay_btn", { total: total.toFixed(2) })}
                   </button>
                 </div>
               </div>
@@ -411,7 +504,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order summary */}
-          <div className="cyna-card p-5 h-fit sticky top-24">
+          <div className="cyna-card p-5 h-fit sticky top-24 lg:mb-0 mb-8">
             <h3 className="font-[Kumbh Sans] font-700 mb-4" style={{ color: "var(--text-primary)" }}>
               {t("checkout.your_order")}
             </h3>

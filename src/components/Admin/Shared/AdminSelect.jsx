@@ -1,11 +1,11 @@
-import { Children, useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
+import { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Fully custom themed select for the admin dashboard.
  *
- * Drop-in replacement for a native <select> — it accepts <option> children
+ * Drop-in replacement for a native <select> it accepts <option> children
  * (so existing forms keep working) and emits a synthetic onChange event with
  * `e.target.value` matching the picked option. The popup is rendered through
  * a portal so it can overflow scrollable parents.

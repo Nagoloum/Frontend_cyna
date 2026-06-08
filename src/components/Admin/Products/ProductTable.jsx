@@ -1,5 +1,5 @@
 // src/components/admin/products/ProductTable.jsx
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Edit2, Trash2, ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, Edit2, Package, Search, Trash2 } from 'lucide-react';
 import StatusBadge from '../shared/StatusBadge';
 
 const COLUMNS = [
@@ -35,7 +35,7 @@ export default function ProductTable({
   pagination, search, filterCategory, sortBy, sortOrder,
   onSearch, onFilterCategory, onSort, onPageChange, onEdit, onDelete,
 }) {
-  // Defensive normalisation — guards against API returning an object instead of array
+  // Defensive normalisation guards against API returning an object instead of array
   const safeProducts   = Array.isArray(products)   ? products   : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
 
