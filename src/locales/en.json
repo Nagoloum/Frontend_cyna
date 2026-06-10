@@ -113,8 +113,16 @@
     "unconfirmed_message": "Please check your inbox (and spam folder) to activate your account.",
     "login_failed": "Login failed",
     "register_failed": "Registration failed",
+    "register_error_generic": "Something went wrong during registration.",
+    "register_success_title": "Registration successful 🎉",
+    "register_success_message": "Your account has been created. Check your inbox to confirm your email address and activate your account.",
+    "register_success_cta": "Go to login",
     "show_password": "Show password",
     "hide_password": "Hide password"
+  },
+  "logout": {
+    "title": "See you soon 👋",
+    "subtitle": "Signing you out…"
   },
   "twoFactor": {
     "title": "Admin Verification",

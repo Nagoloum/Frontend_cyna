@@ -113,8 +113,16 @@
     "unconfirmed_message": "Veuillez vérifier votre boîte mail (et vos spams) pour activer votre compte.",
     "login_failed": "Connexion échouée",
     "register_failed": "Inscription échouée",
+    "register_error_generic": "Une erreur est survenue lors de l'inscription.",
+    "register_success_title": "Inscription réussie 🎉",
+    "register_success_message": "Votre compte a été créé. Vérifiez votre boîte mail pour confirmer votre adresse et activer votre compte.",
+    "register_success_cta": "Aller à la connexion",
     "show_password": "Afficher le mot de passe",
     "hide_password": "Masquer le mot de passe"
+  },
+  "logout": {
+    "title": "À bientôt 👋",
+    "subtitle": "Déconnexion en cours…"
   },
   "twoFactor": {
     "title": "Vérification Administrateur",

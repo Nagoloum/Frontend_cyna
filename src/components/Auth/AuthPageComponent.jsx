@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, MailCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authAPI, login as loginAPI } from '@/services/api';
 import { TWO_FA_ENABLED } from '@/config/auth';
@@ -9,6 +9,7 @@ import { notify } from '@/components/ui/feedback';
 export default function AuthPageComponent() {
   const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -55,11 +56,11 @@ export default function AuthPageComponent() {
         });
         const data = res.data;
         if (!data.success) {
-          alert(data.message || 'Erreur lors de la tentative');
+          notify.error(t('auth.register_failed'), data.message || t('auth.register_error_generic'));
           return;
         }
-        alert(data.message || "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
-        setIsLogin(true);
+        // Popup de validation personnalisé (au lieu d'un alert() natif).
+        setRegisterSuccess(true);
       }
     } catch (err) {
       const msg = err.response?.data?.message ?? err.message ?? 'Erreur de connexion.';
@@ -80,6 +81,36 @@ export default function AuthPageComponent() {
       className="min-h-screen flex items-center justify-center p-4"
       style={{ background: "var(--bg-base)" }}
     >
+      {/* ── Popup de validation d'inscription (custom, pas un alert natif) ── */}
+      {registerSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setRegisterSuccess(false); setIsLogin(true); }} />
+          <div
+            className="relative w-full max-w-md rounded-3xl border bg-[var(--bg-card)] shadow-2xl p-8 text-center page-enter"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div
+              className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center shadow-[var(--shadow-accent)]"
+              style={{ background: "linear-gradient(135deg, var(--accent), #a78bfa)" }}
+            >
+              <MailCheck size={30} color="#fff" />
+            </div>
+            <h3 className="font-[Kumbh Sans] font-800 text-xl mb-2" style={{ color: "var(--text-primary)" }}>
+              {t('auth.register_success_title')}
+            </h3>
+            <p className="text-sm mb-6" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
+              {t('auth.register_success_message')}
+            </p>
+            <button
+              onClick={() => { setRegisterSuccess(false); setIsLogin(true); }}
+              className="btn-primary w-full justify-center py-3"
+            >
+              {t('auth.register_success_cta')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         className="rounded-3xl overflow-hidden max-w-5xl w-full flex flex-col md:flex-row"
         style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}

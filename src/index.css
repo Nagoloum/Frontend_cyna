@@ -402,6 +402,16 @@ html {
   display: none; /* Épaisseur horizontale */
 }
 
+/* ===== LOGOUT PAGE progress bar ===== */
+@keyframes logout-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.logout-bar {
+  width: 0%;
+  animation: logout-progress 1.5s ease forwards;
+}
+
 /* ===== LEGAL PAGES (prose styled with the design tokens) ===== */
 .legal-prose section + section {
   margin-top: 2rem;
