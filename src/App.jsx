@@ -37,6 +37,7 @@ import Settings from "./pages/Admin/SettingsPage";
 
 // Auth admin-only 2FA verification step
 import TwoFactor from "./pages/Auth/TwoFactor";
+import Logout from "./pages/Auth/Logout";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
@@ -98,6 +99,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/email-confirmation" element={<EmailConfirmation />} />
           <Route path="/2FA" element={<TwoFactor />} />
+          <Route path="/logout" element={<Logout />} />
 
           {/* ── Pages légales ── */}
           <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />

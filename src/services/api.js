@@ -155,7 +155,11 @@ export const login = async (credentials) => {
 export const authAPI = {
   login,
 
-  logout: () => {
+  /**
+   * Clear the session WITHOUT redirecting (archives the cart, wipes tokens).
+   * Used by the /logout page which controls the redirect + loading UI itself.
+   */
+  clearSession: () => {
     // Archive the current cart under this user's slot before clearing the
     // active cart, so they find their items again at next login.
     let archivedFor = null;
@@ -170,6 +174,10 @@ export const authAPI = {
     localStorage.removeItem('twoFAVerified');
     localStorage.removeItem('twoFARequired');
     setAuthToken(null);
+  },
+
+  logout: () => {
+    authAPI.clearSession();
     window.location.href = '/auth';
   },
 

@@ -11,7 +11,6 @@ import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ThemeToggle from "../Kit/ThemeToggle";
-import { authAPI } from "@/services/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   toggleNavbarMobile,
@@ -85,7 +84,7 @@ export default function Navbar() {
   }, [location.pathname, dispatch]);
 
   const handleLogout = () => {
-    authAPI.logout();
+    navigate("/logout");
   };
 
   const handleSearch = (e) => {

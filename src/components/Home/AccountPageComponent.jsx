@@ -1138,8 +1138,8 @@ export default function AccountPage() {
         setDeleting(false);
         return;
       }
-      // Session cleared + redirect to /auth.
-      authAPI.logout();
+      // Compte supprimé → page de déconnexion (nettoie la session + redirige).
+      navigate("/logout");
     } catch (err) {
       notify("error", apiMessage(err, t("account.delete_account_error")));
       setDeleting(false);
@@ -1181,7 +1181,7 @@ export default function AccountPage() {
                 </button>
               ))}
               <button
-                onClick={() => authAPI.logout()}
+                onClick={() => navigate("/logout")}
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
               >
                 <LogOut size={15} /> {t("account.sign_out")}
