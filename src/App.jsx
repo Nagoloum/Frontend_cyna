@@ -34,6 +34,7 @@ import MyProfile from "./pages/Admin/MyProfilePage";
 import OrdersPage from "./pages/Admin/OrdersPage";
 import AdminProductsPage from "./pages/Admin/ProductsPage";
 import Settings from "./pages/Admin/SettingsPage";
+import Messages from "./pages/Admin/MessagesPage";
 
 // Auth admin-only 2FA verification step
 import TwoFactor from "./pages/Auth/TwoFactor";
@@ -41,7 +42,6 @@ import Logout from "./pages/Auth/Logout";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
-import ChatBot from "./components/ui/ChatBot";
 import { NotifyProvider } from "./components/ui/feedback";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -121,6 +121,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="messages" element={<Messages />} />
             <Route path="profile" element={<MyProfile />} />
             <Route path="settings" element={<Settings />} />
           </Route>
@@ -130,7 +131,6 @@ function App() {
         </Routes>
 
         <AuthOnlyThemeToggle />
-        <ChatBot />
         <Analytics />
         <SpeedInsights />
       </BrowserRouter>

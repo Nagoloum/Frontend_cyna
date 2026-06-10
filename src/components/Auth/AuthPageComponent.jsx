@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, MailCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authAPI, login as loginAPI } from '@/services/api';
-import { TWO_FA_ENABLED } from '@/config/auth';
 import { notify } from '@/components/ui/feedback';
 
 export default function AuthPageComponent() {
@@ -26,19 +25,22 @@ export default function AuthPageComponent() {
     e.preventDefault();
     try {
       if (isLogin) {
-        const { user } = await loginAPI({
+        const { user, twoFactorMethod } = await loginAPI({
           email: formData.email,
           password: formData.password,
         });
-        if (user?.role === 'ADMIN') {
-          if (TWO_FA_ENABLED) {
-            localStorage.setItem('twoFARequired', '1');
-            navigate('/2FA', { replace: true });
-          } else {
-            localStorage.setItem('twoFAVerified', '1');
-            localStorage.removeItem('twoFARequired');
-            navigate('/admin', { replace: true });
-          }
+        const needs2FA = twoFactorMethod === 'EMAIL' || twoFactorMethod === 'TOTP';
+        if (needs2FA) {
+          localStorage.setItem('twoFARequired', '1');
+          localStorage.setItem('twoFAMethod', twoFactorMethod);
+          localStorage.removeItem('twoFAVerified');
+          navigate('/2FA', { replace: true });
+        } else if (user?.role === 'ADMIN') {
+          // Admin sans 2FA : RouteLayout exige twoFAVerified pour /admin.
+          localStorage.setItem('twoFAVerified', '1');
+          localStorage.removeItem('twoFARequired');
+          localStorage.removeItem('twoFAMethod');
+          navigate('/admin', { replace: true });
         } else {
           navigate(safeNext ?? '/home', { replace: true });
         }

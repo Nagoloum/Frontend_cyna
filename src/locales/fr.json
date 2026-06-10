@@ -127,6 +127,8 @@
   "twoFactor": {
     "title": "Vérification Administrateur",
     "subtitle": "Saisissez le code à 6 chiffres reçu par email.",
+    "subtitle_totp": "Saisissez le code à 6 chiffres de votre application d'authentification.",
+    "totp_hint": "Google Authenticator / Authy",
     "sent_to": "Code envoyé à",
     "verify_btn": "Vérifier le code",
     "verifying": "Vérification…",

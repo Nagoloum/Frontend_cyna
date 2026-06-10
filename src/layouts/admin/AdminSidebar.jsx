@@ -5,6 +5,7 @@ import {
   Package,
   ShoppingCart,
   Settings,
+  Mail,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Products',  to: '/admin/products',  icon: Package          },
   { label: 'Orders',    to: '/admin/orders',    icon: ShoppingCart     },
+  { label: 'Messages',  to: '/admin/messages',  icon: Mail             },
   { label: 'Settings',  to: '/admin/settings',  icon: Settings         },
 ];
 
