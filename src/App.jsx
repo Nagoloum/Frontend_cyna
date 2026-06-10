@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Analytics } from '@vercel/analytics/react';
 
 // Layouts
 import AdminLayout from "./layouts/AdminLayout";
@@ -127,6 +128,7 @@ function App() {
 
         <AuthOnlyThemeToggle />
         <ChatBot />
+        <Analytics />
       </BrowserRouter>
     </NotifyProvider>
   );
