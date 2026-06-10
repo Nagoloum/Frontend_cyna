@@ -24,24 +24,24 @@ export default function Logout() {
       className="min-h-screen flex flex-col items-center justify-center gap-7 p-6"
       style={{ background: "var(--bg-base)" }}
     >
-      {/* Animated badge */}
-      <div className="relative">
+      {/* Circular spinner + badge */}
+      <div className="relative w-24 h-24 flex items-center justify-center">
+        {/* Spinning ring (perfect circle) */}
         <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-[var(--shadow-lg)]"
-          style={{ background: "linear-gradient(135deg, var(--accent), #a78bfa)" }}
-        >
-          <LogOut size={32} color="#fff" />
-        </div>
-        {/* Spinning ring */}
-        <div
-          className="absolute -inset-2 rounded-[28px] border-2 animate-spin"
+          className="absolute inset-0 rounded-full border-4 animate-spin"
           style={{
-            borderColor: "transparent",
+            borderColor: "var(--bg-muted)",
             borderTopColor: "var(--accent)",
-            borderRightColor: "var(--accent)",
-            animationDuration: "0.9s",
+            animationDuration: "0.8s",
           }}
         />
+        {/* Round gradient badge */}
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center shadow-[var(--shadow-md)]"
+          style={{ background: "linear-gradient(135deg, var(--accent), #a78bfa)" }}
+        >
+          <LogOut size={26} color="#fff" />
+        </div>
       </div>
 
       {/* Text */}
