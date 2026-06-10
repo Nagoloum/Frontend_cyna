@@ -43,6 +43,8 @@ import Logout from "./pages/Auth/Logout";
 import ThemeToggle from "./components/Kit/ThemeToggle";
 import ChatBot from "./components/ui/ChatBot";
 import { NotifyProvider } from "./components/ui/feedback";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>
@@ -129,6 +131,8 @@ function App() {
 
         <AuthOnlyThemeToggle />
         <ChatBot />
+        <Analytics />
+        <SpeedInsights />
       </BrowserRouter>
     </NotifyProvider>
   );
