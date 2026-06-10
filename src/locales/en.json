@@ -127,6 +127,8 @@
   "twoFactor": {
     "title": "Admin Verification",
     "subtitle": "Enter the 6-digit code received by email.",
+    "subtitle_totp": "Enter the 6-digit code from your authenticator app.",
+    "totp_hint": "Google Authenticator / Authy",
     "sent_to": "Code sent to",
     "verify_btn": "Verify code",
     "verifying": "Verifying…",

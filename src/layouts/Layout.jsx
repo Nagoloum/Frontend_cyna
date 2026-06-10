@@ -1,5 +1,6 @@
 import Footer from "../components/Home/Footer";
 import Navbar from "../components/Home/Navbar";
+import ChatBot from "../components/ui/ChatBot";
 
 export default function Layout({ children }) {
   return (
@@ -9,6 +10,8 @@ export default function Layout({ children }) {
         {children}
       </main>
       <Footer />
+      {/* ChatBot : uniquement côté utilisateur (le layout admin ne l'inclut pas) */}
+      <ChatBot />
     </div>
   );
 }

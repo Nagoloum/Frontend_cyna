@@ -149,7 +149,10 @@ export const login = async (credentials) => {
   // archived cart (kept across sessions in localStorage under cart:<userId>).
   if (user?._id) store.dispatch(mergeOnLogin(user._id));
 
-  return { token, user };
+  // Per-user 2FA method ('NONE' | 'EMAIL' | 'TOTP') drives the post-login step.
+  const twoFactorMethod = data.data.twoFactorMethod ?? 'NONE';
+
+  return { token, user, twoFactorMethod };
 };
 
 export const authAPI = {
@@ -190,8 +193,21 @@ export const authAPI = {
   /** POST /auth/register */
   register: (data) => api.post('/auth/register', data),
 
-  /** POST /auth/check-code  { code: "123456" } verifies the 6-digit 2FA code */
+  /** POST /auth/check-code  { code: "123456" } verifies the 6-digit EMAIL 2FA code */
   verify2FA: (code) => api.post('/auth/check-code', { code }),
+
+  /** POST /auth/2fa/totp/verify { code } — verifies a TOTP code at the login 2FA step */
+  verifyTotp: (code) => api.post('/auth/2fa/totp/verify', { code }),
+
+  // ── 2FA management (settings) ──
+  /** POST /auth/2fa/totp/init → { otpauthUrl, qrDataUrl, secret } */
+  setupTotp: () => api.post('/auth/2fa/totp/init'),
+  /** POST /auth/2fa/totp/activate { code } — verify code then enable Google Authenticator */
+  activateTotp: (code) => api.post('/auth/2fa/totp/activate', { code }),
+  /** POST /auth/2fa/email/activate — enable email 2FA */
+  activateEmail2FA: () => api.post('/auth/2fa/email/activate'),
+  /** POST /auth/2fa/disable { password } — disable 2FA (password required) */
+  disable2FA: (password) => api.post('/auth/2fa/disable', { password }),
 
   /** GET /auth/email-confirmation?token= */
   emailConfirmation: (token) =>
@@ -472,6 +488,12 @@ export const commandesAPI = {
 export const contactAPI = {
   /** Body: { email, subject, message } */
   create: (data) => api.post('/contact', data),
+
+  /** Admin — list all contact messages */
+  getAll: () => api.get('/contact'),
+
+  /** Admin — delete a message */
+  remove: (id) => api.delete(`/contact/${id}`),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

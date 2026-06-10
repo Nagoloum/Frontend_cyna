@@ -29,6 +29,7 @@ export default function TwoFactorPageComponent() {
     const role = payload?.role ?? payload?.user?.role ?? null;
     const tokenInvalid = !token || isExpired(token);
     const alreadyVerified = localStorage.getItem('twoFAVerified') === '1';
+    const method = localStorage.getItem('twoFAMethod') || 'EMAIL';
 
     useEffect(() => {
         if (!tokenInvalid && role === 'ADMIN' && !alreadyVerified) {
@@ -79,12 +80,15 @@ export default function TwoFactorPageComponent() {
         setError('');
 
         try {
-            const res = await authAPI.verify2FA(finalCode);
+            const res = method === 'TOTP'
+                ? await authAPI.verifyTotp(finalCode)
+                : await authAPI.verify2FA(finalCode);
             const result = res.data;
 
             if (result?.success) {
                 localStorage.setItem('twoFAVerified', '1');
                 localStorage.removeItem('twoFARequired');
+                localStorage.removeItem('twoFAMethod');
                 navigate('/admin/dashboard', { replace: true });
             } else {
                 setError(result?.message || t('twoFactor.invalid_code'));
@@ -117,9 +121,13 @@ export default function TwoFactorPageComponent() {
                     {t('twoFactor.title')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-2">
-                    {t('twoFactor.subtitle')}
+                    {method === 'TOTP' ? t('twoFactor.subtitle_totp') : t('twoFactor.subtitle')}
                 </p>
-                {maskedEmail && (
+                {method === 'TOTP' ? (
+                    <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mb-7">
+                        <ShieldCheck size={12} /> {t('twoFactor.totp_hint')}
+                    </p>
+                ) : maskedEmail && (
                     <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mb-7">
                         <Mail size={12} /> {maskedEmail}
                     </p>
