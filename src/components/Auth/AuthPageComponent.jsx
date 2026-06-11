@@ -47,7 +47,7 @@ export default function AuthPageComponent() {
           localStorage.setItem('twoFAVerified', '1');
           localStorage.removeItem('twoFARequired');
           localStorage.removeItem('twoFAMethod');
-          navigate('/admin', { replace: true });
+          navigate('/2FA', { replace: true });
         } else {
           navigate(safeNext ?? '/home', { replace: true });
         }
