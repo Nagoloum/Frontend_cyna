@@ -53,9 +53,9 @@ export default function AdminHeader() {
   }, [dispatch]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/auth');
+    // Écran de déconnexion commun (spinner + nettoyage complet de la session),
+    // puis retour à la page de connexion.
+    navigate('/logout?to=/auth');
   };
 
   const initials = user?.name
