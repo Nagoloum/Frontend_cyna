@@ -42,7 +42,7 @@ import Logout from "./pages/Auth/Logout";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
-import CookieConsentBanner from "./components/ui/CookieConsentBanner";
+import PrivacyBanner from "./components/ui/PrivacyBanner";
 import { NotifyProvider } from "./components/ui/feedback";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -57,7 +57,7 @@ const PublicPage = ({ children }) => (
 const UserPagesCookieBanner = () => {
   const { pathname } = useLocation();
   if (pathname.startsWith('/admin')) return null;
-  return <CookieConsentBanner />;
+  return <PrivacyBanner />;
 };
 
 const AUTH_PATHS = ['/auth', '/forgot-password', '/reset-password', '/email-confirmation', '/2FA'];

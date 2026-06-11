@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cookie } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getCookieConsent, setCookieConsent } from '@/lib/cookieConsent';
+import { getCookieConsent, setCookieConsent } from '@/lib/privacyPrefs';
 
 /**
  * Bandeau de consentement cookies (RGPD), fixé en bas des pages utilisateur.
  * Affiché une seule fois : dès qu'un choix est fait (accepter ou refuser),
  * il est mémorisé et le bandeau ne réapparaît plus — sauf réouverture
  * explicite via openCookieBanner() (footer ou tentative de connexion).
+ *
+ * ⚠️ NE PAS renommer ce fichier avec un nom contenant « cookie » ou
+ * « consent » : en dev, Vite sert le module par son URL réelle et les
+ * bloqueurs de publicité (listes EasyList) la bloqueraient
+ * (ERR_BLOCKED_BY_CLIENT).
  */
-export default function CookieConsentBanner() {
+export default function PrivacyBanner() {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(() => getCookieConsent() === null);
 

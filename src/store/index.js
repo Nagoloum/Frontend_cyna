@@ -4,7 +4,7 @@ import authReducer from './slices/authSlice';
 import cartReducer from './slices/cartSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import productFormReducer from './slices/productFormSlice';
-import { cookiesAllowed } from '../lib/cookieConsent';
+import { cookiesAllowed } from '../lib/privacyPrefs';
 
 // Persist cart to localStorage and apply theme side-effects after each relevant action.
 // La persistance est soumise au consentement cookies : sans acceptation, rien

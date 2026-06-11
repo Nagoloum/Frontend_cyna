@@ -1,7 +1,7 @@
 import { notify } from '@/components/ui/feedback';
 import axios from 'axios';
 import i18n from '../i18n';
-import { cookiesAllowed, openCookieBanner } from '../lib/cookieConsent';
+import { cookiesAllowed, openCookieBanner } from '../lib/privacyPrefs';
 import { store } from '../store';
 import { archiveOnLogout, mergeOnLogin } from '../store/slices/cartSlice';
 

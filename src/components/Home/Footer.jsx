@@ -1,7 +1,7 @@
 import { Github, Linkedin, Mail, Shield, Twitter } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { openCookieBanner } from "@/lib/cookieConsent";
+import { openCookieBanner } from "@/lib/privacyPrefs";
 
 const CynaLogo = () => (
   <svg
