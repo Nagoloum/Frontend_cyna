@@ -12,7 +12,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ThemeToggle from "../Kit/ThemeToggle";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { cookiesAllowed } from "@/lib/cookieConsent";
+import { cookiesAllowed } from "@/lib/privacyPrefs";
 import {
   toggleNavbarMobile,
   setNavbarMobileOpen,
