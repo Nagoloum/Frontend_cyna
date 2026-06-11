@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, MailCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, MailCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authAPI, getApiErrorMessage, login as loginAPI } from '@/services/api';
 import { notify } from '@/components/ui/feedback';
@@ -12,6 +12,8 @@ export default function AuthPageComponent() {
   // Acceptation des CGU + politique de confidentialité : requise pour
   // l'inscription uniquement (pas pour la connexion).
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // État de chargement du bouton connexion / inscription (anti double-clic).
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -26,6 +28,8 @@ export default function AuthPageComponent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       if (isLogin) {
         const { user, twoFactorMethod } = await loginAPI({
@@ -75,6 +79,8 @@ export default function AuthPageComponent() {
       // Jamais de message technique brut (réseau, 5xx) à l'utilisateur.
       const msg = getApiErrorMessage(err, t('errors.generic'));
       notify.error(isLogin ? t('auth.login_failed') : t('auth.register_failed'), msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -224,10 +230,13 @@ export default function AuthPageComponent() {
               </label>
             )}
 
-            <button type="submit"
-              className="mt-4 w-full h-12 rounded-full text-white font-medium shadow-[var(--shadow-accent)] transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+            <button type="submit" disabled={submitting}
+              className="mt-4 w-full h-12 rounded-full text-white font-medium shadow-[var(--shadow-accent)] transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: "var(--accent)" }}>
-              {isLogin ? t('auth.login_btn') : t('auth.signup_btn')}
+              {submitting && <Loader2 size={18} className="animate-spin" />}
+              {submitting
+                ? t('auth.submitting')
+                : isLogin ? t('auth.login_btn') : t('auth.signup_btn')}
             </button>
 
             <p className="text-sm mt-4 text-center" style={{ color: "var(--text-muted)" }}>

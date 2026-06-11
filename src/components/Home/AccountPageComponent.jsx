@@ -838,8 +838,16 @@ function OrdersTab() {
     commandesAPI.getByUser({ limit: 50 })
       .then(r => {
         const payload = r.data?.data ?? r.data ?? {};
-        const list = payload?.data ?? payload;
-        setOrders(Array.isArray(list) ? list : []);
+        // Le backend renvoie { results, total, ... } où `results` est soit un
+        // tableau (filtre year), soit un objet groupé par année { "2026": [...] }.
+        const results = payload?.results ?? payload?.data ?? payload;
+        const list = Array.isArray(results)
+          ? results
+          : results && typeof results === "object"
+            ? Object.values(results).flat()
+            : [];
+        list.sort((a, b) => new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0));
+        setOrders(list);
       })
       .catch(() => setOrders([]))
       .finally(() => setLoading(false));
