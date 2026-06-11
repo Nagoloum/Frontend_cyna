@@ -1,4 +1,4 @@
-import { adressesAPI, cartesAPI, commandesAPI } from "@/services/api";
+import { adressesAPI, cartesAPI, commandesAPI, getApiErrorMessage } from "@/services/api";
 import {
     AlertCircle, ArrowLeft, CheckCircle, ChevronRight, CreditCard,
     Loader2, Lock, MapPin, Plus, Shield,
@@ -235,7 +235,8 @@ function CheckoutForm() {
       dispatch(clearCart());
       navigate("/checkout/confirmation");
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? t("checkout.error_order_generic");
+      // Jamais de message technique brut (réseau, 5xx) à l'utilisateur.
+      const msg = getApiErrorMessage(err, t("checkout.error_order_generic"));
       setError(msg);
       setSubmitting(false);
     }

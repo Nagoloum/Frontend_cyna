@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, MailCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { authAPI, login as loginAPI } from '@/services/api';
+import { authAPI, getApiErrorMessage, login as loginAPI } from '@/services/api';
 import { notify } from '@/components/ui/feedback';
 
 export default function AuthPageComponent() {
   const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  // Acceptation des CGU + politique de confidentialité : requise pour
+  // l'inscription uniquement (pas pour la connexion).
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -50,6 +53,10 @@ export default function AuthPageComponent() {
           }, 800);
         }
       } else {
+        if (!acceptedTerms) {
+          notify.error(t('auth.register_failed'), t('auth.accept_terms_required'));
+          return;
+        }
         const res = await authAPI.register({
           firstName: formData.firstName,
           lastName:  formData.lastName,
@@ -65,7 +72,8 @@ export default function AuthPageComponent() {
         setRegisterSuccess(true);
       }
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? 'Erreur de connexion.';
+      // Jamais de message technique brut (réseau, 5xx) à l'utilisateur.
+      const msg = getApiErrorMessage(err, t('errors.generic'));
       notify.error(isLogin ? t('auth.login_failed') : t('auth.register_failed'), msg);
     }
   };
@@ -194,6 +202,28 @@ export default function AuthPageComponent() {
               </div>
             )}
 
+            {/* Case obligatoire (inscription uniquement) : acceptation des CGU
+                et de la politique de confidentialité, placée avant le bouton. */}
+            {!isLogin && (
+              <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  required={!isLogin}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--accent)] cursor-pointer"
+                />
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  {t('auth.accept_terms')}{' '}
+                  <a href="/terms-of-use" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>{t('auth.terms_link')}</a>{' '}
+                  {t('auth.and')}{' '}
+                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>{t('auth.privacy_link')}</a>{' '}
+                  {t('auth.of')}{' '}
+                  <span style={{ color: "var(--accent)" }}>Cyna</span>.
+                </span>
+              </label>
+            )}
+
             <button type="submit"
               className="mt-4 w-full h-12 rounded-full text-white font-medium shadow-[var(--shadow-accent)] transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
               style={{ background: "var(--accent)" }}>
@@ -202,20 +232,23 @@ export default function AuthPageComponent() {
 
             <p className="text-sm mt-4 text-center" style={{ color: "var(--text-muted)" }}>
               {isLogin ? t('auth.no_account') : t('auth.already_account')}{' '}
-              <button type="button" onClick={() => setIsLogin(!isLogin)}
+              <button type="button" onClick={() => { setIsLogin(!isLogin); setAcceptedTerms(false); }}
                 className="font-medium hover:underline" style={{ color: "var(--accent)" }}>
                 {isLogin ? t('auth.sign_up_link') : t('auth.sign_in_link')}
               </button>
             </p>
 
-            <p className="text-sm mt-4 text-center" style={{ color: "var(--text-muted)" }}>
-              {t('auth.terms_agreement')}{' '}
-              <a href="/terms-of-use" style={{ color: "var(--accent)" }}>{t('auth.terms_link')}</a>{' '}
-              {t('auth.and')}{' '}
-              <a href="/privacy-policy" style={{ color: "var(--accent)" }}>{t('auth.privacy_link')}</a>{' '}
-              {t('auth.of')}{' '}
-              <span style={{ color: "var(--accent)" }}>Cyna</span>.
-            </p>
+            {/* En inscription, l'acceptation passe par la case à cocher ci-dessus. */}
+            {isLogin && (
+              <p className="text-sm mt-4 text-center" style={{ color: "var(--text-muted)" }}>
+                {t('auth.terms_agreement')}{' '}
+                <a href="/terms-of-use" style={{ color: "var(--accent)" }}>{t('auth.terms_link')}</a>{' '}
+                {t('auth.and')}{' '}
+                <a href="/privacy-policy" style={{ color: "var(--accent)" }}>{t('auth.privacy_link')}</a>{' '}
+                {t('auth.of')}{' '}
+                <span style={{ color: "var(--accent)" }}>Cyna</span>.
+              </p>
+            )}
 
           </form>
         </div>
