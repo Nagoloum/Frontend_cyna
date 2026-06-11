@@ -176,7 +176,7 @@
     "success_title": "Password Updated!",
     "success_message": "Your password has been successfully changed.",
     "redirecting": "Redirecting to login in 3 seconds...",
-    "back_to_login": "← Back to Login",
+    "back_to_login": "Back to Login",
     "invalid_link": "Invalid link",
     "missing_token_error": "The reset token is missing.",
     "passwords_mismatch": "Passwords do not match",

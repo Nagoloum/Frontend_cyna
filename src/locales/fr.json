@@ -176,7 +176,7 @@
     "success_title": "Mot de Passe Mis à Jour !",
     "success_message": "Votre mot de passe a été modifié avec succès.",
     "redirecting": "Redirection vers la connexion dans 3 secondes...",
-    "back_to_login": "← Retour à la Connexion",
+    "back_to_login": "Retour à la Connexion",
     "invalid_link": "Lien invalide",
     "missing_token_error": "Le jeton de réinitialisation est manquant.",
     "passwords_mismatch": "Mots de passe différents",

@@ -56,7 +56,8 @@ export default function ResetPasswordComponent() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-6 transition-colors duration-700">
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full flex flex-col md:flex-row transition-all duration-700">
 
-        <div className="md:w-1/2 w-full">
+        {/* Image : masquée en mobile (visible à partir de md) */}
+        <div className="md:w-1/2 w-full hidden md:block">
           <img
             src="./images/img.jpg"
             alt={t('resetPassword.title')}

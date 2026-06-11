@@ -45,8 +45,8 @@ export default function ForgotPassword() {
           boxShadow: "var(--shadow-lg)",
         }}
       >
-        {/* Image */}
-        <div className="md:w-1/2 w-full">
+        {/* Image : masquée en mobile (visible à partir de md) */}
+        <div className="md:w-1/2 w-full hidden md:block">
           <img
             src="./images/img.jpg"
             alt={t("forgotPassword.title")}
