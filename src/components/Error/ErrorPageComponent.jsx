@@ -49,7 +49,7 @@ export default function ErrorPage() {
             {/* Boutons */}
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link
-                to="/getstarted"
+                to="/"
                 className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white font-semibold text-lg rounded-full shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 Back to Home
