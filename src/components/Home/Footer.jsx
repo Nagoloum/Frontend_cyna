@@ -1,6 +1,7 @@
 import { Github, Linkedin, Mail, Shield, Twitter } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { openCookieBanner } from "@/lib/cookieConsent";
 
 const CynaLogo = () => (
   <svg
@@ -49,6 +50,8 @@ export default function Footer() {
       { label: t("footer.links.terms"), href: "/terms-of-use" },
       { label: t("footer.links.privacy"), href: "/privacy-policy" },
       { label: t("footer.links.cookies"), href: "/cookie-policy" },
+      // Rouvre le bandeau de consentement (promis par la politique de cookies).
+      { label: t("footer.links.cookie_prefs"), onClick: openCookieBanner },
       { label: t("footer.links.legal"), href: "/legal" },
     ],
   };
@@ -127,16 +130,30 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {items.map((item) => (
                   <li key={item.label}>
-                    <Link
-                      to={item.href}
-                      className="text-sm hover:text-purple-900 hover:underline hover:underline-offset-4 hover:pl-0.5 transition-all"
-                      style={{
-                        color: "var(--text-secondary)",
-                        fontFamily: "'Kumbh Sans', sans-serif",
-                      }}
-                    >
-                      {item.label}
-                    </Link>
+                    {item.onClick ? (
+                      <button
+                        type="button"
+                        onClick={item.onClick}
+                        className="text-sm hover:text-purple-900 hover:underline hover:underline-offset-4 hover:pl-0.5 transition-all"
+                        style={{
+                          color: "var(--text-secondary)",
+                          fontFamily: "'Kumbh Sans', sans-serif",
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        className="text-sm hover:text-purple-900 hover:underline hover:underline-offset-4 hover:pl-0.5 transition-all"
+                        style={{
+                          color: "var(--text-secondary)",
+                          fontFamily: "'Kumbh Sans', sans-serif",
+                        }}
+                      >
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

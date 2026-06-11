@@ -42,6 +42,7 @@ import Logout from "./pages/Auth/Logout";
 
 // Composants globaux
 import ThemeToggle from "./components/Kit/ThemeToggle";
+import CookieConsentBanner from "./components/ui/CookieConsentBanner";
 import { NotifyProvider } from "./components/ui/feedback";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -49,6 +50,15 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>
 );
+
+// Bandeau cookies : pages utilisateur uniquement (jamais sur l'admin).
+// Inclut les pages d'auth pour que l'utilisateur puisse accepter avant de se
+// connecter (la connexion nécessite le stockage de session).
+const UserPagesCookieBanner = () => {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/admin')) return null;
+  return <CookieConsentBanner />;
+};
 
 const AUTH_PATHS = ['/auth', '/forgot-password', '/reset-password', '/email-confirmation', '/2FA'];
 const AuthOnlyThemeToggle = () => {
@@ -131,6 +141,7 @@ function App() {
         </Routes>
 
         <AuthOnlyThemeToggle />
+        <UserPagesCookieBanner />
         <Analytics />
         <SpeedInsights />
       </BrowserRouter>

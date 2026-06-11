@@ -12,6 +12,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ThemeToggle from "../Kit/ThemeToggle";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { cookiesAllowed } from "@/lib/cookieConsent";
 import {
   toggleNavbarMobile,
   setNavbarMobileOpen,
@@ -69,7 +70,8 @@ export default function Navbar() {
   const toggleLang = () => {
     const next = isFr ? "en" : "fr";
     i18n.changeLanguage(next);
-    localStorage.setItem("lang", next);
+    // Préférence persistée uniquement avec le consentement cookies.
+    if (cookiesAllowed()) localStorage.setItem("lang", next);
     dispatch(setLanguageIsFrench(next === "fr"));
   };
 

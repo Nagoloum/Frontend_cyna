@@ -49,6 +49,7 @@
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
       "cookies": "Cookie Policy",
+      "cookie_prefs": "Cookie preferences",
       "legal": "Legal Notice"
     }
   },
@@ -109,6 +110,8 @@
     "and": "and the",
     "privacy_link": "Privacy Policy",
     "of": "of",
+    "accept_terms": "I accept the",
+    "accept_terms_required": "Please accept the Terms of Use and Privacy Policy to create your account.",
     "unconfirmed_title": "Account not confirmed",
     "unconfirmed_message": "Please check your inbox (and spam folder) to activate your account.",
     "login_failed": "Login failed",
@@ -119,6 +122,17 @@
     "register_success_cta": "Go to login",
     "show_password": "Show password",
     "hide_password": "Hide password"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again later."
+  },
+  "cookie_banner": {
+    "title": "We use cookies",
+    "message": "Cookies enable signing in to your account, saving your cart and remembering your preferences (theme, language). If you refuse, these features will be unavailable.",
+    "policy_link": "Learn more",
+    "accept": "Accept",
+    "refuse": "Refuse",
+    "login_blocked": "Signing in requires accepting cookies. Please accept cookies via the banner at the bottom of the page to log in."
   },
   "logout": {
     "title": "See you soon 👋",

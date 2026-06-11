@@ -49,6 +49,7 @@
       "terms": "Conditions d'Utilisation",
       "privacy": "Politique de Confidentialité",
       "cookies": "Politique de Cookies",
+      "cookie_prefs": "Préférences de cookies",
       "legal": "Mentions Légales"
     }
   },
@@ -109,6 +110,8 @@
     "and": "et",
     "privacy_link": "la Politique de Confidentialité",
     "of": "de",
+    "accept_terms": "J'accepte",
+    "accept_terms_required": "Veuillez accepter les Conditions d'Utilisation et la Politique de Confidentialité pour créer votre compte.",
     "unconfirmed_title": "Compte non confirmé",
     "unconfirmed_message": "Veuillez vérifier votre boîte mail (et vos spams) pour activer votre compte.",
     "login_failed": "Connexion échouée",
@@ -119,6 +122,17 @@
     "register_success_cta": "Aller à la connexion",
     "show_password": "Afficher le mot de passe",
     "hide_password": "Masquer le mot de passe"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Veuillez réessayer plus tard."
+  },
+  "cookie_banner": {
+    "title": "Nous utilisons des cookies",
+    "message": "Les cookies permettent la connexion à votre compte, la sauvegarde de votre panier et la mémorisation de vos préférences (thème, langue). Si vous refusez, ces fonctionnalités seront indisponibles.",
+    "policy_link": "En savoir plus",
+    "accept": "Accepter",
+    "refuse": "Refuser",
+    "login_blocked": "La connexion nécessite l'acceptation des cookies. Veuillez accepter les cookies via le bandeau en bas de page pour vous connecter."
   },
   "logout": {
     "title": "À bientôt 👋",

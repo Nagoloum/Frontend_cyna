@@ -1,5 +1,7 @@
 import { notify } from '@/components/ui/feedback';
 import axios from 'axios';
+import i18n from '../i18n';
+import { cookiesAllowed, openCookieBanner } from '../lib/cookieConsent';
 import { store } from '../store';
 import { archiveOnLogout, mergeOnLogin } from '../store/slices/cartSlice';
 
@@ -102,6 +104,25 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Message d'erreur présentable à l'utilisateur.
+ * - Messages métier du backend (4xx) : transmis tels quels.
+ * - Erreurs levées localement (ex. consentement cookies) : transmises.
+ * - Erreurs techniques (réseau, 5xx, exceptions JS) : remplacées par un
+ *   message générique — ne jamais exposer de détails internes.
+ */
+export const getApiErrorMessage = (err, fallback) => {
+  const status = err?.response?.status;
+  const m = err?.response?.data?.message;
+  if (status && status < 500 && m) {
+    return Array.isArray(m) ? m.join(' · ') : String(m);
+  }
+  if (!err?.response && !err?.request && err?.message) {
+    return err.message;
+  }
+  return fallback ?? 'Une erreur est survenue. Veuillez réessayer plus tard.';
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH   POST /auth/login · POST /auth/register · GET /auth/user/me
 //        POST /auth/forgot-password · POST /auth/change-password?token=
@@ -119,6 +140,13 @@ const decodeJwt = (token) => {
 };
 
 export const login = async (credentials) => {
+  // La session repose sur un stockage local (token) : sans consentement
+  // cookies, la connexion fait partie des fonctionnalités indisponibles.
+  // Le bandeau est rouvert pour permettre d'accepter puis réessayer.
+  if (!cookiesAllowed()) {
+    openCookieBanner();
+    throw new Error(i18n.t('cookie_banner.login_blocked'));
+  }
   const response = await api.post('/auth/login', credentials);
   const data = response.data;
   if (!data?.success || !data?.data?.token) {
