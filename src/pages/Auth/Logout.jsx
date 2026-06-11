@@ -1,23 +1,32 @@
 import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Loader2, LogOut } from "lucide-react";
 import { authAPI } from "@/services/api";
 
 /**
  * Standalone logout screen: clears the session, shows a polished loading
- * state, then does a clean full reload to the homepage (so every
- * auth-dependent component resets).
+ * state, then does a clean full reload (so every auth-dependent component
+ * resets). Destination configurable via `?to=` (chemin interne uniquement) :
+ * `/home` par défaut, `/auth` pour la déconnexion admin.
  */
 export default function Logout() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+
+  const requested = searchParams.get("to") || "/home";
+  const target =
+    requested.startsWith("/") && !requested.startsWith("//")
+      ? requested
+      : "/home";
 
   useEffect(() => {
     authAPI.clearSession();
     const timer = setTimeout(() => {
-      window.location.href = "/home";
+      window.location.href = target;
     }, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [target]);
 
   return (
     <div
