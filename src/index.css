@@ -4,6 +4,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── ACCESSIBILITÉ ──────────────────────────────────────────────────────── */
+/* Anneau de focus visible au clavier, restauré malgré les focus:outline-none
+   présents dans les composants (le ring ne s'affiche qu'à la navigation clavier,
+   pas au clic souris). */
+:focus-visible {
+  outline: 2px solid var(--accent, #7c3aed) !important;
+  outline-offset: 2px !important;
+  border-radius: 3px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Lien d'évitement (skip link) : hors écran sauf au focus clavier. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -56px;
+  z-index: 1000;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--accent, #7c3aed);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 8px;
+}
+
+/* Respect de la préférence "réduire les animations". */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ─── DESIGN SYSTEM CYNA ─────────────────────────────────────────────────── */
 
 :root {

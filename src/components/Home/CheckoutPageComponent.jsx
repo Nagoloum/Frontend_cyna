@@ -547,6 +547,12 @@ function AuthedCheckoutForm() {
                 <span style={{ color: "var(--text-muted)" }}>{t("checkout.subtotal")}</span>
                 <span style={{ color: "var(--text-primary)" }}>{total.toFixed(2)} €</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: "var(--text-muted)" }}>{t("checkout.discount")}</span>
+                  <span style={{ color: "#16a34a" }}>- {discountAmount.toFixed(2)} €</span>
+                </div>
+              )}
               <div className="flex justify-between text-xs">
                 <span style={{ color: "var(--text-muted)" }}>{`${t("checkout.vat")} (${TVA_PERCENT}%)`}</span>
                 <span style={{ color: "var(--text-primary)" }}>{tvaAmount.toFixed(2)} €</span>
@@ -742,6 +748,12 @@ function GuestCheckoutForm() {
                 <span style={{ color: "var(--text-muted)" }}>{t("checkout.subtotal")}</span>
                 <span style={{ color: "var(--text-primary)" }}>{total.toFixed(2)} €</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: "var(--text-muted)" }}>{t("checkout.discount")}</span>
+                  <span style={{ color: "#16a34a" }}>- {discountAmount.toFixed(2)} €</span>
+                </div>
+              )}
               <div className="flex justify-between text-xs">
                 <span style={{ color: "var(--text-muted)" }}>{`${t("checkout.vat")} (${TVA_PERCENT}%)`}</span>
                 <span style={{ color: "var(--text-primary)" }}>{tvaAmount.toFixed(2)} €</span>

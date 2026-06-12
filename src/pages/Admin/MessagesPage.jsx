@@ -3,19 +3,29 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   AlertCircle,
   CheckCircle,
+  CheckCheck,
   ChevronLeft,
   ChevronRight,
+  Eye,
   Inbox,
   Loader2,
   Mail,
   Reply,
   Search,
+  Send,
   Trash2,
 } from "lucide-react";
 import { contactAPI } from "@/services/api";
 import { ADMIN_REFRESH_EVENT } from "../../layouts/admin/AdminHeader";
 
 const LIMIT = 10;
+
+const STATUS = {
+  NEW:     { label: "New",     cls: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  READ:    { label: "Read",    cls: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+  REPLIED: { label: "Replied", cls: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400" },
+  CLOSED:  { label: "Closed",  cls: "bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400" },
+};
 
 const fmtDate = (iso) => {
   if (!iso) return "";
@@ -24,14 +34,6 @@ const fmtDate = (iso) => {
       day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
   } catch { return ""; }
-};
-
-const buildMailto = (m) => {
-  const subject = encodeURIComponent(`Re: ${m.subject ?? ""}`);
-  const body = encodeURIComponent(
-    `\n\n----------\nEn réponse à votre message :\n"${m.message ?? ""}"`,
-  );
-  return `mailto:${m.email}?subject=${subject}&body=${body}`;
 };
 
 function Toast({ message, type, onDismiss }) {
@@ -56,7 +58,44 @@ export default function MessagesPage() {
   const [confirmId, setConfirmId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [replyOpenId, setReplyOpenId] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [replySending, setReplySending] = useState(false);
+  const [statusBusyId, setStatusBusyId] = useState(null);
   const searchTimeout = useRef(null);
+
+  const patchLocal = (id, patch) =>
+    setMessages((prev) => prev.map((m) => (m._id === id ? { ...m, ...patch } : m)));
+
+  const sendReply = async (id) => {
+    if (!replyText.trim() || replySending) return;
+    setReplySending(true);
+    try {
+      const res = await contactAPI.reply(id, replyText.trim());
+      if (res?.data?.success === false) {
+        setToast({ type: "error", message: res.data.message || "Échec de l'envoi." });
+      } else {
+        patchLocal(id, { status: "REPLIED", reply: replyText.trim() });
+        setReplyOpenId(null);
+        setReplyText("");
+        setToast({ type: "success", message: "Réponse envoyée." });
+      }
+    } catch (err) {
+      setToast({ type: "error", message: err.response?.data?.message || "Échec de l'envoi." });
+    } finally {
+      setReplySending(false);
+    }
+  };
+
+  const changeStatus = async (id, status) => {
+    setStatusBusyId(id);
+    try {
+      const res = await contactAPI.setStatus(id, status);
+      if (res?.data?.success !== false) patchLocal(id, { status });
+    } catch { /* silencieux */ } finally {
+      setStatusBusyId(null);
+    }
+  };
 
   const load = useCallback((opts = {}) => {
     setLoading(true);
@@ -174,9 +213,14 @@ export default function MessagesPage() {
                       >
                         {m.email}
                       </a>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
-                        {fmtDate(m.createdAt)}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${(STATUS[m.status] ?? STATUS.NEW).cls}`}>
+                          {(STATUS[m.status] ?? STATUS.NEW).label}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {fmtDate(m.createdAt)}
+                        </span>
+                      </div>
                     </div>
 
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mt-1">
@@ -186,14 +230,70 @@ export default function MessagesPage() {
                       {m.message}
                     </p>
 
+                    {m.reply && (
+                      <div className="mt-3 p-3 rounded-xl bg-green-50/60 dark:bg-green-500/5 border border-green-100 dark:border-green-500/15">
+                        <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 mb-1">
+                          Votre réponse · {fmtDate(m.repliedAt)}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">{m.reply}</p>
+                      </div>
+                    )}
+
+                    {/* Reply panel */}
+                    {replyOpenId === m._id && (
+                      <div className="mt-3">
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          rows={3}
+                          placeholder="Votre réponse au client…"
+                          className="w-full p-3 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-indigo-400"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => sendReply(m._id)}
+                            disabled={replySending || !replyText.trim()}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-60"
+                          >
+                            {replySending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Envoyer
+                          </button>
+                          <button
+                            onClick={() => { setReplyOpenId(null); setReplyText(""); }}
+                            className="h-8 px-3 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Actions */}
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
-                      <a
-                        href={buildMailto(m)}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex-wrap">
+                      <button
+                        onClick={() => { setReplyOpenId(replyOpenId === m._id ? null : m._id); setReplyText(""); }}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
                       >
                         <Reply size={13} /> Répondre
-                      </a>
+                      </button>
+
+                      {m.status !== "READ" && m.status !== "REPLIED" && (
+                        <button
+                          onClick={() => changeStatus(m._id, "READ")}
+                          disabled={statusBusyId === m._id}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                        >
+                          <Eye size={13} /> Marquer lu
+                        </button>
+                      )}
+                      {m.status !== "CLOSED" && (
+                        <button
+                          onClick={() => changeStatus(m._id, "CLOSED")}
+                          disabled={statusBusyId === m._id}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                        >
+                          <CheckCheck size={13} /> Clore
+                        </button>
+                      )}
 
                       {confirmId === m._id ? (
                         <span className="inline-flex items-center gap-1.5">
