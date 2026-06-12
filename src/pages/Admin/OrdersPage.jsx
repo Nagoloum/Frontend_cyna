@@ -1,31 +1,35 @@
 /* eslint-disable no-unused-vars */
 // src/pages/admin/OrdersPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Search, AlertCircle, ShoppingCart,
   ChevronLeft, ChevronRight, Eye, CheckCircle,
-  XCircle, Clock, X, Package,
+  XCircle, Clock, X, Package, Loader2,
   User, Calendar, Hash, CreditCard,
 } from 'lucide-react';
 import { commandesAPI } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
+import AdminSelect from '../../components/Admin/Shared/AdminSelect';
 
 // Backend statuses: PENDING, PAID, CANCELED
+// Labels are resolved via i18n at render time (see getStatusLabel helper below).
 const STATUS_CONFIG = {
-  PENDING:  { label: 'Pending',   color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', icon: Clock       },
-  PAID:     { label: 'Paid',      color: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400', icon: CheckCircle },
-  CANCELED: { label: 'Cancelled', color: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400',         icon: XCircle     },
+  PENDING:  { key: 'admin.orders.status_pending',  color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', icon: Clock       },
+  PAID:     { key: 'admin.orders.status_paid',     color: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400', icon: CheckCircle },
+  CANCELED: { key: 'admin.orders.status_canceled', color: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400',         icon: XCircle     },
 };
 
 const STATUS_OPTIONS = ['PENDING', 'PAID', 'CANCELED'];
 
 function StatusBadge({ status }) {
+  const { t } = useTranslation();
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
   const Icon = cfg.icon;
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
       <Icon size={11} />
-      {cfg.label}
+      {t(cfg.key)}
     </span>
   );
 }
@@ -48,6 +52,7 @@ const customerName = (user) => {
 
 // ── Order Detail Modal (with admin status change) ─────────────────────────────
 function OrderDetailModal({ order, onClose, onUpdated }) {
+  const { t } = useTranslation();
   const items = Array.isArray(order.abonnements) ? order.abonnements : [];
   const [statut, setStatut] = useState(order.statut ?? 'PENDING');
   const [saving, setSaving] = useState(false);
@@ -64,7 +69,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
       onUpdated?.();
       onClose();
     } catch (err) {
-      setSaveError(err.response?.data?.message ?? 'Failed to update status.');
+      setSaveError(err.response?.data?.message ?? t('admin.orders.error_status'));
     } finally {
       setSaving(false);
     }
@@ -76,7 +81,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Order Details</h2>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('admin.orders.detail_title')}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">#{order.reference ?? '—'}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -87,10 +92,10 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: User,       label: 'Customer',  value: customerName(order.user) },
-              { icon: Calendar,   label: 'Date',      value: formatDate(order.createdAt) },
-              { icon: CreditCard, label: 'Total',     value: formatEur(order.totalPrice) },
-              { icon: Hash,       label: 'Reference', value: order.reference ?? '—' },
+              { icon: User,       label: t('admin.orders.label_customer'),  value: customerName(order.user) },
+              { icon: Calendar,   label: t('admin.orders.label_date'),      value: formatDate(order.createdAt) },
+              { icon: CreditCard, label: t('admin.orders.label_total'),     value: formatEur(order.totalPrice) },
+              { icon: Hash,       label: t('admin.orders.label_reference'), value: order.reference ?? '—' },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-start gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                 <Icon size={14} className="text-indigo-500 mt-0.5 flex-shrink-0" />
@@ -103,24 +108,29 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Status</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              {t('admin.orders.label_status')}
+            </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <select
-                value={statut}
-                onChange={(e) => setStatut(e.target.value)}
-                disabled={saving}
-                className="h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:opacity-60"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{STATUS_CONFIG[s]?.label ?? s}</option>
-                ))}
-              </select>
+              <div className="w-44">
+                <AdminSelect
+                  value={statut}
+                  onChange={(e) => setStatut(e.target.value)}
+                  disabled={saving}
+                >
+                  <option value="">—</option>
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{t(STATUS_CONFIG[s]?.key ?? 'admin.orders.status_pending')}</option>
+                  ))}
+                </AdminSelect>
+              </div>
               <button
                 onClick={handleSaveStatus}
                 disabled={!dirty || saving}
-                className="h-9 px-4 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-9 px-4 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
               >
-                {saving ? 'Saving…' : 'Save'}
+                {saving && <Loader2 size={13} className="animate-spin" />}
+                {saving ? t('admin.orders.saving_status') : t('admin.orders.save_status')}
               </button>
             </div>
             {saveError && <p className="text-xs text-red-500 mt-2">{saveError}</p>}
@@ -128,7 +138,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
 
           {items.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Subscriptions</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('admin.orders.label_subscriptions')}</p>
               <div className="space-y-2">
                 {items.map((ab, i) => (
                   <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/50">
@@ -140,7 +150,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
                         {ab.product?.name ?? `Item ${i + 1}`}
                       </p>
                       <p className="text-xs text-gray-400">
-                        Qty: {ab.quantity ?? 1} · {ab.periode === 'ANNEE' ? 'Yearly' : 'Monthly'}
+                        Qty: {ab.quantity ?? 1} · {ab.periode === 'ANNEE' ? t('admin.orders.qty_period_yearly') : t('admin.orders.qty_period_monthly')}
                       </p>
                     </div>
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -159,6 +169,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const [orders, setOrders]               = useState([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
@@ -183,7 +194,7 @@ export default function OrdersPage() {
       setOrders(Array.isArray(list) ? list : []);
       setPagination((prev) => ({ ...prev, page: params.page, total }));
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Failed to load orders.');
+      setError(err.response?.data?.message ?? t('admin.common.error'));
     } finally {
       setLoading(false);
     }
@@ -210,9 +221,11 @@ export default function OrdersPage() {
     <div className="p-6 space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.orders.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          {pagination.total > 0 ? `${pagination.total} orders total` : 'View customer orders'}
+          {pagination.total > 0
+            ? t('admin.orders.subtitle_count', { count: pagination.total })
+            : t('admin.orders.subtitle_empty')}
         </p>
       </div>
 
@@ -220,7 +233,7 @@ export default function OrdersPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
           <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
           <span>{error}</span>
-          <button onClick={() => fetchOrders()} className="ml-auto text-xs underline">Retry</button>
+          <button onClick={() => fetchOrders()} className="ml-auto text-xs underline">{t('admin.common.retry')}</button>
         </div>
       )}
 
@@ -233,7 +246,7 @@ export default function OrdersPage() {
               type="text"
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search orders…"
+              placeholder={t('admin.orders.search_placeholder')}
               className="w-full h-9 pl-9 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
             />
           </div>
@@ -248,7 +261,7 @@ export default function OrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700/60">
-                {['Reference', 'Customer', 'Date', 'Items', 'Total', 'Status', ''].map((col) => (
+                {[t('admin.orders.col_reference'), t('admin.orders.col_customer'), t('admin.orders.col_date'), t('admin.orders.col_items'), t('admin.orders.col_total'), t('admin.orders.col_status'), ''].map((col) => (
                   <th key={col} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {col}
                   </th>
@@ -271,8 +284,8 @@ export default function OrdersPage() {
                   <td colSpan={7} className="px-4 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-gray-500">
                       <ShoppingCart size={36} className="opacity-20" />
-                      <p className="text-sm font-medium">No orders found</p>
-                      {search && <p className="text-xs">Try a different search term</p>}
+                      <p className="text-sm font-medium">{t('admin.orders.no_orders')}</p>
+                      {search && <p className="text-xs">{t('admin.orders.empty_search')}</p>}
                     </div>
                   </td>
                 </tr>

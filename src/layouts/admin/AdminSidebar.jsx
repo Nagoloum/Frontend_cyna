@@ -1,5 +1,6 @@
 // src/layouts/admin/AdminSidebar.jsx
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Package,
@@ -38,17 +39,18 @@ const CynaLogo = ({ className = '' }) => (
 );
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Products',  to: '/admin/products',  icon: Package          },
-  { label: 'Orders',    to: '/admin/orders',    icon: ShoppingCart     },
-  { label: 'Promotions', to: '/admin/promotions', icon: Tag           },
-  { label: 'Users',     to: '/admin/users',     icon: Users            },
-  { label: 'Messages',  to: '/admin/messages',  icon: Mail             },
-  { label: 'Audit',     to: '/admin/audit',     icon: ScrollText       },
-  { label: 'Settings',  to: '/admin/settings',  icon: Settings         },
+  { tKey: 'admin.nav.dashboard',  to: '/admin/dashboard', icon: LayoutDashboard },
+  { tKey: 'admin.nav.catalog',    to: '/admin/products',  icon: Package          },
+  { tKey: 'admin.nav.orders',     to: '/admin/orders',    icon: ShoppingCart     },
+  { tKey: 'admin.nav.promotions', to: '/admin/promotions', icon: Tag             },
+  { tKey: 'admin.nav.users',      to: '/admin/users',     icon: Users            },
+  { tKey: 'admin.nav.messages',   to: '/admin/messages',  icon: Mail             },
+  { tKey: 'admin.nav.audit',      to: '/admin/audit',     icon: ScrollText       },
+  { tKey: 'admin.nav.settings',   to: '/admin/settings',  icon: Settings         },
 ];
 
 export default function AdminSidebar() {
+  const { t }      = useTranslation();
   const dispatch   = useAppDispatch();
   const collapsed  = useAppSelector((s) => s.ui.sidebarCollapsed);
   const navigate   = useNavigate();
@@ -88,7 +90,7 @@ export default function AdminSidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
         {!collapsed && (
           <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-3 mb-3">
-            Navigation
+            {t('admin.nav.navigation')}
           </p>
         )}
 
@@ -108,7 +110,7 @@ export default function AdminSidebar() {
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? t(item.tKey) : undefined}
             >
               {({ isActive }) => (
                 <>
@@ -120,7 +122,7 @@ export default function AdminSidebar() {
                         : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
                     }`}
                   />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && <span>{t(item.tKey)}</span>}
                   {isActive && !collapsed && (
                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
                   )}
@@ -137,7 +139,7 @@ export default function AdminSidebar() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 dark:bg-green-500/10">
             <Shield size={14} className="text-green-500 flex-shrink-0" />
             <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-              2FA Enabled
+              {t('admin.nav.two_fa_enabled')}
             </span>
           </div>
         )}
@@ -152,10 +154,10 @@ export default function AdminSidebar() {
             transition-all duration-200 group
             ${collapsed ? 'justify-center' : ''}
           `}
-          title={collapsed ? 'Sign Out' : undefined}
+          title={collapsed ? t('admin.nav.sign_out') : undefined}
         >
           <LogOut size={18} className="flex-shrink-0 transition-colors duration-200" />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span>{t('admin.nav.sign_out')}</span>}
         </button>
       </div>
 
