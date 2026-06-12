@@ -1,11 +1,14 @@
-import { buildImageUrl } from "@/services/api";
+import { buildImageUrl, couponsAPI } from "@/services/api";
 import {
   AlertCircle, ArrowRight, LogIn, Minus, Package,
-  Plus, ShoppingBag, Trash2,
+  Plus, ShoppingBag, Trash2, Tag, X, Loader2,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateCartItem, removeCartItem } from "@/store/slices/cartSlice";
+import { computeTotals, TVA_PERCENT } from "@/lib/pricing";
+import { getAppliedCoupon, setAppliedCoupon } from "@/lib/coupon";
 import { useTranslation } from "react-i18next";
 
 const getUser = () => {
@@ -178,6 +181,43 @@ export default function CartPage() {
     const p = i.billingPeriod === "monthly" ? i.priceMonth : i.priceYear;
     return sum + (Number(p) || 0) * (i.qty || 1);
   }, 0);
+  // ── Code promo ────────────────────────────────────────────────────────────
+  const [coupon, setCoupon] = useState(() => getAppliedCoupon());
+  const [couponInput, setCouponInput] = useState("");
+  const [couponMsg, setCouponMsg] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code || applyingCoupon) return;
+    setApplyingCoupon(true);
+    setCouponMsg("");
+    try {
+      const res = await couponsAPI.validate(code, total);
+      const body = res.data;
+      if (body?.success && body?.data?.valid) {
+        const applied = { code: body.data.code, discount: Number(body.data.discount) || 0 };
+        setCoupon(applied);
+        setAppliedCoupon(applied);
+        setCouponInput("");
+      } else {
+        setCouponMsg(body?.message || t("cart.coupon_invalid"));
+      }
+    } catch (err) {
+      setCouponMsg(err.response?.data?.message || t("cart.coupon_invalid"));
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCoupon(null);
+    setAppliedCoupon(null);
+    setCouponMsg("");
+  };
+
+  // Decomposition TVA + remise pour l'affichage (le serveur recalcule a la commande).
+  const { tva, ttc, discount } = computeTotals(total, coupon?.discount || 0);
   const hasUnavailable = cart.some(i => i.stock === 0);
 
   return (
@@ -282,15 +322,56 @@ export default function CartPage() {
                   })}
                 </div>
 
+                {/* Code promo */}
+                <div className="mb-4">
+                  {coupon ? (
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl text-xs"
+                      style={{ background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.25)" }}>
+                      <span className="inline-flex items-center gap-1.5 font-medium" style={{ color: "var(--text-primary)" }}>
+                        <Tag size={13} /> {coupon.code}
+                      </span>
+                      <button type="button" onClick={removeCoupon} aria-label={t("cart.coupon_remove")}
+                        className="inline-flex items-center gap-1 text-[var(--text-muted)] hover:text-[var(--danger)]">
+                        <X size={13} /> {t("cart.coupon_remove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
+                          placeholder={t("cart.coupon_placeholder")}
+                          className="flex-1 h-10 px-3 rounded-xl text-sm outline-none"
+                          style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                        />
+                        <button type="button" onClick={applyCoupon} disabled={applyingCoupon || !couponInput.trim()}
+                          className="btn-ghost px-4 text-sm disabled:opacity-50">
+                          {applyingCoupon ? <Loader2 size={14} className="animate-spin" /> : t("cart.coupon_apply")}
+                        </button>
+                      </div>
+                      {couponMsg && <p className="text-xs mt-1.5" style={{ color: "var(--danger)" }}>{couponMsg}</p>}
+                    </div>
+                  )}
+                </div>
+
                 {/* Totals */}
                 <div className="space-y-2 mb-5">
                   <div className="flex justify-between text-xs">
                     <span style={{ color: "var(--text-muted)" }}>{t("cart.subtotal")}</span>
                     <span style={{ color: "var(--text-primary)" }}>{fmtEur(total)}</span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span style={{ color: "var(--text-muted)" }}>{t("cart.discount")}</span>
+                      <span style={{ color: "#16a34a" }}>- {fmtEur(discount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-xs">
-                    <span style={{ color: "var(--text-muted)" }}>{t("cart.vat")}</span>
-                    <span style={{ color: "var(--text-muted)" }}>{t("cart.vat_calc")}</span>
+                    <span style={{ color: "var(--text-muted)" }}>{`${t("cart.vat")} (${TVA_PERCENT}%)`}</span>
+                    <span style={{ color: "var(--text-primary)" }}>{fmtEur(tva)}</span>
                   </div>
                 </div>
 
@@ -302,7 +383,7 @@ export default function CartPage() {
                     {t("cart.total")}
                   </span>
                   <span className="font-[Kumbh Sans] font-800 text-2xl" style={{ color: "var(--accent)" }}>
-                    {fmtEur(total)}
+                    {fmtEur(ttc)}
                   </span>
                 </div>
 
@@ -332,14 +413,11 @@ export default function CartPage() {
                 )}
 
                 <button
-                  onClick={() => user
-                    ? navigate("/checkout")
-                    : navigate(`/auth?next=${encodeURIComponent("/checkout")}`)
-                  }
+                  onClick={() => navigate("/checkout")}
                   disabled={hasUnavailable}
                   className="w-full btn-primary py-3 gap-2 text-sm justify-center disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  {user ? t("cart.proceed_checkout") : t("cart.sign_in_to_order")}
+                  {t("cart.proceed_checkout")}
                   <ArrowRight size={16} />
                 </button>
 

@@ -81,12 +81,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-logout on 401 (only when a token was actually set prevents redirect loops
-// on the public login attempt itself).
+// Réponses d'erreur :
+// - Le backend renvoie désormais de vrais codes HTTP 4xx pour les erreurs
+//   métier, marquées par l'en-tête `X-App-Error`. Ces réponses portent notre
+//   enveloppe { success:false, message } : on les "re-résout" pour que le code
+//   appelant continue de lire `res.data.success` exactement comme avant (il
+//   recevait un 200 auparavant). Comportement frontend strictement inchangé.
+// - Un 401 SANS ce marqueur = session expirée / non authentifié (guard) →
+//   déconnexion automatique (sauf sur les endpoints d'auth publics).
+// - Les erreurs techniques (5xx, réseau) continuent d'être rejetées.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && localStorage.getItem('token')) {
+    const status = error.response?.status;
+    const isAppError = error.response?.headers?.['x-app-error'] === '1';
+
+    if (
+      status === 401 &&
+      !isAppError &&
+      localStorage.getItem('token') &&
+      !String(error.config?.url ?? '').includes('/auth/')
+    ) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('twoFAVerified');
@@ -99,7 +114,14 @@ api.interceptors.response.use(
       );
       // Defer redirect slightly so the toast renders before navigation.
       setTimeout(() => { window.location.href = '/auth'; }, 600);
+      return Promise.reject(error);
     }
+
+    // Erreur métier de l'API → on la présente comme une réponse résolue.
+    if (isAppError && error.response) {
+      return Promise.resolve(error.response);
+    }
+
     return Promise.reject(error);
   }
 );
@@ -280,6 +302,9 @@ export const usersAPI = {
 
   /** DELETE /users/:id */
   delete: (id) => api.delete(`/users/${id}`),
+
+  /** PATCH /users/:id/status — admin suspend/reactivate. Body: { isActive } */
+  setActive: (id, isActive) => api.patch(`/users/${id}/status`, { isActive }),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -473,11 +498,28 @@ export const commandesAPI = {
    */
   create: (data) => api.post('/commandes/create', data),
 
+  /**
+   * Guest checkout (no account needed upfront). Body: {
+   *   email, firstName, lastName, adresse, complementAdresse?, city, region,
+   *   country, codePostal, phone, stripePaymentMethodId, abonnements:[...]
+   * }. Returns `data.status` = 'PAID' | 'REQUIRES_ACTION' (clientSecret) | 'PENDING'.
+   */
+  guestCheckout: (data) => api.post('/commandes/guest-checkout', data),
+
   /** Current user's orders */
   getByUser: (params = {}) => api.get('/commandes/by-user', { params }),
 
   /** Single order by reference (owner or admin) */
   getByReference: (reference) => api.get(`/commandes/${reference}`),
+
+  /** Download the order's PDF invoice (generated on the fly). Returns a Blob. */
+  downloadInvoice: async (reference) => {
+    const res = await api.get(
+      `/commandes/${encodeURIComponent(reference)}/facture`,
+      { responseType: 'blob' }
+    );
+    return res.data;
+  },
 
   /** Confirm a Stripe payment (after 3-D Secure) — pass the PaymentIntent id. */
   paymentSuccess: (orderId, sessionId, paymentIntentId) =>
@@ -487,6 +529,10 @@ export const commandesAPI = {
 
   /** Admin only paginated list of all orders */
   getAll: (params = {}) => api.get('/commandes', { params }),
+
+  /** Admin only — change an order's status. statut: 'PENDING'|'PAID'|'CANCELED' */
+  updateStatut: (id, statut) =>
+    api.patch(`/commandes/${id}/statut`, { statut }),
 
   // ── Subscriptions (abonnements) ──
   /** Current user's subscriptions (flattened across orders, raw ISO dates). */
@@ -517,8 +563,8 @@ export const contactAPI = {
   /** Body: { email, subject, message } */
   create: (data) => api.post('/contact', data),
 
-  /** Admin — list all contact messages */
-  getAll: () => api.get('/contact'),
+  /** Admin — list contact messages (paginated when page/limit are passed) */
+  getAll: (params = {}) => api.get('/contact', { params }),
 
   /** Admin — delete a message */
   remove: (id) => api.delete(`/contact/${id}`),
@@ -588,6 +634,33 @@ export const dashboardAPI = {
       commandes:  extract(oR),
     };
   },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT   GET /audit-logs (admin, paginated, read-only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const auditAPI = {
+  /** Admin — paginated audit log. params: { page, limit, search } */
+  getAll: (params = {}) => api.get('/audit-logs', { params }),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COUPONS   POST /coupons/validate (public) · admin CRUD on /coupons
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const couponsAPI = {
+  /** Validate a code against an HT amount. Body: { code, amount }. */
+  validate: (code, amount) => api.post('/coupons/validate', { code, amount }),
+
+  /** Admin — list coupons (paginated when page/limit passed). */
+  getAll: (params = {}) => api.get('/coupons', { params }),
+  /** Admin — create a coupon. */
+  create: (data) => api.post('/coupons', data),
+  /** Admin — update a coupon. */
+  update: (id, data) => api.patch(`/coupons/${id}`, data),
+  /** Admin — delete a coupon. */
+  remove: (id) => api.delete(`/coupons/${id}`),
 };
 
 export default api;

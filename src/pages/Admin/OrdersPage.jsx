@@ -10,12 +10,14 @@ import {
 import { commandesAPI } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 
-// Backend statuses: PENDING, PAID, CANCEL
+// Backend statuses: PENDING, PAID, CANCELED
 const STATUS_CONFIG = {
-  PENDING: { label: 'Pending',   color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', icon: Clock       },
-  PAID:    { label: 'Paid',      color: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400', icon: CheckCircle },
-  CANCEL:  { label: 'Cancelled', color: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400',         icon: XCircle     },
+  PENDING:  { label: 'Pending',   color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', icon: Clock       },
+  PAID:     { label: 'Paid',      color: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400', icon: CheckCircle },
+  CANCELED: { label: 'Cancelled', color: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400',         icon: XCircle     },
 };
+
+const STATUS_OPTIONS = ['PENDING', 'PAID', 'CANCELED'];
 
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
@@ -44,9 +46,29 @@ const customerName = (user) => {
   return full || user.email || '—';
 };
 
-// ── Order Detail Modal (read-only) ────────────────────────────────────────────
-function OrderDetailModal({ order, onClose }) {
+// ── Order Detail Modal (with admin status change) ─────────────────────────────
+function OrderDetailModal({ order, onClose, onUpdated }) {
   const items = Array.isArray(order.abonnements) ? order.abonnements : [];
+  const [statut, setStatut] = useState(order.statut ?? 'PENDING');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  const dirty = statut !== order.statut;
+
+  const handleSaveStatus = async () => {
+    if (!dirty || saving) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await commandesAPI.updateStatut(order._id, statut);
+      onUpdated?.();
+      onClose();
+    } catch (err) {
+      setSaveError(err.response?.data?.message ?? 'Failed to update status.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -82,7 +104,26 @@ function OrderDetailModal({ order, onClose }) {
 
           <div>
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Status</p>
-            <StatusBadge status={order.statut} />
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={statut}
+                onChange={(e) => setStatut(e.target.value)}
+                disabled={saving}
+                className="h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:opacity-60"
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{STATUS_CONFIG[s]?.label ?? s}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleSaveStatus}
+                disabled={!dirty || saving}
+                className="h-9 px-4 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+            {saveError && <p className="text-xs text-red-500 mt-2">{saveError}</p>}
           </div>
 
           {items.length > 0 && (
@@ -305,6 +346,7 @@ export default function OrdersPage() {
         <OrderDetailModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onUpdated={() => fetchOrders()}
         />
       )}
     </div>

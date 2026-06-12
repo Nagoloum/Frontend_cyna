@@ -6,6 +6,8 @@ import {
   ShoppingCart,
   Settings,
   Mail,
+  Users,
+  ScrollText,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -38,7 +40,9 @@ const NAV_ITEMS = [
   { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Products',  to: '/admin/products',  icon: Package          },
   { label: 'Orders',    to: '/admin/orders',    icon: ShoppingCart     },
+  { label: 'Users',     to: '/admin/users',     icon: Users            },
   { label: 'Messages',  to: '/admin/messages',  icon: Mail             },
+  { label: 'Audit',     to: '/admin/audit',     icon: ScrollText       },
   { label: 'Settings',  to: '/admin/settings',  icon: Settings         },
 ];
 

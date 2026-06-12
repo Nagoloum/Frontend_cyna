@@ -11,6 +11,8 @@ import { stripePromise } from "@/lib/stripe";
 import StripeCardFields from "@/components/ui/StripeCardFields";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { clearCart } from "@/store/slices/cartSlice";
+import { computeTotals, TVA_PERCENT } from "@/lib/pricing";
+import { getAppliedCoupon, clearAppliedCoupon } from "@/lib/coupon";
 
 const billingPeriodToPeriode = (bp) =>
   String(bp).toLowerCase() === "yearly" ? "ANNEE" : "MOIS";
@@ -35,12 +37,20 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
 export default function CheckoutPage() {
   return (
     <Elements stripe={stripePromise}>
-      <CheckoutForm />
+      <CheckoutRouter />
     </Elements>
   );
 }
 
-function CheckoutForm() {
+// Un invité (non connecté) suit le flux d'achat invité ; un utilisateur
+// connecté garde le flux complet (adresses/cartes enregistrées).
+function CheckoutRouter() {
+  const isAuthed =
+    typeof window !== "undefined" && !!localStorage.getItem("token");
+  return isAuthed ? <AuthedCheckoutForm /> : <GuestCheckoutForm />;
+}
+
+function AuthedCheckoutForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -80,6 +90,9 @@ function CheckoutForm() {
     const price = i.billingPeriod === "monthly" ? i.priceMonth : i.priceYear;
     return s + (Number(price) || 0) * (i.qty || 1);
   }, 0);
+  // TTC affiche = HT + TVA (le serveur fait foi sur le montant debite).
+  const appliedCoupon = getAppliedCoupon();
+  const { tva: tvaAmount, ttc: totalTTC, discount: discountAmount } = computeTotals(total, appliedCoupon?.discount || 0);
 
   // ── Load saved addresses + cards ──────────────────────────────────────────
   useEffect(() => {
@@ -209,6 +222,7 @@ function CheckoutForm() {
         cbId: selectedCardId,
         adresseFacturationId,
         abonnements,
+        couponCode: appliedCoupon?.code,
       });
       const body = orderRes.data;
       if (!body?.success) {
@@ -233,6 +247,7 @@ function CheckoutForm() {
 
       // 4) Succès → vider le panier (Redux + localStorage via middleware) et confirmer.
       dispatch(clearCart());
+      clearAppliedCoupon();
       navigate("/checkout/confirmation");
     } catch (err) {
       // Jamais de message technique brut (réseau, 5xx) à l'utilisateur.
@@ -497,7 +512,7 @@ function CheckoutForm() {
                     className="btn-primary py-3 gap-2 flex-1 justify-center text-base disabled:opacity-50"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Shield size={18} />}
-                    {submitting ? t("checkout.processing_payment") : t("checkout.pay_btn", { total: total.toFixed(2) })}
+                    {submitting ? t("checkout.processing_payment") : t("checkout.pay_btn", { total: totalTTC.toFixed(2) })}
                   </button>
                 </div>
               </div>
@@ -527,14 +542,229 @@ function CheckoutForm() {
                 );
               })}
             </div>
-            <div className="flex justify-between items-center">
+            <div className="space-y-1.5 mb-3">
+              <div className="flex justify-between text-xs">
+                <span style={{ color: "var(--text-muted)" }}>{t("checkout.subtotal")}</span>
+                <span style={{ color: "var(--text-primary)" }}>{total.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: "var(--text-muted)" }}>{`${t("checkout.vat")} (${TVA_PERCENT}%)`}</span>
+                <span style={{ color: "var(--text-primary)" }}>{tvaAmount.toFixed(2)} €</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>{t("checkout.total")}</span>
               <span className="font-[Kumbh Sans] font-800 text-xl" style={{ color: "var(--accent)" }}>
-                {total.toFixed(2)} €
+                {totalTTC.toFixed(2)} €
               </span>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Flux d'achat invité (sans compte) ───────────────────────────────────────
+function GuestCheckoutForm() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const stripe = useStripe();
+  const elements = useElements();
+  const cart = useAppSelector((s) => s.cart.items);
+
+  const [form, setForm] = useState({
+    email: "", firstName: "", lastName: "",
+    adresse: "", complementAdresse: "", city: "", region: "",
+    country: "France", codePostal: "", phone: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const total = cart.reduce((s, i) => {
+    const price = i.billingPeriod === "monthly" ? i.priceMonth : i.priceYear;
+    return s + (Number(price) || 0) * (i.qty || 1);
+  }, 0);
+  const appliedCoupon = getAppliedCoupon();
+  const { tva: tvaAmount, ttc: totalTTC, discount: discountAmount } = computeTotals(total, appliedCoupon?.discount || 0);
+
+  const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const requiredFilled = [
+    "email", "firstName", "lastName", "adresse", "city", "region", "country", "codePostal", "phone",
+  ].every((k) => String(form[k]).trim());
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+    if (!cart.length) { setError(t("checkout.empty_cart")); return; }
+    if (!requiredFilled) { setError(t("checkout.fill_required")); return; }
+    if (!stripe || !elements) { setError(t("account.stripe_unavailable")); return; }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      // 1) Création d'un PaymentMethod Stripe (aucune donnée carte ne transite par nous).
+      const { error: pmErr, paymentMethod } = await stripe.createPaymentMethod({
+        type: "card",
+        card: elements.getElement(CardNumberElement),
+        billing_details: {
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email,
+        },
+      });
+      if (pmErr) throw new Error(pmErr.message || t("checkout.error_save_card"));
+
+      const abonnements = cart.map((item) => ({
+        productId: item._id,
+        quantity: Number(item.qty || 1),
+        periode: billingPeriodToPeriode(item.billingPeriod),
+      }));
+      if (new Set(abonnements.map((a) => a.periode)).size > 1) {
+        throw new Error(t("checkout.mixed_billing"));
+      }
+
+      // 2) Achat invité : le backend crée le compte + la commande et débite la carte.
+      const res = await commandesAPI.guestCheckout({
+        ...form,
+        stripePaymentMethodId: paymentMethod.id,
+        abonnements,
+        couponCode: appliedCoupon?.code,
+      });
+      const body = res.data;
+      if (!body?.success) throw new Error(body?.message || t("checkout.error_create_order"));
+      const payload = body.data ?? {};
+
+      // 3) 3-D Secure : on confirme côté client ; le webhook Stripe finalise la
+      //    commande côté serveur (l'invité n'est pas encore authentifié).
+      if (payload.status === "REQUIRES_ACTION" && payload.clientSecret) {
+        const { error: scaErr, paymentIntent } = await stripe.confirmCardPayment(payload.clientSecret);
+        if (scaErr) throw new Error(scaErr.message || t("checkout.error_payment_failed"));
+        if (paymentIntent?.status !== "succeeded") throw new Error(t("checkout.error_payment_failed"));
+      } else if (payload.status !== "PAID") {
+        throw new Error(body?.message || t("checkout.error_payment_failed"));
+      }
+
+      dispatch(clearCart());
+      clearAppliedCoupon();
+      navigate("/checkout/confirmation");
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("checkout.error_order_generic")));
+      setSubmitting(false);
+    }
+  };
+
+  if (!cart.length) {
+    return (
+      <div className="cyna-container py-16 text-center" style={{ minHeight: "60vh" }}>
+        <p className="mb-4" style={{ color: "var(--text-secondary)" }}>{t("checkout.empty_cart")}</p>
+        <Link to="/products" className="btn-primary inline-flex gap-2">{t("orderConfirmation.continue")}</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-enter" style={{ background: "var(--bg-base)", minHeight: "70vh" }}>
+      <div className="cyna-container py-10">
+        <h1 className="section-title mb-1">{t("checkout.guest_title")}</h1>
+        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+          {t("checkout.guest_subtitle")}{" "}
+          <Link to="/auth?next=/checkout" className="underline" style={{ color: "var(--accent)" }}>
+            {t("checkout.guest_login_link")}
+          </Link>
+        </p>
+
+        <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Compte */}
+            <div className="cyna-card p-5">
+              <h3 className="font-[Kumbh Sans] font-700 mb-4 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <Lock size={16} /> {t("checkout.guest_account")}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <InputField label={t("checkout.field_email")} type="email" value={form.email} onChange={setField("email")} required half />
+                <InputField label={t("checkout.field_phone")} value={form.phone} onChange={setField("phone")} required half />
+              </div>
+            </div>
+
+            {/* Adresse de facturation */}
+            <div className="cyna-card p-5">
+              <h3 className="font-[Kumbh Sans] font-700 mb-4 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <MapPin size={16} /> {t("checkout.billing_address")}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <InputField label={t("checkout.field_first_name")} value={form.firstName} onChange={setField("firstName")} required half />
+                <InputField label={t("checkout.field_last_name")} value={form.lastName} onChange={setField("lastName")} required half />
+                <InputField label={t("checkout.field_address")} value={form.adresse} onChange={setField("adresse")} required />
+                <InputField label={t("checkout.field_complement")} value={form.complementAdresse} onChange={setField("complementAdresse")} />
+                <InputField label={t("checkout.field_city")} value={form.city} onChange={setField("city")} required half />
+                <InputField label={t("checkout.field_postal_code")} value={form.codePostal} onChange={setField("codePostal")} required half />
+                <InputField label={t("checkout.field_region")} value={form.region} onChange={setField("region")} required half />
+                <InputField label={t("checkout.field_country")} value={form.country} onChange={setField("country")} required half />
+              </div>
+            </div>
+
+            {/* Paiement */}
+            <div className="cyna-card p-5">
+              <h3 className="font-[Kumbh Sans] font-700 mb-4 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <Shield size={16} /> {t("checkout.payment_header")}
+              </h3>
+              <div className="space-y-3">
+                <StripeCardFields />
+              </div>
+              <p className="flex items-center gap-1.5 text-xs mt-3" style={{ color: "var(--text-muted)" }}>
+                <Lock size={12} /> {t("checkout.ssl_secured")}
+              </p>
+            </div>
+          </div>
+
+          {/* Récapitulatif */}
+          <div className="cyna-card p-5 h-fit lg:sticky lg:top-24">
+            <h3 className="font-[Kumbh Sans] font-700 mb-4" style={{ color: "var(--text-primary)" }}>
+              {t("checkout.your_order")}
+            </h3>
+            <div className="space-y-3 mb-4 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
+              {cart.map((item, i) => {
+                const p = item.billingPeriod === "monthly" ? item.priceMonth : item.priceYear;
+                return (
+                  <div key={i} className="flex justify-between gap-2 text-xs">
+                    <span className="line-clamp-2 flex-1" style={{ color: "var(--text-secondary)" }}>
+                      {item.name} ×{item.qty || 1}
+                    </span>
+                    <span style={{ color: "var(--text-primary)" }}>{(Number(p) * (item.qty || 1)).toFixed(2)} €</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="space-y-1.5 mb-3">
+              <div className="flex justify-between text-xs">
+                <span style={{ color: "var(--text-muted)" }}>{t("checkout.subtotal")}</span>
+                <span style={{ color: "var(--text-primary)" }}>{total.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: "var(--text-muted)" }}>{`${t("checkout.vat")} (${TVA_PERCENT}%)`}</span>
+                <span style={{ color: "var(--text-primary)" }}>{tvaAmount.toFixed(2)} €</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-3 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+              <span className="font-[Kumbh Sans] font-700 text-sm" style={{ color: "var(--text-primary)" }}>{t("checkout.total")}</span>
+              <span className="font-[Kumbh Sans] font-800 text-xl" style={{ color: "var(--accent)" }}>{totalTTC.toFixed(2)} €</span>
+            </div>
+
+            {error && (
+              <p className="text-red-500 text-xs mb-3 flex items-center gap-1.5">
+                <AlertCircle size={14} /> {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={submitting}
+              className="btn-primary w-full justify-center gap-2 disabled:opacity-60">
+              {submitting && <Loader2 size={16} className="animate-spin" />}
+              {submitting ? t("checkout.processing_payment") : t("checkout.pay_btn", { total: totalTTC.toFixed(2) })}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

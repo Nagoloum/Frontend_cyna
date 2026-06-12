@@ -9,6 +9,8 @@ import RouteLayout from "./layouts/RouteLayout";
 import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
 import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
 import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
+import AboutComponent from "./components/Policy/AboutComponent";
+import LegalNoticeComponent from "./components/Policy/LegalNoticeComponent";
 import AuthPage from "./pages/Auth/Auth";
 import EmailConfirmation from "./pages/Auth/EmailConfirmation";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
@@ -32,6 +34,8 @@ import SearchPage from "./pages/User/SearchPage";
 import Dashboard from "./pages/Admin/Dashboard";
 import MyProfile from "./pages/Admin/MyProfilePage";
 import OrdersPage from "./pages/Admin/OrdersPage";
+import UsersPage from "./pages/Admin/UsersPage";
+import AuditPage from "./pages/Admin/AuditPage";
 import AdminProductsPage from "./pages/Admin/ProductsPage";
 import Settings from "./pages/Admin/SettingsPage";
 import Messages from "./pages/Admin/MessagesPage";
@@ -87,17 +91,12 @@ function App() {
           <Route path="/search" element={<PublicPage><SearchPage /></PublicPage>} />
           <Route path="/contact" element={<PublicPage><ContactPage /></PublicPage>} />
 
+          {/* ── Checkout : accessible aux invités (achat invité) comme aux
+               utilisateurs connectés. Le composant gère les deux flux. ── */}
+          <Route path="/checkout" element={<PublicPage><CheckoutPage /></PublicPage>} />
+          <Route path="/checkout/confirmation" element={<PublicPage><OrderConfirmationPage /></PublicPage>} />
+
           {/* ── Routes privées utilisateur ── */}
-          <Route path="/checkout" element={
-            <RouteLayout requireAuth redirectTo="/auth">
-              <PublicPage><CheckoutPage /></PublicPage>
-            </RouteLayout>
-          } />
-          <Route path="/checkout/confirmation" element={
-            <RouteLayout requireAuth redirectTo="/auth">
-              <PublicPage><OrderConfirmationPage /></PublicPage>
-            </RouteLayout>
-          } />
           <Route path="/account" element={
             <RouteLayout requireAuth redirectTo="/auth">
               <PublicPage><AccountPage /></PublicPage>
@@ -117,6 +116,8 @@ function App() {
           <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />
           <Route path="/privacy-policy" element={<PublicPage><PrivacyPolicyComponent /></PublicPage>} />
           <Route path="/cookie-policy" element={<PublicPage><CookiePolicyComponent /></PublicPage>} />
+          <Route path="/about" element={<PublicPage><AboutComponent /></PublicPage>} />
+          <Route path="/legal" element={<PublicPage><LegalNoticeComponent /></PublicPage>} />
 
           {/* ── Admin (rôle ADMIN obligatoire) ── */}
           <Route
@@ -131,7 +132,9 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="users" element={<UsersPage />} />
             <Route path="messages" element={<Messages />} />
+            <Route path="audit" element={<AuditPage />} />
             <Route path="profile" element={<MyProfile />} />
             <Route path="settings" element={<Settings />} />
           </Route>
