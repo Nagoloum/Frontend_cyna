@@ -676,4 +676,17 @@ export const couponsAPI = {
   remove: (id) => api.delete(`/coupons/${id}`),
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PUSH   POST /push/subscribe · POST /push/unsubscribe
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const pushAPI = {
+  /** Enregistre (ou met à jour) la souscription push de l'appareil courant. */
+  subscribe: (sub) =>
+    api.post('/push/subscribe', { endpoint: sub.endpoint, keys: sub.keys }),
+
+  /** Supprime la souscription push de l'appareil courant. */
+  unsubscribe: (endpoint) => api.post('/push/unsubscribe', { endpoint }),
+};
+
 export default api;

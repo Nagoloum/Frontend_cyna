@@ -1,10 +1,13 @@
-import { adressesAPI, authAPI, cartesAPI, commandesAPI, usersAPI } from "@/services/api";
+import { adressesAPI, authAPI, cartesAPI, commandesAPI, usersAPI, pushAPI } from "@/services/api";
+import { isPushSupported, isPushSubscribed, getPushPermission, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 import { Elements, CardNumberElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe";
 import StripeCardFields from "@/components/ui/StripeCardFields";
 import {
     AlertCircle,
     Ban,
+    Bell,
+    BellOff,
     Calendar,
     Check,
     CheckCircle2, ChevronRight,
@@ -15,11 +18,13 @@ import {
     Edit2, Eye, EyeOff,
     KeyRound,
     Loader2,
-    Lock, LogOut, MapPin, Package,
+    Lock, LogOut, Mail, MapPin, Package,
     Plus,
     Receipt,
     RefreshCw,
     Save,
+    Shield, ShieldCheck, ShieldOff,
+    Smartphone,
     Sparkles,
     Star, Trash2, User, X,
 } from "lucide-react";
@@ -1090,6 +1095,319 @@ function CardsTab() {
   );
 }
 
+// ── Notifications tab ─────────────────────────────────────────────────────────
+function SecurityTab() {
+  const { t } = useTranslation();
+  const [method, setMethod]   = useState(null);     // null = loading
+  const [step, setStep]       = useState('idle');   // 'idle' | 'totp-code' | 'disable'
+  const [totpData, setTotpData] = useState(null);   // { qrDataUrl, secret }
+  const [code, setCode]       = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy]       = useState(false);
+  const [error, setError]     = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  useEffect(() => {
+    authAPI.me()
+      .then(u => setMethod(u.twoFactorMethod ?? 'NONE'))
+      .catch(() => setMethod('NONE'));
+  }, []);
+
+  const flash = (msg, isErr) => {
+    if (isErr) setError(msg); else setSuccess(msg);
+    setTimeout(() => { setError(null); setSuccess(null); }, 3500);
+  };
+
+  const handleSetupTotp = async () => {
+    setBusy(true); setError(null);
+    try {
+      const res = await authAPI.setupTotp();
+      setTotpData(res.data?.data ?? res.data);
+      setStep('totp-code');
+    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+    setBusy(false);
+  };
+
+  const handleActivateTotp = async () => {
+    if (code.length !== 6) return;
+    setBusy(true); setError(null);
+    try {
+      await authAPI.activateTotp(code.trim());
+      setMethod('TOTP'); setStep('idle'); setCode(''); setTotpData(null);
+      flash(t('account.twofa_totp_enabled'), false);
+    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+    setBusy(false);
+  };
+
+  const handleEmailFA = async () => {
+    setBusy(true); setError(null);
+    try {
+      await authAPI.activateEmail2FA();
+      setMethod('EMAIL');
+      flash(t('account.twofa_email_enabled'), false);
+    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+    setBusy(false);
+  };
+
+  const handleDisable = async () => {
+    if (!password.trim()) return;
+    setBusy(true); setError(null);
+    try {
+      await authAPI.disable2FA(password);
+      setMethod('NONE'); setStep('idle'); setPassword('');
+      flash(t('account.twofa_disabled'), false);
+    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+    setBusy(false);
+  };
+
+  if (method === null) {
+    return (
+      <div className="cyna-card p-6 flex items-center gap-3 text-[var(--text-secondary)]">
+        <Loader2 size={16} className="animate-spin" />
+        <span className="text-sm">{t('common.loading') || 'Chargement…'}</span>
+      </div>
+    );
+  }
+
+  const inputCls = "px-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all";
+
+  return (
+    <div className="space-y-4 mb-6 lg:mb-0">
+      <div className="cyna-card p-6 space-y-4">
+        <h2 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+          <Shield size={16} /> {t('account.twofa_title')}
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          {t('account.twofa_desc')}
+        </p>
+
+        <div className="flex items-center gap-2">
+          {method === 'NONE'
+            ? <ShieldOff size={16} style={{ color: 'var(--text-muted)' }} />
+            : <ShieldCheck size={16} className="text-green-500" />}
+          <span className="text-sm font-medium" style={{ color: method === 'NONE' ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
+            {method === 'NONE'  && t('account.twofa_status_none')}
+            {method === 'EMAIL' && t('account.twofa_status_email')}
+            {method === 'TOTP'  && t('account.twofa_status_totp')}
+          </span>
+        </div>
+
+        {error   && <p className="text-sm text-red-500">{error}</p>}
+        {success && <p className="text-sm text-green-600">{success}</p>}
+
+        {step === 'idle' && method === 'NONE' && (
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <button onClick={handleSetupTotp} disabled={busy} className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium">
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Smartphone size={14} />}
+              {t('account.twofa_enable_totp')}
+            </button>
+            <button onClick={handleEmailFA} disabled={busy} className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium">
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+              {t('account.twofa_enable_email')}
+            </button>
+          </div>
+        )}
+
+        {step === 'totp-code' && totpData && (
+          <div className="space-y-3 pt-2">
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {t('account.twofa_totp_scan')}
+            </p>
+            {totpData.qrDataUrl && (
+              <img src={totpData.qrDataUrl} alt="QR Code 2FA" className="w-40 h-40 rounded-lg border border-[var(--border)]" />
+            )}
+            {totpData.secret && (
+              <p className="text-xs font-mono p-2 rounded-lg break-all" style={{ background: 'var(--bg-muted)' }}>
+                {t('account.twofa_totp_secret')} {totpData.secret}
+              </p>
+            )}
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="text" value={code} maxLength={6} placeholder="000000"
+                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => e.key === 'Enter' && handleActivateTotp()}
+                className={`${inputCls} w-32 font-mono text-center`}
+              />
+              <button onClick={handleActivateTotp} disabled={busy || code.length !== 6}
+                className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium">
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                {t('account.twofa_verify')}
+              </button>
+              <button onClick={() => { setStep('idle'); setCode(''); setTotpData(null); }}
+                className="h-9 px-3 rounded-xl border border-[var(--border)] text-sm"
+                style={{ color: 'var(--text-secondary)' }}>
+                {t('account.cancel')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'idle' && method !== 'NONE' && (
+          <div className="pt-2">
+            <button onClick={() => setStep('disable')}
+              className="h-9 px-4 rounded-xl border border-[var(--border)] text-sm flex items-center gap-2 hover:bg-[var(--bg-muted)] transition-all"
+              style={{ color: 'var(--text-secondary)' }}>
+              <ShieldOff size={14} />
+              {t('account.twofa_disable_btn')}
+            </button>
+          </div>
+        )}
+
+        {step === 'disable' && (
+          <div className="space-y-3 pt-2">
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {t('account.twofa_disable_confirm')}
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="password" value={password}
+                placeholder={t('account.twofa_password_ph')}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleDisable()}
+                className={`${inputCls} flex-1 min-w-0`}
+              />
+              <button onClick={handleDisable} disabled={busy || !password.trim()}
+                className="h-9 px-4 rounded-xl text-sm font-medium flex items-center gap-2 transition-all disabled:opacity-50"
+                style={{ background: 'var(--danger)', color: '#fff' }}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <ShieldOff size={14} />}
+                {t('account.twofa_disable')}
+              </button>
+              <button onClick={() => { setStep('idle'); setPassword(''); }}
+                className="h-9 px-3 rounded-xl border border-[var(--border)] text-sm"
+                style={{ color: 'var(--text-secondary)' }}>
+                {t('account.cancel')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NotificationsTab() {
+  const { t } = useTranslation();
+  const [supported, setSupported]   = useState(null);   // null = loading
+  const [subscribed, setSubscribed] = useState(false);
+  const [permission, setPermission] = useState('default');
+  const [busy, setBusy]             = useState(false);
+  const [error, setError]           = useState(null);
+  const [success, setSuccess]       = useState(null);
+
+  useEffect(() => {
+    const ok = isPushSupported();
+    setSupported(ok);
+    if (ok) {
+      setPermission(getPushPermission());
+      isPushSubscribed().then(setSubscribed).catch(() => setSubscribed(false));
+    }
+  }, []);
+
+  const flash = (msg, isErr) => {
+    if (isErr) setError(msg); else setSuccess(msg);
+    setTimeout(() => { setError(null); setSuccess(null); }, 3500);
+  };
+
+  const handleToggle = async () => {
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      if (subscribed) {
+        await unsubscribeFromPush(pushAPI);
+        setSubscribed(false);
+        flash(t("account.push_unsubscribed") || "Notifications désactivées.", false);
+      } else {
+        await subscribeToPush(pushAPI);
+        setSubscribed(true);
+        setPermission('granted');
+        flash(t("account.push_subscribed") || "Notifications activées !", false);
+      }
+    } catch (err) {
+      flash(err.message || t("account.push_error") || "Erreur lors de l'activation.", true);
+    }
+    setBusy(false);
+  };
+
+  if (supported === null) {
+    return (
+      <div className="cyna-card p-6 flex items-center gap-3 text-[var(--text-secondary)]">
+        <Loader2 size={16} className="animate-spin" />
+        <span className="text-sm">{t("common.loading") || "Chargement…"}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 mb-6 lg:mb-0">
+      <div className="cyna-card p-6 space-y-4">
+        <h2 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+          <Bell size={16} /> {t("account.push_title") || "Notifications push"}
+        </h2>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          {t("account.push_desc") || "Recevez une notification sur cet appareil à la confirmation d'une commande ou à l'expiration d'un abonnement."}
+        </p>
+
+        {!supported && (
+          <div className="flex items-start gap-2 p-3 rounded-lg" style={{ background: "var(--bg-muted)", color: "var(--text-secondary)" }}>
+            <BellOff size={16} className="mt-0.5 flex-shrink-0" />
+            <p className="text-sm">
+              {t("account.push_unsupported") || "Votre navigateur ne supporte pas les notifications push, ou la clé VAPID n'est pas configurée."}
+            </p>
+          </div>
+        )}
+
+        {supported && permission === 'denied' && (
+          <div className="flex items-start gap-2 p-3 rounded-lg" style={{ background: "rgba(239,68,68,0.07)", color: "var(--danger)" }}>
+            <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+            <p className="text-sm">
+              {t("account.push_denied") || "Vous avez bloqué les notifications dans votre navigateur. Pour les activer, autorisez-les dans les paramètres du site."}
+            </p>
+          </div>
+        )}
+
+        {error   && <p className="text-sm text-red-500">{error}</p>}
+        {success && <p className="text-sm text-green-600">{success}</p>}
+
+        {supported && permission !== 'denied' && (
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                {subscribed
+                  ? (t("account.push_enabled") || "Notifications activées sur cet appareil")
+                  : (t("account.push_disabled") || "Notifications désactivées sur cet appareil")}
+              </p>
+              {subscribed && (
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  {t("account.push_enabled_hint") || "Vous serez notifié des confirmations de commande et des expirations."}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleToggle}
+              disabled={busy}
+              className={`flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium transition-all ${
+                subscribed
+                  ? "border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
+                  : "btn-primary"
+              }`}
+            >
+              {busy
+                ? <Loader2 size={14} className="animate-spin" />
+                : subscribed ? <BellOff size={14} /> : <Bell size={14} />}
+              {busy
+                ? (t("common.saving") || "…")
+                : subscribed
+                  ? (t("account.push_disable") || "Désactiver")
+                  : (t("account.push_enable")  || "Activer")}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main AccountPage ──────────────────────────────────────────────────────────
 export default function AccountPage() {
   const { t } = useTranslation();
@@ -1111,6 +1429,8 @@ export default function AccountPage() {
     { id: "cards",         label: t("account.tab_payment"),       icon: CreditCard },
     { id: "subscriptions", label: t("account.tab_subscriptions"), icon: Sparkles   },
     { id: "orders",        label: t("account.tab_orders"),        icon: Package    },
+    { id: "security",      label: t("account.tab_security"),      icon: Shield     },
+    { id: "notifications", label: t("account.tab_notifications"), icon: Bell       },
   ];
 
   // Load the profile once on mount. We must NOT depend on `tokenUser`: getUser()
@@ -1333,6 +1653,12 @@ export default function AccountPage() {
 
             {/* ── Orders ── */}
             {tab === "orders" && <OrdersTab />}
+
+            {/* ── Security / 2FA ── */}
+            {tab === "security" && <SecurityTab />}
+
+            {/* ── Notifications ── */}
+            {tab === "notifications" && <NotificationsTab />}
           </div>
         </div>
       </div>
