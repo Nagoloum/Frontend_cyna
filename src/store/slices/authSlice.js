@@ -6,10 +6,16 @@ const authSlice = createSlice({
     status: 'checking', // 'checking' | 'ok' | 'expired' | 'denied' | 'redirect' | 'twoFA'
     redirectTarget: '/auth',
     countdown: 3,
+    // Méthode 2FA de l'admin connecté : 'NONE' | 'EMAIL' | 'TOTP' | null (non chargée).
+    // Alimente les badges 2FA de la sidebar et du header admin.
+    twoFactorMethod: null,
   },
   reducers: {
     setAuthStatus: (state, action) => {
       state.status = action.payload;
+    },
+    setTwoFactorMethod: (state, action) => {
+      state.twoFactorMethod = action.payload;
     },
     setRedirectTarget: (state, action) => {
       state.redirectTarget = action.payload;
@@ -29,7 +35,7 @@ const authSlice = createSlice({
 });
 
 export const {
-  setAuthStatus, setRedirectTarget, setCountdown, decrementCountdown, resetAuth,
+  setAuthStatus, setTwoFactorMethod, setRedirectTarget, setCountdown, decrementCountdown, resetAuth,
 } = authSlice.actions;
 
 export default authSlice.reducer;

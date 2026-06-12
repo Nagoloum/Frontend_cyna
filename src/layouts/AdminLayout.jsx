@@ -1,4 +1,5 @@
 // src/layouts/AdminLayout.jsx
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './admin/AdminSidebar';
 import AdminHeader from './admin/AdminHeader';
@@ -6,10 +7,20 @@ import AdminFooter from './admin/AdminFooter';
 import { Menu, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { toggleAdminMobile, setAdminMobileOpen } from '../store/slices/uiSlice';
+import { setTwoFactorMethod } from '../store/slices/authSlice';
+import { authAPI } from '../services/api';
 
 export default function AdminLayout() {
   const dispatch        = useAppDispatch();
   const mobileMenuOpen  = useAppSelector((s) => s.ui.adminMobileOpen);
+
+  // Charge une seule fois le statut 2FA de l'admin pour alimenter les badges
+  // de la sidebar et du header (évite un double appel API par badge).
+  useEffect(() => {
+    authAPI.me()
+      .then((u) => dispatch(setTwoFactorMethod(u?.twoFactorMethod ?? 'NONE')))
+      .catch(() => dispatch(setTwoFactorMethod('NONE')));
+  }, [dispatch]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">

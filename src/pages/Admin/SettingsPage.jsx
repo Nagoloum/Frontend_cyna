@@ -22,6 +22,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { authAPI, usersAPI } from '@/services/api';
+import { useAppDispatch } from '@/store/hooks';
+import { setTwoFactorMethod } from '@/store/slices/authSlice';
 
 const getUser = () => {
   try {
@@ -137,6 +139,7 @@ function PwdField({ label, value, onChange, placeholder }) {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
   const { t, i18n } = useTranslation();
+  const dispatch = useAppDispatch();
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -231,6 +234,12 @@ export default function Settings() {
       .catch(() => {})
       .finally(() => setLoading2FA(false));
   }, []);
+
+  // Garde les badges 2FA (sidebar + header) synchronisés en direct dès que la
+  // méthode change ici, sans rechargement de page.
+  useEffect(() => {
+    if (!loading2FA) dispatch(setTwoFactorMethod(twoFAMethod));
+  }, [twoFAMethod, loading2FA, dispatch]);
 
   const enableEmail2FA = async () => {
     setSaving2FA(true);

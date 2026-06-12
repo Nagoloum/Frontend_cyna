@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LogOut,
   Shield,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleSidebar } from '../../store/slices/uiSlice';
@@ -53,6 +54,8 @@ export default function AdminSidebar() {
   const { t }      = useTranslation();
   const dispatch   = useAppDispatch();
   const collapsed  = useAppSelector((s) => s.ui.sidebarCollapsed);
+  const twoFA      = useAppSelector((s) => s.auth.twoFactorMethod);
+  const twoFAOn    = twoFA != null && twoFA !== 'NONE';
   const navigate   = useNavigate();
 
   const handleLogout = () => {
@@ -135,13 +138,33 @@ export default function AdminSidebar() {
 
       {/* ── Section admin + Logout ── */}
       <div className="border-t border-gray-200 dark:border-gray-700/60 p-3 space-y-1">
-        {!collapsed && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 dark:bg-green-500/10">
-            <Shield size={14} className="text-green-500 flex-shrink-0" />
-            <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-              {t('admin.nav.two_fa_enabled')}
-            </span>
-          </div>
+        {/* Badge 2FA dynamique (masqué pendant le chargement du statut). */}
+        {twoFA != null && (
+          collapsed ? (
+            <div
+              className={`flex items-center justify-center px-3 py-2 rounded-xl ${
+                twoFAOn ? 'bg-green-50 dark:bg-green-500/10' : 'bg-red-50 dark:bg-red-500/10'
+              }`}
+              title={t(twoFAOn ? 'admin.nav.two_fa_enabled' : 'admin.nav.two_fa_disabled')}
+            >
+              {twoFAOn
+                ? <Shield size={14} className="text-green-500 flex-shrink-0" />
+                : <ShieldAlert size={14} className="text-red-500 flex-shrink-0" />}
+            </div>
+          ) : (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${
+              twoFAOn ? 'bg-green-50 dark:bg-green-500/10' : 'bg-red-50 dark:bg-red-500/10'
+            }`}>
+              {twoFAOn
+                ? <Shield size={14} className="text-green-500 flex-shrink-0" />
+                : <ShieldAlert size={14} className="text-red-500 flex-shrink-0" />}
+              <span className={`text-xs font-medium ${
+                twoFAOn ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {t(twoFAOn ? 'admin.nav.two_fa_enabled' : 'admin.nav.two_fa_disabled')}
+              </span>
+            </div>
+          )
         )}
 
         <button

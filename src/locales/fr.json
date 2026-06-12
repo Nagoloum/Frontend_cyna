@@ -869,7 +869,8 @@
       "settings": "Paramètres",
       "sign_out": "Déconnexion",
       "two_fa_enabled": "2FA activée",
-      "navigation": "Navigation"
+      "navigation": "Navigation",
+      "two_fa_disabled": "2FA non activée"
     },
     "common": {
       "add": "Ajouter",
