@@ -102,6 +102,35 @@ function SaveBtn({ loading, label = 'Save', onClick }) {
   );
 }
 
+// ── Password field with lock icon + individual eye toggle ─────────────────────
+function PwdField({ label, value, onChange, placeholder }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+        {label}
+      </label>
+      <div className="relative">
+        <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full h-10 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 transition-all"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((v) => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          {show ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // Main component
 // ══════════════════════════════════════════════════════════════════════════════
@@ -139,7 +168,6 @@ export default function Settings() {
 
   // ── Password ──────────────────────────────────────────────────────────────
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
-  const [showPwd, setShowPwd] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
   const changePassword = async () => {
     if (!pwd.current || !pwd.next || !pwd.confirm) { showToast('Veuillez remplir tous les champs.', 'error'); return; }
@@ -329,23 +357,29 @@ export default function Settings() {
 
       {/* Security — password */}
       <Section icon={Lock} title="Mot de passe" subtitle="Saisissez votre mot de passe actuel pour le modifier">
-        <div className="space-y-3 max-w-sm">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Mot de passe actuel</label>
-            <input type={showPwd ? 'text' : 'password'} value={pwd.current} onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))} className={pwdInputCls} placeholder="••••••••" />
+        <div className="space-y-3">
+          {/* Mot de passe actuel — pleine largeur */}
+          <PwdField
+            label="Mot de passe actuel"
+            value={pwd.current}
+            onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))}
+            placeholder="••••••••"
+          />
+          {/* Nouveau + Confirmer — côte à côte sur sm+, empilés sur mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PwdField
+              label="Nouveau mot de passe"
+              value={pwd.next}
+              onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))}
+              placeholder="Au moins 8 caractères"
+            />
+            <PwdField
+              label="Confirmer le nouveau mot de passe"
+              value={pwd.confirm}
+              onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))}
+              placeholder="Répétez le mot de passe"
+            />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Nouveau mot de passe</label>
-            <input type={showPwd ? 'text' : 'password'} value={pwd.next} onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))} className={pwdInputCls} placeholder="Au moins 8 caractères" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Confirmer le nouveau mot de passe</label>
-            <input type={showPwd ? 'text' : 'password'} value={pwd.confirm} onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))} className={pwdInputCls} placeholder="Répétez le mot de passe" />
-          </div>
-          <button onClick={() => setShowPwd((v) => !v)} className="text-xs flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-indigo-500">
-            {showPwd ? <EyeOff size={13} /> : <Eye size={13} />}
-            {showPwd ? 'Masquer' : 'Afficher'} les mots de passe
-          </button>
         </div>
         <SaveBtn loading={savingPwd} label="Changer le mot de passe" onClick={changePassword} />
       </Section>

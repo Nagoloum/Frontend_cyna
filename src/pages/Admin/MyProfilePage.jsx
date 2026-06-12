@@ -2,7 +2,7 @@
 // src/pages/Admin/MyProfile.jsx
 import { useState, useEffect } from 'react';
 import {
-  User, Mail, Lock, CheckCircle, AlertCircle, Eye, EyeOff, Loader2,
+  User, Mail, CheckCircle, AlertCircle, Loader2,
 } from 'lucide-react';
 import { authAPI, usersAPI } from '../../services/api';
 
@@ -93,35 +93,6 @@ function Input({ icon: Icon, type = 'text', ...props }) {
   );
 }
 
-function PasswordInput({ ...props }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="relative">
-      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-      <input
-        type={show ? 'text' : 'password'}
-        className="
-          w-full h-10 pl-9 pr-10 rounded-xl text-sm
-          bg-gray-50 dark:bg-gray-700/60
-          border border-gray-200 dark:border-gray-600
-          text-gray-900 dark:text-white
-          placeholder-gray-400 dark:placeholder-gray-500
-          focus:outline-none focus:ring-2 focus:ring-indigo-500/30
-          focus:border-indigo-500 dark:focus:border-indigo-400
-          transition-all duration-200
-        "
-        {...props}
-      />
-      <button
-        type="button"
-        onClick={() => setShow(!show)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-      >
-        {show ? <EyeOff size={14} /> : <Eye size={14} />}
-      </button>
-    </div>
-  );
-}
 
 function SaveBtn({ loading, label = 'Save changes', onClick }) {
   return (
@@ -150,10 +121,6 @@ export default function MyProfile() {
 
   const [profile, setProfile] = useState({ firstName: '', lastName: '', email: '' });
   const [savingProfile, setSavingProfile] = useState(false);
-
-  const [passwords, setPasswords] = useState({ next: '', confirm: '' });
-  const [pwErrors, setPwErrors] = useState({});
-  const [savingPw, setSavingPw] = useState(false);
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -186,28 +153,6 @@ export default function MyProfile() {
     finally { setSavingProfile(false); }
   };
 
-  const handleChangePassword = async () => {
-    const errors = {};
-    if (passwords.next.length < 8) errors.next = 'Minimum 8 characters';
-    if (passwords.next !== passwords.confirm) errors.confirm = 'Passwords do not match';
-    if (Object.keys(errors).length) { setPwErrors(errors); return; }
-    setPwErrors({});
-    if (!userId) { showToast('User session not found', 'error'); return; }
-    setSavingPw(true);
-    try {
-      await usersAPI.updateProfile(userId, { password: passwords.next });
-      setPasswords({ next: '', confirm: '' });
-      showToast('Password changed successfully');
-    } catch (err) {
-      const msg = err.response?.data?.message ?? 'Error changing password';
-      showToast(msg, 'error');
-    }
-    finally { setSavingPw(false); }
-  };
-
-  // Initials avatar
-  const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const initials = fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'AD';
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -219,19 +164,6 @@ export default function MyProfile() {
           Manage your personal information and account security
         </p>
       </div>
-
-      {/* Identity card */}
-      <Section icon={User} title="Identity" subtitle="Your administrator account information">
-        <div className="flex items-center gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center ring-2 ring-indigo-500/20 flex-shrink-0">
-            <span className="text-2xl font-bold text-white">{initials}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{fullName || 'Admin'}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{profile.email}</p>
-          </div>
-        </div>
-      </Section>
 
       {/* Personal info */}
       <Section icon={User} title="Personal Information" subtitle="Update your name">
@@ -265,34 +197,6 @@ export default function MyProfile() {
         </div>
       </Section>
 
-      {/* Password */}
-      <Section icon={Lock} title="Change Password" subtitle="Use a strong password of at least 8 characters">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="New password" error={pwErrors.next} hint="Min. 8 characters">
-              <PasswordInput
-                value={passwords.next}
-                onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
-                placeholder="New password"
-              />
-            </Field>
-            <Field label="Confirm new password" error={pwErrors.confirm}>
-              <PasswordInput
-                value={passwords.confirm}
-                onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
-                placeholder="Repeat new password"
-              />
-            </Field>
-          </div>
-
-          {passwords.next && <PasswordStrength password={passwords.next} />}
-
-          <div className="flex justify-end pt-1">
-            <SaveBtn loading={savingPw} label="Change Password" onClick={handleChangePassword} />
-          </div>
-        </div>
-      </Section>
-
       {/* Toast */}
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
@@ -301,47 +205,3 @@ export default function MyProfile() {
   );
 }
 
-// ── Password strength meter ───────────────────────────────────────────────────
-function PasswordStrength({ password }) {
-  const checks = [
-    { label: '8+ characters',    ok: password.length >= 8 },
-    { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
-    { label: 'Number',           ok: /[0-9]/.test(password) },
-    { label: 'Special char',     ok: /[^A-Za-z0-9]/.test(password) },
-  ];
-  const score = checks.filter((c) => c.ok).length;
-  const levels = [
-    { label: 'Very weak',   color: 'bg-red-500' },
-    { label: 'Weak',        color: 'bg-orange-500' },
-    { label: 'Fair',        color: 'bg-yellow-500' },
-    { label: 'Strong',      color: 'bg-blue-500' },
-    { label: 'Very strong', color: 'bg-green-500' },
-  ];
-  const level = levels[score] ?? levels[0];
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-1">
-        {levels.map((_, i) => (
-          <div
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i < score ? level.color : 'bg-gray-200 dark:bg-gray-700'}`}
-          />
-        ))}
-      </div>
-      <div className="flex items-center justify-between">
-        <span className={`text-xs font-semibold ${score >= 3 ? 'text-green-600 dark:text-green-400' : score >= 2 ? 'text-yellow-600' : 'text-red-500'}`}>
-          {level.label}
-        </span>
-        <div className="flex gap-3">
-          {checks.map((c) => (
-            <span key={c.label} className={`text-xs flex items-center gap-1 ${c.ok ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`}>
-              <CheckCircle size={10} />
-              {c.label}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
