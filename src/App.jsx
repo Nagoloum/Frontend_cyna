@@ -1,55 +1,60 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
-// Layouts
+// Layouts (eager : coquilles partagées, présentes sur quasi toutes les routes)
 import AdminLayout from "./layouts/AdminLayout";
 import Layout from "./layouts/Layout";
 import RouteLayout from "./layouts/RouteLayout";
 
-// Pages publiques
-import CookiePolicyComponent from "./components/Policy/CookiePolicyComponent";
-import PrivacyPolicyComponent from "./components/Policy/PrivacyPolicyComponent";
-import TermsOfUseComponent from "./components/Policy/TermOfUseComponent";
-import AboutComponent from "./components/Policy/AboutComponent";
-import LegalNoticeComponent from "./components/Policy/LegalNoticeComponent";
-import AuthPage from "./pages/Auth/Auth";
-import EmailConfirmation from "./pages/Auth/EmailConfirmation";
-import ForgotPassword from "./pages/Auth/ForgotPassword";
-import ResetPassword from "./pages/Auth/ResetPassword";
-import ErrorPage from "./pages/ErrorPage";
-
-// Pages utilisateur
-import AccountPage from "./pages/User/AccountPage";
-import CartPage from "./pages/User/CartPage";
-import CategoriesPage from "./pages/User/CategoriesPage";
-import CategoryDetailPage from "./pages/User/CategoryDetailPage";
-import CheckoutPage from "./pages/User/CheckoutPage";
-import ContactPage from "./pages/User/ContactPage";
-import HomePage from "./pages/User/Home";
-import OrderConfirmationPage from "./pages/User/OrderConfirmationPage";
-import ProductDetailPage from "./pages/User/ProductDetailPage";
-import ProductsPage from "./pages/User/ProductsPage";
-import SearchPage from "./pages/User/SearchPage";
-
-// Pages admin
-import Dashboard from "./pages/Admin/Dashboard";
-import MyProfile from "./pages/Admin/MyProfilePage";
-import OrdersPage from "./pages/Admin/OrdersPage";
-import UsersPage from "./pages/Admin/UsersPage";
-import AuditPage from "./pages/Admin/AuditPage";
-import AdminProductsPage from "./pages/Admin/ProductsPage";
-import Settings from "./pages/Admin/SettingsPage";
-import Messages from "./pages/Admin/MessagesPage";
-
-// Auth admin-only 2FA verification step
-import TwoFactor from "./pages/Auth/TwoFactor";
-import Logout from "./pages/Auth/Logout";
-
-// Composants globaux
+// Composants globaux (eager)
 import ThemeToggle from "./components/Kit/ThemeToggle";
 import PrivacyBanner from "./components/ui/PrivacyBanner";
 import { NotifyProvider } from "./components/ui/feedback";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+
+// Pages (lazy : code-splitting par route → bundle initial réduit)
+const CookiePolicyComponent = lazy(() => import("./components/Policy/CookiePolicyComponent"));
+const PrivacyPolicyComponent = lazy(() => import("./components/Policy/PrivacyPolicyComponent"));
+const TermsOfUseComponent = lazy(() => import("./components/Policy/TermOfUseComponent"));
+const AboutComponent = lazy(() => import("./components/Policy/AboutComponent"));
+const LegalNoticeComponent = lazy(() => import("./components/Policy/LegalNoticeComponent"));
+const AuthPage = lazy(() => import("./pages/Auth/Auth"));
+const EmailConfirmation = lazy(() => import("./pages/Auth/EmailConfirmation"));
+const ForgotPassword = lazy(() => import("./pages/Auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/Auth/ResetPassword"));
+const ErrorPage = lazy(() => import("./pages/ErrorPage"));
+const AccountPage = lazy(() => import("./pages/User/AccountPage"));
+const CartPage = lazy(() => import("./pages/User/CartPage"));
+const CategoriesPage = lazy(() => import("./pages/User/CategoriesPage"));
+const CategoryDetailPage = lazy(() => import("./pages/User/CategoryDetailPage"));
+const CheckoutPage = lazy(() => import("./pages/User/CheckoutPage"));
+const ContactPage = lazy(() => import("./pages/User/ContactPage"));
+const HomePage = lazy(() => import("./pages/User/Home"));
+const OrderConfirmationPage = lazy(() => import("./pages/User/OrderConfirmationPage"));
+const ProductDetailPage = lazy(() => import("./pages/User/ProductDetailPage"));
+const ProductsPage = lazy(() => import("./pages/User/ProductsPage"));
+const SearchPage = lazy(() => import("./pages/User/SearchPage"));
+const Dashboard = lazy(() => import("./pages/Admin/Dashboard"));
+const MyProfile = lazy(() => import("./pages/Admin/MyProfilePage"));
+const OrdersPage = lazy(() => import("./pages/Admin/OrdersPage"));
+const UsersPage = lazy(() => import("./pages/Admin/UsersPage"));
+const AuditPage = lazy(() => import("./pages/Admin/AuditPage"));
+const PromotionsPage = lazy(() => import("./pages/Admin/PromotionsPage"));
+const AdminProductsPage = lazy(() => import("./pages/Admin/ProductsPage"));
+const Settings = lazy(() => import("./pages/Admin/SettingsPage"));
+const Messages = lazy(() => import("./pages/Admin/MessagesPage"));
+const TwoFactor = lazy(() => import("./pages/Auth/TwoFactor"));
+const Logout = lazy(() => import("./pages/Auth/Logout"));
+
+const PageLoader = () => (
+  <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div
+      className="animate-spin"
+      style={{ width: 28, height: 28, border: "3px solid var(--border)", borderTopColor: "var(--accent)", borderRadius: "50%" }}
+    />
+  </div>
+);
 
 const PublicPage = ({ children }) => (
   <Layout>{children}</Layout>
@@ -77,6 +82,7 @@ function App() {
     // NotifyProvider reads from Redux and renders toast/confirm portals into <body>
     <NotifyProvider>
       <BrowserRouter>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Redirect racine */}
           <Route path="/" element={<Navigate to="/home" replace />} />
@@ -132,6 +138,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="promotions" element={<PromotionsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="messages" element={<Messages />} />
             <Route path="audit" element={<AuditPage />} />
@@ -142,6 +149,7 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<ErrorPage />} />
         </Routes>
+        </Suspense>
 
         <AuthOnlyThemeToggle />
         <UserPagesCookieBanner />

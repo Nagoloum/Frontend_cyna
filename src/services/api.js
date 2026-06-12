@@ -566,6 +566,12 @@ export const contactAPI = {
   /** Admin — list contact messages (paginated when page/limit are passed) */
   getAll: (params = {}) => api.get('/contact', { params }),
 
+  /** Admin — reply to a message (persists + emails the customer). */
+  reply: (id, message) => api.patch(`/contact/${id}/reply`, { message }),
+
+  /** Admin — set ticket status: 'NEW' | 'READ' | 'REPLIED' | 'CLOSED'. */
+  setStatus: (id, status) => api.patch(`/contact/${id}/status`, { status }),
+
   /** Admin — delete a message */
   remove: (id) => api.delete(`/contact/${id}`),
 };
