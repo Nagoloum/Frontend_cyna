@@ -343,8 +343,8 @@ function SlidersTab() {
     setLoading(true); setError(null);
     try {
       const res = await slidersAPI.getAll();
-      const raw = res.data?.data ?? res.data ?? [];
-      setSliders(Array.isArray(raw) ? raw.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : []);
+      const raw = extractList(res.data);
+      setSliders(raw.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
     } catch (e) { setError(e.response?.data?.message ?? 'Failed to load sliders.'); }
     finally { setLoading(false); }
   }, []);
