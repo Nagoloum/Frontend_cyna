@@ -1,8 +1,10 @@
 // src/layouts/admin/AdminFooter.jsx
+import { useTranslation } from 'react-i18next';
 
 const APP_VERSION = '1.0.0'; // Sync with your package.json if needed
 
 export default function AdminFooter() {
+  const { t } = useTranslation();
   const year = new Date().getFullYear();
 
   return (
@@ -14,12 +16,12 @@ export default function AdminFooter() {
     ">
       {/* Left: version */}
       <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
-        Back-office v{APP_VERSION}
+        {t('admin.footer.version', { version: APP_VERSION })}
       </span>
 
       {/* Center: copyright */}
       <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
-        © {year} Cyna Internal use only
+        {t('admin.footer.copyright', { year })}
       </span>
 
       {/* Droite : liens */}
@@ -28,7 +30,7 @@ export default function AdminFooter() {
           href="mailto:it@cyna.fr"
           className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200"
         >
-          Contact IT
+          {t('admin.footer.contact_it')}
         </a>
         <a
           href="/privacy-policy"
@@ -36,7 +38,7 @@ export default function AdminFooter() {
           rel="noopener noreferrer"
           className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200"
         >
-          Legal Notice
+          {t('admin.footer.legal_notice')}
         </a>
       </div>
     </footer>

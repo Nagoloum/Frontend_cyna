@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   User, Mail, CheckCircle, AlertCircle, Loader2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authAPI, usersAPI } from '../../services/api';
 
 // ── Helper: decode JWT payload (used as fallback before /auth/user/me resolves) ─
@@ -94,7 +95,8 @@ function Input({ icon: Icon, type = 'text', ...props }) {
 }
 
 
-function SaveBtn({ loading, label = 'Save changes', onClick }) {
+function SaveBtn({ loading, label, onClick }) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onClick}
@@ -107,7 +109,7 @@ function SaveBtn({ loading, label = 'Save changes', onClick }) {
       "
     >
       {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-      {loading ? 'Saving…' : label}
+      {loading ? t('admin.common.saving') : (label ?? t('admin.common.save'))}
     </button>
   );
 }
@@ -116,6 +118,7 @@ function SaveBtn({ loading, label = 'Save changes', onClick }) {
 // Main component
 // ══════════════════════════════════════════════════════════════════════════════
 export default function MyProfile() {
+  const { t } = useTranslation();
   const [toast, setToast] = useState(null);
   const [userId, setUserId] = useState(null);
 
@@ -141,15 +144,15 @@ export default function MyProfile() {
   }, []);
 
   const handleSaveProfile = async () => {
-    if (!userId) { showToast('User session not found', 'error'); return; }
+    if (!userId) { showToast(t('admin.profile.session_not_found'), 'error'); return; }
     setSavingProfile(true);
     try {
       await usersAPI.updateProfile(userId, {
         firstName: profile.firstName,
         lastName:  profile.lastName,
       });
-      showToast('Profile updated successfully');
-    } catch { showToast('Error updating profile', 'error'); }
+      showToast(t('admin.profile.update_success'));
+    } catch { showToast(t('admin.profile.update_error'), 'error'); }
     finally { setSavingProfile(false); }
   };
 
@@ -159,35 +162,35 @@ export default function MyProfile() {
 
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">My Profile</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{t('admin.profile.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          Manage your personal information and account security
+          {t('admin.profile.subtitle')}
         </p>
       </div>
 
       {/* Personal info */}
-      <Section icon={User} title="Personal Information" subtitle="Update your name">
+      <Section icon={User} title={t('admin.profile.personal_info')} subtitle={t('admin.profile.personal_info_sub')}>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="First name">
+            <Field label={t('admin.profile.first_name')}>
               <Input
                 icon={User}
                 value={profile.firstName}
                 onChange={(e) => setProfile((p) => ({ ...p, firstName: e.target.value }))}
-                placeholder="John"
+                placeholder={t('admin.profile.first_name_placeholder')}
               />
             </Field>
-            <Field label="Last name">
+            <Field label={t('admin.profile.last_name')}>
               <Input
                 icon={User}
                 value={profile.lastName}
                 onChange={(e) => setProfile((p) => ({ ...p, lastName: e.target.value }))}
-                placeholder="Doe"
+                placeholder={t('admin.profile.last_name_placeholder')}
               />
             </Field>
           </div>
 
-          <Field label="Email address" hint="Contact your system administrator to change email">
+          <Field label={t('admin.profile.email')} hint={t('admin.profile.email_hint')}>
             <Input icon={Mail} value={profile.email} disabled />
           </Field>
 

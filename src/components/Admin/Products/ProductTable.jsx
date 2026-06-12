@@ -1,14 +1,15 @@
 // src/components/admin/products/ProductTable.jsx
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, Edit2, Package, Search, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import StatusBadge from '../shared/StatusBadge';
 
 const COLUMNS = [
-  { key: 'name',      label: 'Product',    sortable: true  },
-  { key: 'category',  label: 'Category',  sortable: true  },
-  { key: 'price',     label: 'Price',       sortable: true  },
-  { key: 'isActive',  label: 'Status',     sortable: false },
-  { key: 'createdAt', label: 'Created',    sortable: true  },
-  { key: 'actions',   label: '',           sortable: false },
+  { key: 'name',      labelKey: 'admin.products.col_product',  sortable: true  },
+  { key: 'category',  labelKey: 'admin.products.col_category', sortable: true  },
+  { key: 'price',     labelKey: 'admin.products.col_price',    sortable: true  },
+  { key: 'isActive',  labelKey: 'admin.products.col_status',   sortable: false },
+  { key: 'createdAt', labelKey: 'admin.common.created_at',     sortable: true  },
+  { key: 'actions',   labelKey: '',                            sortable: false },
 ];
 
 function SortIcon({ field, sortBy, sortOrder }) {
@@ -35,6 +36,7 @@ export default function ProductTable({
   pagination, search, filterCategory, sortBy, sortOrder,
   onSearch, onFilterCategory, onSort, onPageChange, onEdit, onDelete,
 }) {
+  const { t } = useTranslation();
   // Defensive normalisation guards against API returning an object instead of array
   const safeProducts   = Array.isArray(products)   ? products   : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
@@ -60,7 +62,7 @@ export default function ProductTable({
             type="text"
             value={search}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search a product…"
+            placeholder={t('admin.products.search_placeholder')}
             className="
               w-full h-9 pl-9 pr-3 rounded-xl text-sm
               bg-gray-50 dark:bg-gray-700/60
@@ -88,7 +90,7 @@ export default function ProductTable({
             transition-all duration-200
           "
         >
-          <option value="">All categories</option>
+          <option value="">{t('admin.products.all_categories')}</option>
           {safeCategories.map((cat) => (
             <option key={cat.slug} value={cat.slug}>{cat.name}</option>
           ))}
@@ -97,7 +99,7 @@ export default function ProductTable({
         {/* Compteur results */}
         {!loading && (
           <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">
-            {pagination.total} result{pagination.total > 1 ? 's' : ''}
+            {t('admin.products.result_count', { count: pagination.total })}
           </span>
         )}
       </div>
@@ -119,7 +121,7 @@ export default function ProductTable({
                   `}
                 >
                   <span className="flex items-center gap-1">
-                    {col.label}
+                    {col.labelKey ? t(col.labelKey) : ''}
                     {col.sortable && <SortIcon field={col.key} sortBy={sortBy} sortOrder={sortOrder} />}
                   </span>
                 </th>
@@ -136,9 +138,9 @@ export default function ProductTable({
                   <td colSpan={6} className="px-4 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-gray-500">
                       <Package size={36} className="opacity-30" />
-                      <p className="text-sm font-medium">No products found</p>
+                      <p className="text-sm font-medium">{t('admin.products.empty')}</p>
                       {search && (
-                        <p className="text-xs">Try a different search term</p>
+                        <p className="text-xs">{t('admin.products.empty_sub_search')}</p>
                       )}
                     </div>
                   </td>
@@ -212,14 +214,14 @@ export default function ProductTable({
                       <button
                         onClick={() => onEdit(product)}
                         className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150"
-                        title="Modifier"
+                        title={t('admin.common.edit')}
                       >
                         <Edit2 size={14} />
                       </button>
                       <button
                         onClick={() => onDelete(product)}
                         className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all duration-150"
-                        title="Delete"
+                        title={t('admin.common.delete')}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -235,7 +237,7 @@ export default function ProductTable({
       {pagination.total > pagination.limit && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700/60">
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            Page {pagination.page} / {totalPages}
+            {t('admin.common.page_of', { page: pagination.page, total: totalPages })}
           </span>
           <div className="flex items-center gap-1">
             <button

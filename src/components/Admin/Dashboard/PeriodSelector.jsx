@@ -1,26 +1,29 @@
 // src/components/admin/dashboard/PeriodSelector.jsx
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, ChevronDown, Check } from 'lucide-react';
 
 const PRESETS = [
-  { label: '7 last days',   value: '7d'    },
-  { label: '5 last weeks',  value: '5w'    },
-  { label: '30 last days',  value: '30d'   },
-  { label: 'This month',    value: 'month' },
+  { labelKey: 'admin.dashboard.period_7d',    value: '7d'    },
+  { labelKey: 'admin.dashboard.period_5w',    value: '5w'    },
+  { labelKey: 'admin.dashboard.period_30d',   value: '30d'   },
+  { labelKey: 'admin.dashboard.period_month', value: 'month' },
 ];
 
 export default function PeriodSelector({ value = '7d', onChange }) {
+  const { t } = useTranslation();
   const [open, setOpen]             = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo]     = useState('');
   const ref = useRef(null);
 
-  const activeLabel =
-    PRESETS.find((p) => p.value === value)?.label ??
-    (value === 'custom' && customFrom && customTo
+  const activePreset = PRESETS.find((p) => p.value === value);
+  const activeLabel = activePreset
+    ? t(activePreset.labelKey)
+    : (value === 'custom' && customFrom && customTo
       ? `${customFrom} → ${customTo}`
-      : 'Custom range');
+      : t('admin.dashboard.custom_range'));
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -61,7 +64,7 @@ export default function PeriodSelector({ value = '7d', onChange }) {
         <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/30 overflow-hidden">
           <div className="p-2">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-2 py-1.5">
-              Preset period
+              {t('admin.dashboard.preset_period')}
             </p>
             {PRESETS.map((preset) => (
               <button
@@ -69,7 +72,7 @@ export default function PeriodSelector({ value = '7d', onChange }) {
                 onClick={() => handlePreset(preset)}
                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-150"
               >
-                <span>{preset.label}</span>
+                <span>{t(preset.labelKey)}</span>
                 {value === preset.value && <Check size={14} className="text-indigo-500 flex-shrink-0" />}
               </button>
             ))}
@@ -82,20 +85,20 @@ export default function PeriodSelector({ value = '7d', onChange }) {
               onClick={() => setShowCustom(!showCustom)}
               className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-150"
             >
-              <span>Custom range…</span>
+              <span>{t('admin.dashboard.custom_range_toggle')}</span>
               <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${showCustom ? 'rotate-180' : ''}`} />
             </button>
 
             {showCustom && (
               <div className="mt-2 px-2 space-y-2">
                 <div>
-                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">From</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('admin.dashboard.date_from')}</label>
                   <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
                     className="w-full h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all duration-200"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">To</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('admin.dashboard.date_to')}</label>
                   <input type="date" value={customTo} min={customFrom} onChange={(e) => setCustomTo(e.target.value)}
                     className="w-full h-9 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all duration-200"
                   />
@@ -105,7 +108,7 @@ export default function PeriodSelector({ value = '7d', onChange }) {
                   disabled={!customFrom || !customTo}
                   className="w-full h-9 rounded-xl text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
                 >
-                  Apply
+                  {t('admin.dashboard.apply')}
                 </button>
               </div>
             )}

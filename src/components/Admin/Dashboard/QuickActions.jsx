@@ -1,35 +1,36 @@
 // src/components/admin/dashboard/QuickActions.jsx
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, ShoppingCart, HeadphonesIcon, Tag, ArrowRight } from 'lucide-react';
 
 const ACTIONS = [
   {
-    label:       'Add Product',
-    description: 'Create a new SaaS service',
+    labelKey:    'admin.dashboard.action_add_product',
+    descKey:     'admin.dashboard.action_add_product_desc',
     icon:        Plus,
     to:          '/admin/products?action=create',
     color:       'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20',
     iconBg:      'bg-indigo-100 dark:bg-indigo-500/20',
   },
   {
-    label:       'View Orders',
-    description: 'Manage and track orders',
+    labelKey:    'admin.dashboard.action_view_orders',
+    descKey:     'admin.dashboard.action_view_orders_desc',
     icon:        ShoppingCart,
     to:          '/admin/orders',
     color:       'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-500/20 hover:bg-violet-100 dark:hover:bg-violet-500/20',
     iconBg:      'bg-violet-100 dark:bg-violet-500/20',
   },
   {
-    label:       'Manage Support',
-    description: 'Pending messages and tickets',
+    labelKey:    'admin.dashboard.action_manage_support',
+    descKey:     'admin.dashboard.action_manage_support_desc',
     icon:        HeadphonesIcon,
     to:          '/admin/support',
     color:       'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20',
     iconBg:      'bg-blue-100 dark:bg-blue-500/20',
   },
   {
-    label:       'Categories',
-    description: 'Manage product categories',
+    labelKey:    'admin.dashboard.action_categories',
+    descKey:     'admin.dashboard.action_categories_desc',
     icon:        Tag,
     to:          '/admin/products',
     color:       'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-200 dark:border-cyan-500/20 hover:bg-cyan-100 dark:hover:bg-cyan-500/20',
@@ -39,6 +40,7 @@ const ACTIONS = [
 
 export default function QuickActions() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -46,7 +48,7 @@ export default function QuickActions() {
         const Icon = action.icon;
         return (
           <button
-            key={action.to + action.label}
+            key={action.to + action.labelKey}
             onClick={() => navigate(action.to)}
             className={`group flex flex-col items-start gap-3 p-4 rounded-2xl border transition-all duration-200 text-left ${action.color}`}
           >
@@ -54,8 +56,8 @@ export default function QuickActions() {
               <Icon size={17} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold leading-tight">{action.label}</p>
-              <p className="text-xs opacity-70 mt-0.5 leading-tight hidden sm:block">{action.description}</p>
+              <p className="text-sm font-semibold leading-tight">{t(action.labelKey)}</p>
+              <p className="text-xs opacity-70 mt-0.5 leading-tight hidden sm:block">{t(action.descKey)}</p>
             </div>
             <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 self-end" />
           </button>

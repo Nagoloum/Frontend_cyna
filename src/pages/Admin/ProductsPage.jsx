@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import AdminSelect from '../../components/Admin/Shared/AdminSelect';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
@@ -100,15 +101,18 @@ const EmptyState = ({ icon: Icon, message, sub }) => (
   </td></tr>
 );
 
-const StatusPill = ({ active }) => (
+const StatusPill = ({ active }) => {
+  const { t } = useTranslation();
+  return (
   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
     active ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400'
            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
   }`}>
     <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-green-500' : 'bg-gray-400'}`} />
-    {active ? 'Active' : 'Inactive'}
+    {active ? t('admin.common.active') : t('admin.common.inactive')}
   </span>
-);
+  );
+};
 
 const SortIcon = ({ field, sortBy, order }) => {
   if (sortBy !== field) return <ChevronsUpDown size={12} className="text-gray-300 dark:text-gray-600" />;
@@ -123,11 +127,12 @@ const Th = ({ label, field, sortBy, order, onSort, className = '' }) => (
 );
 
 function Pagination({ page, total, limit, onChange }) {
+  const { t } = useTranslation();
   const totalPages = Math.ceil(total / limit) || 1;
   if (total <= limit) return null;
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700/60">
-      <span className="text-xs text-gray-500 dark:text-gray-400">Page {page} / {totalPages}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400">{t('admin.common.page_of', { page, total: totalPages })}</span>
       <div className="flex items-center gap-1">
         <button onClick={() => onChange(page - 1)} disabled={page <= 1}
           className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 transition-all">
@@ -157,6 +162,7 @@ function Pagination({ page, total, limit, onChange }) {
 }
 
 function DeleteModal({ name, onClose, onConfirm }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const run = async () => { setLoading(true); try { await onConfirm(); } finally { setLoading(false); } };
   return createPortal(
@@ -167,14 +173,14 @@ function DeleteModal({ name, onClose, onConfirm }) {
         <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4">
           <AlertTriangle size={22} className="text-red-500" />
         </div>
-        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">Delete permanently?</h3>
+        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">{t('admin.common.delete_title')}</h3>
         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 my-3 px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-xl truncate">{name}</p>
-        <p className="text-xs text-red-500 mb-5">⚠ This action cannot be undone.</p>
+        <p className="text-xs text-red-500 mb-5">⚠ {t('admin.common.delete_body')}</p>
         <div className="flex gap-3">
-          <button onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">Cancel</button>
+          <button onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">{t('admin.common.cancel')}</button>
           <button onClick={run} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
             {loading && <Loader2 size={13} className="animate-spin" />}
-            {loading ? 'Deleting…' : 'Delete'}
+            {loading ? t('admin.common.deleting') : t('admin.common.delete')}
           </button>
         </div>
       </div>
@@ -192,6 +198,7 @@ function DeleteModal({ name, onClose, onConfirm }) {
  * DTO: { title (required), newImage (file), linkUrl?, NameUrl (required), order? }
  */
 function SliderFormModal({ slider, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isEdit  = !!slider;
   const fileRef = useRef(null);
   const [loading, setLoading]   = useState(false);
@@ -222,10 +229,10 @@ function SliderFormModal({ slider, onClose, onSaved }) {
   const handleSubmit = async e => {
     e.preventDefault();
     setError(null);
-    if (!form.title.trim())   return setError('Title is required.');
-    if (!form.NameUrl.trim()) return setError('Button label is required.');
-    if (!form.linkUrl.trim()) return setError('Link URL is required.');
-    if (!isEdit && !imageFile) return setError('An image is required for a new slider.');
+    if (!form.title.trim())   return setError(t('admin.sliders.err_title_required'));
+    if (!form.NameUrl.trim()) return setError(t('admin.sliders.err_button_required'));
+    if (!form.linkUrl.trim()) return setError(t('admin.sliders.err_link_required'));
+    if (!isEdit && !imageFile) return setError(t('admin.sliders.err_image_required'));
 
     setLoading(true);
     try {
@@ -238,14 +245,14 @@ function SliderFormModal({ slider, onClose, onSaved }) {
 
       if (isEdit) ensureOk(await slidersAPI.update(slider._id, fd));
       else        ensureOk(await slidersAPI.create(fd));
-      notify.success(isEdit ? 'Slide updated' : 'Slide created', form.title.trim());
+      notify.success(isEdit ? t('admin.sliders.updated') : t('admin.sliders.created'), form.title.trim());
       emitAdminChange('slider');
       onSaved();
     } catch (err) {
-      const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const m = err.response?.data?.message ?? err.message ?? t('admin.common.error');
       const msg = Array.isArray(m) ? m.join(' · ') : m;
       setError(msg);
-      notify.error('Save failed', msg);
+      notify.error(t('admin.common.save_failed'), msg);
     } finally { setLoading(false); }
   };
 
@@ -257,8 +264,8 @@ function SliderFormModal({ slider, onClose, onSaved }) {
       <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? 'Edit Slide' : 'New Slide'}</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hero carousel home page</p>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? t('admin.sliders.edit_modal_title') : t('admin.sliders.new_modal_title')}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('admin.sliders.modal_subtitle')}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={15} /></button>
         </div>
@@ -269,7 +276,7 @@ function SliderFormModal({ slider, onClose, onSaved }) {
           {/* Image */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Image {!isEdit && <span className="text-red-500">*</span>}
+              {t('admin.sliders.label_image')} {!isEdit && <span className="text-red-500">*</span>}
             </label>
             <div className="flex items-center gap-3">
               <div
@@ -283,9 +290,9 @@ function SliderFormModal({ slider, onClose, onSaved }) {
               <div className="flex-1">
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition-all">
-                  <Upload size={13} />{imageFile ? imageFile.name : isEdit ? 'Change image' : 'Choose image'}
+                  <Upload size={13} />{imageFile ? imageFile.name : isEdit ? t('admin.common.change_image') : t('admin.common.choose_image')}
                 </button>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">JPG, PNG or WebP · max 2 MB</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('admin.common.image_hint')}</p>
               </div>
             </div>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
@@ -293,38 +300,38 @@ function SliderFormModal({ slider, onClose, onSaved }) {
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Title <span className="text-red-500">*</span></label>
-            <input name="title" value={form.title} onChange={handleChange} placeholder="e.g. Next-Generation SOC Protection" className={inp} />
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.sliders.label_title')} <span className="text-red-500">*</span></label>
+            <input name="title" value={form.title} onChange={handleChange} placeholder={t('admin.sliders.placeholder_title')} className={inp} />
           </div>
 
           {/* NameUrl used as the carousel CTA button label */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Button label <span className="text-red-500">*</span></label>
-            <input name="NameUrl" value={form.NameUrl} onChange={handleChange} placeholder="e.g. Discover, Learn more" className={inp} />
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Text displayed on the carousel call-to-action button.</p>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.sliders.label_button')} <span className="text-red-500">*</span></label>
+            <input name="NameUrl" value={form.NameUrl} onChange={handleChange} placeholder={t('admin.sliders.placeholder_button')} className={inp} />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('admin.sliders.label_button_hint')}</p>
           </div>
 
           {/* Link URL + Order */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Link URL <span className="text-red-500">*</span>
+                {t('admin.sliders.label_link')} <span className="text-red-500">*</span>
               </label>
               <input name="linkUrl" value={form.linkUrl} onChange={handleChange} placeholder="/categories" className={inp} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Order</label>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.sliders.label_order')}</label>
               <input name="order" type="number" min="0" value={form.order} onChange={handleChange} className={inp} />
             </div>
           </div>
 
           <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
             <button type="button" onClick={onClose} disabled={loading}
-              className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">Cancel</button>
+              className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">{t('admin.common.cancel')}</button>
             <button type="submit" disabled={loading}
               className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
               {loading && <Loader2 size={13} className="animate-spin" />}
-              {loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Slide'}
+              {loading ? t('admin.common.saving') : isEdit ? t('admin.common.save') : t('admin.sliders.create')}
             </button>
           </div>
         </form>
@@ -334,6 +341,7 @@ function SliderFormModal({ slider, onClose, onSaved }) {
 }
 
 function SlidersTab() {
+  const { t } = useTranslation();
   const [sliders, setSliders]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -345,9 +353,9 @@ function SlidersTab() {
       const res = await slidersAPI.getAll();
       const raw = extractList(res.data);
       setSliders(raw.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
-    } catch (e) { setError(e.response?.data?.message ?? 'Failed to load sliders.'); }
+    } catch (e) { setError(e.response?.data?.message ?? t('admin.sliders.load_failed')); }
     finally { setLoading(false); }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchSliders(); }, [fetchSliders]);
 
@@ -362,10 +370,10 @@ function SlidersTab() {
     const title = modal.data.title;
     try {
       await slidersAPI.delete(modal.data._id);
-      notify.success('Slide deleted', title);
+      notify.success(t('admin.sliders.deleted'), title);
       emitAdminChange('slider');
     } catch (err) {
-      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+      notify.error(t('admin.common.delete_failed'), err.response?.data?.message ?? err.message ?? t('admin.common.error'));
     }
     setModal(null);
     fetchSliders();
@@ -375,15 +383,15 @@ function SlidersTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm text-gray-500 dark:text-gray-400 flex-1">
-          {sliders.length} slide{sliders.length !== 1 ? 's' : ''} displayed in homepage hero carousel
+          {t('admin.sliders.count', { count: sliders.length })}
         </p>
         <button onClick={() => setModal({ type: 'create' })}
           className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all">
-          <Plus size={13} />Add Slide
+          <Plus size={13} />{t('admin.sliders.add')}
         </button>
       </div>
 
-      {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}<button onClick={() => fetchSliders()} className="ml-auto text-xs underline">Retry</button></div>}
+      {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}<button onClick={() => fetchSliders()} className="ml-auto text-xs underline">{t('admin.common.retry')}</button></div>}
 
       {/* Slider grid */}
       {loading ? (
@@ -393,8 +401,8 @@ function SlidersTab() {
       ) : sliders.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-14 text-center">
           <LayoutDashboard size={36} className="text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No slides yet</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Create your first slide to populate the homepage carousel</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('admin.sliders.empty')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('admin.sliders.empty_sub')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -461,6 +469,7 @@ function SlidersTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ProductFormModal({ product, categories, services, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isEdit  = !!product;
   const fileRef = useRef(null);
   const [loading, setLoading]           = useState(false);
@@ -530,10 +539,10 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
   const handleSubmit = async e => {
     e.preventDefault();
     setError(null);
-    if (!form.name.trim())               return setError('Product name is required.');
-    if (!form.serviceId)                 return setError('Please select a service.');
-    if (!form.priceMonth && !form.priceYear) return setError('At least one price is required.');
-    if (!isEdit && imageFiles.length === 0) return setError('At least one image is required.');
+    if (!form.name.trim())               return setError(t('admin.products.err_name_required'));
+    if (!form.serviceId)                 return setError(t('admin.products.err_service_required'));
+    if (!form.priceMonth && !form.priceYear) return setError(t('admin.products.err_price_required'));
+    if (!isEdit && imageFiles.length === 0) return setError(t('admin.products.err_image_required'));
 
     setLoading(true);
     try {
@@ -558,16 +567,16 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
       if (isEdit) ensureOk(await productsAPI.update(product.slug, payload));
       else        ensureOk(await productsAPI.create(payload));
       notify.success(
-        isEdit ? 'Product updated' : 'Product created',
+        isEdit ? t('admin.products.updated') : t('admin.products.created'),
         form.name.trim()
       );
       emitAdminChange('product');
       onSaved();
     } catch (err) {
-      const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const m = err.response?.data?.message ?? err.message ?? t('admin.common.error');
       const msg = Array.isArray(m) ? m.join(' · ') : m;
       setError(msg);
-      notify.error('Save failed', msg);
+      notify.error(t('admin.common.save_failed'), msg);
     } finally { setLoading(false); }
   };
 
@@ -579,8 +588,8 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
       <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? 'Edit Product' : 'New Product'}</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{isEdit ? `Editing: ${product.name}` : 'Fill in the details'}</p>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? t('admin.products.edit_modal_title') : t('admin.products.new_modal_title')}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{isEdit ? t('admin.products.editing', { name: product.name }) : t('admin.products.fill_details')}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={16} /></button>
         </div>
@@ -588,18 +597,18 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
           {error && <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} className="mt-0.5 flex-shrink-0" />{error}</div>}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Name <span className="text-red-500">*</span></label>
-            <input name="name" value={form.name} onChange={handleChange} placeholder="e.g. EDR Pro Plan" className={inp} />
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.products.label_name')} <span className="text-red-500">*</span></label>
+            <input name="name" value={form.name} onChange={handleChange} placeholder={t('admin.products.placeholder_name')} className={inp} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Service <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.products.label_service')} <span className="text-red-500">*</span></label>
             <AdminSelect name="serviceId" value={form.serviceId} onChange={handleChange}>
-              <option value="">Select a service…</option>
+              <option value="">{t('admin.products.select_service')}</option>
               {services.map(s => <option key={s._id ?? s.slug} value={s._id ?? s.slug}>{s.name}</option>)}
             </AdminSelect>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {[['priceMonth','Monthly (€)'],['priceYear','Yearly (€)'],['stock','Stock']].map(([name, label]) => (
+            {[['priceMonth',t('admin.products.label_price_month')],['priceYear',t('admin.products.label_price_year')],['stock',t('admin.products.label_stock')]].map(([name, label]) => (
               <div key={name}>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{label}</label>
                 <input name={name} type="number" min="0" step={name.includes('price') ? '0.01' : '1'} value={form[name]} onChange={handleChange} placeholder="0" className={inp} />
@@ -612,15 +621,15 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
                 <input type="checkbox" name="is_selected" checked={form.is_selected} onChange={handleChange} className="sr-only peer" />
                 <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
               </div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Top product</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{t('admin.products.label_top')}</span>
             </label>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 ml-12">
-              Featured in the homepage <strong>Top Products</strong> section.
+              {t('admin.products.label_top_hint')}
             </p>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Product images {!isEdit && <span className="text-red-500">*</span>}
+              {t('admin.products.label_images')} {!isEdit && <span className="text-red-500">*</span>}
             </label>
             {previews.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
@@ -634,15 +643,15 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
             )}
             <button type="button" onClick={() => fileRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
-              <Upload size={14} />{previews.length > 0 ? 'Add more images' : isEdit ? 'Upload images' : 'Upload images (required)'}
+              <Upload size={14} />{previews.length > 0 ? t('admin.products.add_images') : isEdit ? t('admin.products.upload_images_edit') : t('admin.products.upload_images')}
             </button>
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={addImages} className="hidden" />
           </div>
           <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">Cancel</button>
+            <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">{t('admin.common.cancel')}</button>
             <button type="submit" disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
               {loading && <Loader2 size={13} className="animate-spin" />}
-              {loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Product'}
+              {loading ? t('admin.common.saving') : isEdit ? t('admin.common.save') : t('admin.products.create')}
             </button>
           </div>
         </form>
@@ -652,6 +661,7 @@ function ProductFormModal({ product, categories, services, onClose, onSaved }) {
 }
 
 function ProductsTab({ categories, services }) {
+  const { t } = useTranslation();
   const [products, setProducts]         = useState([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(null);
@@ -681,9 +691,9 @@ function ProductsTab({ categories, services }) {
       const items = Array.isArray(inner?.items) ? inner.items : Array.isArray(inner?.data) ? inner.data : Array.isArray(inner) ? inner : [];
       setPagination(p => ({ ...p, page: params.page, total: d?.data?.total ?? d?.total ?? items.length }));
       setProducts(items);
-    } catch (e) { setError(e.response?.data?.message ?? 'Failed to load products.'); }
+    } catch (e) { setError(e.response?.data?.message ?? t('admin.products.load_failed')); }
     finally { setLoading(false); }
-  }, [pagination.page, pagination.limit, search, filterCategory, sortBy, sortOrder]);
+  }, [pagination.page, pagination.limit, search, filterCategory, sortBy, sortOrder, t]);
 
   useEffect(() => { fetch(); }, [fetch]);
   useEffect(() => { if (searchParams.get('action') === 'create') setModal({ type: 'create' }); }, [searchParams]);
@@ -711,10 +721,10 @@ function ProductsTab({ categories, services }) {
     const name = modal.data.name;
     try {
       await productsAPI.delete(modal.data.slug);
-      notify.success('Product deleted', name);
+      notify.success(t('admin.products.deleted'), name);
       emitAdminChange('product');
     } catch (err) {
-      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+      notify.error(t('admin.common.delete_failed'), err.response?.data?.message ?? err.message ?? t('admin.common.error'));
     }
     setModal(null);
     fetch({ page: pagination.page });
@@ -725,44 +735,44 @@ function ProductsTab({ categories, services }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[160px] max-w-sm">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input value={search} onChange={e => onSearch(e.target.value)} placeholder="Search products…"
+          <input value={search} onChange={e => onSearch(e.target.value)} placeholder={t('admin.products.search_placeholder')}
             className="w-full h-9 pl-8 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all" />
         </div>
         <div className="w-44">
           <AdminSelect size="sm"
             value={filterCategory}
             onChange={e => { setFilterCategory(e.target.value); fetch({ filterCategory: e.target.value, page: 1 }); }}>
-            <option value="">All categories</option>
+            <option value="">{t('admin.products.all_categories')}</option>
             {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
           </AdminSelect>
         </div>
-        <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{pagination.total} product{pagination.total !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{t('admin.products.count', { count: pagination.total })}</span>
         <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all">
-          <Plus size={13} />Add Product
+          <Plus size={13} />{t('admin.products.add')}
         </button>
       </div>
 
-      {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}<button onClick={() => fetch()} className="ml-auto text-xs underline">Retry</button></div>}
+      {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}<button onClick={() => fetch()} className="ml-auto text-xs underline">{t('admin.common.retry')}</button></div>}
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700/60">
-                <Th label="Product"  field="name"      sortBy={sortBy} order={sortOrder} onSort={onSort} />
-                <Th label="Service"  field="service"   sortBy={sortBy} order={sortOrder} onSort={onSort} />
-                <Th label="Category" />
-                <Th label="Monthly"  field="priceMonth" sortBy={sortBy} order={sortOrder} onSort={onSort} />
-                <Th label="Yearly"   field="priceYear"  sortBy={sortBy} order={sortOrder} onSort={onSort} />
-                <Th label="Stock"    field="stock"      sortBy={sortBy} order={sortOrder} onSort={onSort} />
-                <Th label="Top" />
-                <Th label="Created"  field="createdAt" sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label={t('admin.products.col_product')}  field="name"      sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label={t('admin.products.col_service')}  field="service"   sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label={t('admin.products.col_category')} />
+                <Th label={t('admin.products.col_monthly')}  field="priceMonth" sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label={t('admin.products.col_yearly')}   field="priceYear"  sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label={t('admin.products.col_stock')}    field="stock"      sortBy={sortBy} order={sortOrder} onSort={onSort} />
+                <Th label={t('admin.products.col_top')} />
+                <Th label={t('admin.common.created_at')}  field="createdAt" sortBy={sortBy} order={sortOrder} onSort={onSort} />
                 <Th label="" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/40">
               {loading ? [...Array(5)].map((_, i) => <SkeletonRow key={i} cols={9} />)
-                : products.length === 0 ? <EmptyState icon={Package} message="No products found" sub={search ? 'Try a different search term' : 'Create your first product'} />
+                : products.length === 0 ? <EmptyState icon={Package} message={t('admin.products.empty')} sub={search ? t('admin.products.empty_sub_search') : t('admin.products.empty_sub')} />
                 : products.map(p => (
                   <tr key={p.slug ?? p._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                     <td className="px-4 py-3"><div className="flex items-center gap-3"><Thumb src={p.images?.[0]} alt={p.name} /><div className="min-w-0"><p className="font-medium text-gray-900 dark:text-white truncate max-w-[160px]">{p.name}</p><p className="text-xs text-gray-400 truncate max-w-[160px]">/{p.slug}</p></div></div></td>
@@ -774,7 +784,7 @@ function ProductsTab({ categories, services }) {
                     <td className="px-4 py-3">
                       {p.is_selected ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> Top
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> {t('admin.products.col_top')}
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
@@ -804,6 +814,7 @@ function ProductsTab({ categories, services }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ServiceFormModal({ service, categories, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = !!service;
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
@@ -829,21 +840,21 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
   const handleChange = e => { const { name, value, type, checked } = e.target; setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value })); };
   const handleSubmit = async e => {
     e.preventDefault(); setError(null);
-    if (!form.name.trim()) return setError('Service name is required.');
-    if (!form.categoryId)  return setError('Please select a category.');
+    if (!form.name.trim()) return setError(t('admin.services.err_name_required'));
+    if (!form.categoryId)  return setError(t('admin.services.err_category_required'));
     setLoading(true);
     try {
       const payload = { name: form.name.trim(), categoryId: form.categoryId, description: form.description.trim(), available: form.available };
       if (isEdit) ensureOk(await servicesAPI.update(service.slug, payload));
       else        ensureOk(await servicesAPI.create(payload));
-      notify.success(isEdit ? 'Service updated' : 'Service created', form.name.trim());
+      notify.success(isEdit ? t('admin.services.updated') : t('admin.services.created'), form.name.trim());
       emitAdminChange('service');
       onSaved();
     } catch (err) {
-      const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const m = err.response?.data?.message ?? err.message ?? t('admin.common.error');
       const msg = Array.isArray(m) ? m.join(' · ') : m;
       setError(msg);
-      notify.error('Save failed', msg);
+      notify.error(t('admin.common.save_failed'), msg);
     }
     finally { setLoading(false); }
   };
@@ -853,24 +864,24 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? 'Edit Service' : 'New Service'}</h2>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? t('admin.services.edit_modal_title') : t('admin.services.new_modal_title')}</h2>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={13} className="mt-0.5 flex-shrink-0" />{error}</div>}
-          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Name <span className="text-red-500">*</span></label><input name="name" value={form.name} onChange={handleChange} placeholder="e.g. EDR Protection" className={inp} /></div>
-          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Category <span className="text-red-500">*</span></label><AdminSelect name="categoryId" value={form.categoryId} onChange={handleChange}><option value="">Select a category…</option>{categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}</AdminSelect></div>
-          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Description</label><textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder="Optional…" className="w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
+          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.services.label_name')} <span className="text-red-500">*</span></label><input name="name" value={form.name} onChange={handleChange} placeholder={t('admin.services.placeholder_name')} className={inp} /></div>
+          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.services.label_category')} <span className="text-red-500">*</span></label><AdminSelect name="categoryId" value={form.categoryId} onChange={handleChange}><option value="">{t('admin.services.select_category')}</option>{categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}</AdminSelect></div>
+          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.services.label_description')}</label><textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder={t('admin.common.optional')} className="w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
           <label className="flex items-center gap-2.5 cursor-pointer">
             <div className="relative">
               <input type="checkbox" name="available" checked={form.available} onChange={handleChange} className="sr-only peer" />
               <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
             </div>
-            <span className="text-sm text-gray-700 dark:text-gray-300">Available to customers</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{t('admin.services.label_available')}</span>
           </label>
           <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">{loading && <Loader2 size={13} className="animate-spin" />}{loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Service'}</button>
+            <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">{t('admin.common.cancel')}</button>
+            <button type="submit" disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">{loading && <Loader2 size={13} className="animate-spin" />}{loading ? t('admin.common.saving') : isEdit ? t('admin.common.save') : t('admin.services.create')}</button>
           </div>
         </form>
       </div>
@@ -879,6 +890,7 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
 }
 
 function ServicesTab({ categories }) {
+  const { t } = useTranslation();
   const [services, setServices] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -889,9 +901,9 @@ function ServicesTab({ categories }) {
   const fetch = useCallback(async (opts = {}) => {
     setLoading(true); setError(null);
     try { const res = await servicesAPI.getAll(opts.params ?? {}); setServices(extractList(res.data)); }
-    catch (e) { setError(e.response?.data?.message ?? 'Failed to load services.'); }
+    catch (e) { setError(e.response?.data?.message ?? t('admin.services.load_failed')); }
     finally { setLoading(false); }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -910,10 +922,10 @@ function ServicesTab({ categories }) {
     const name = modal.data.name;
     try {
       await servicesAPI.delete(modal.data.slug);
-      notify.success('Service deleted', name);
+      notify.success(t('admin.services.deleted'), name);
       emitAdminChange('service');
     } catch (err) {
-      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+      notify.error(t('admin.common.delete_failed'), err.response?.data?.message ?? err.message ?? t('admin.common.error'));
     }
     setModal(null);
     fetch();
@@ -939,25 +951,25 @@ function ServicesTab({ categories }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[160px] max-w-sm">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services…"
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('admin.services.search_placeholder')}
             className="w-full h-9 pl-8 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all" />
         </div>
         <div className="w-44">
           <AdminSelect size="sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-            <option value="">All categories</option>
+            <option value="">{t('admin.services.all_categories')}</option>
             {categories.map(c => <option key={c._id ?? c.slug} value={c._id ?? c.slug}>{c.name}</option>)}
           </AdminSelect>
         </div>
-        <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{filtered.length} service{filtered.length !== 1 ? 's' : ''}</span>
-        <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />Add Service</button>
+        <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto hidden sm:block">{t('admin.services.count', { count: filtered.length })}</span>
+        <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />{t('admin.services.add')}</button>
       </div>
       {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}</div>}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-gray-200 dark:border-gray-700/60"><Th label="Service" /><Th label="Category" /><Th label="Description" /><Th label="Availability" /><Th label="Created" /><Th label="" /></tr></thead>
+          <thead><tr className="border-b border-gray-200 dark:border-gray-700/60"><Th label={t('admin.services.col_service')} /><Th label={t('admin.services.col_category')} /><Th label={t('admin.services.col_description')} /><Th label={t('admin.services.col_availability')} /><Th label={t('admin.common.created_at')} /><Th label="" /></tr></thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/40">
             {loading ? [...Array(4)].map((_, i) => <SkeletonRow key={i} cols={6} />)
-              : filtered.length === 0 ? <EmptyState icon={Layers} message="No services found" sub="Create your first service" />
+              : filtered.length === 0 ? <EmptyState icon={Layers} message={t('admin.services.empty')} sub={t('admin.services.empty_sub')} />
               : filtered.map(s => (
                 <tr key={s.slug ?? s._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                   <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center flex-shrink-0 border border-violet-100 dark:border-violet-500/20"><Layers size={14} className="text-violet-500" /></div><div className="min-w-0"><p className="font-medium text-gray-900 dark:text-white truncate max-w-[160px]">{s.name}</p><p className="text-xs text-gray-400 truncate">/{s.slug}</p></div></div></td>
@@ -982,6 +994,7 @@ function ServicesTab({ categories }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
+  const { t } = useTranslation();
   const isEdit  = !!category;
   const fileRef = useRef(null);
   const [loading, setLoading]     = useState(false);
@@ -1011,8 +1024,8 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
   const handleFile = e => { const file = e.target.files?.[0]; if (!file) return; if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview); setImageFile(file); setPreview(URL.createObjectURL(file)); e.target.value = ''; };
   const handleSubmit = async e => {
     e.preventDefault(); setError(null);
-    if (!form.name.trim())     return setError('Category name is required.');
-    if (!isEdit && !imageFile) return setError('An image is required for a new category.');
+    if (!form.name.trim())     return setError(t('admin.categories.err_name_required'));
+    if (!isEdit && !imageFile) return setError(t('admin.categories.err_image_required'));
     setLoading(true);
     try {
       const fd = new FormData();
@@ -1022,14 +1035,14 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
       if (imageFile) fd.append('newImage', imageFile);
       if (isEdit) ensureOk(await categoriesAPI.update(category.slug, fd));
       else        ensureOk(await categoriesAPI.create(fd));
-      notify.success(isEdit ? 'Category updated' : 'Category created', form.name.trim());
+      notify.success(isEdit ? t('admin.categories.updated') : t('admin.categories.created'), form.name.trim());
       emitAdminChange('category');
       onSaved();
     } catch (err) {
-      const m = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const m = err.response?.data?.message ?? err.message ?? t('admin.common.error');
       const msg = Array.isArray(m) ? m.join(' · ') : m;
       setError(msg);
-      notify.error('Save failed', msg);
+      notify.error(t('admin.common.save_failed'), msg);
     }
     finally { setLoading(false); }
   };
@@ -1039,26 +1052,26 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? 'Edit Category' : 'New Category'}</h2>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">{isEdit ? t('admin.categories.edit_modal_title') : t('admin.categories.new_modal_title')}</h2>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={13} className="mt-0.5 flex-shrink-0" />{error}</div>}
-          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Image {!isEdit && <span className="text-red-500">*</span>}</label>
+          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.categories.label_image')} {!isEdit && <span className="text-red-500">*</span>}</label>
             <div className="flex items-center gap-3">
               <div onClick={() => fileRef.current?.click()} className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors flex-shrink-0 bg-gray-50 dark:bg-gray-700/50">{preview ? <img src={preview} alt="" className="w-full h-full object-cover" onError={() => setPreview(null)} /> : <ImageIcon size={22} className="text-gray-300 dark:text-gray-600" />}</div>
-              <div className="flex-1"><button type="button" onClick={() => fileRef.current?.click()} className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition-all"><Upload size={13} />{imageFile ? imageFile.name : isEdit ? 'Change image' : 'Choose image'}</button><p className="text-xs text-gray-400 dark:text-gray-500 mt-1">JPG, PNG or WebP · max 2 MB</p></div>
+              <div className="flex-1"><button type="button" onClick={() => fileRef.current?.click()} className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition-all"><Upload size={13} />{imageFile ? imageFile.name : isEdit ? t('admin.common.change_image') : t('admin.common.choose_image')}</button><p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('admin.common.image_hint')}</p></div>
             </div>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2"><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Name <span className="text-red-500">*</span></label><input name="name" value={form.name} onChange={handleChange} placeholder="e.g. Endpoint Security" className={inp} /></div>
-            <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Order</label><input name="order" type="number" min="1" value={form.order} onChange={handleChange} className={inp} /></div>
+            <div className="col-span-2"><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.categories.label_name')} <span className="text-red-500">*</span></label><input name="name" value={form.name} onChange={handleChange} placeholder={t('admin.categories.placeholder_name')} className={inp} /></div>
+            <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.categories.label_order')}</label><input name="order" type="number" min="1" value={form.order} onChange={handleChange} className={inp} /></div>
           </div>
-          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Description</label><textarea name="description" value={form.description} onChange={handleChange} rows={2} placeholder="Optional…" className="w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
+          <div><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">{t('admin.categories.label_description')}</label><textarea name="description" value={form.description} onChange={handleChange} rows={2} placeholder={t('admin.common.optional')} className="w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
           <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">{loading && <Loader2 size={13} className="animate-spin" />}{loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Category'}</button>
+            <button type="button" onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all">{t('admin.common.cancel')}</button>
+            <button type="submit" disabled={loading} className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2">{loading && <Loader2 size={13} className="animate-spin" />}{loading ? t('admin.common.saving') : isEdit ? t('admin.common.save') : t('admin.categories.create')}</button>
           </div>
         </form>
       </div>
@@ -1067,6 +1080,7 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
 }
 
 function CategoriesTab() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -1076,9 +1090,9 @@ function CategoriesTab() {
   const fetch = useCallback(async () => {
     setLoading(true); setError(null);
     try { const res = await categoriesAPI.getAll(); setCategories(extractList(res.data)); }
-    catch (e) { setError(e.response?.data?.message ?? 'Failed to load categories.'); }
+    catch (e) { setError(e.response?.data?.message ?? t('admin.categories.load_failed')); }
     finally { setLoading(false); }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -1086,10 +1100,10 @@ function CategoriesTab() {
     const name = modal.data.name;
     try {
       await categoriesAPI.delete(modal.data.slug);
-      notify.success('Category deleted', name);
+      notify.success(t('admin.categories.deleted'), name);
       emitAdminChange('category');
     } catch (err) {
-      notify.error('Delete failed', err.response?.data?.message ?? err.message ?? 'Unknown error');
+      notify.error(t('admin.common.delete_failed'), err.response?.data?.message ?? err.message ?? t('admin.common.error'));
     }
     setModal(null);
     fetch();
@@ -1113,16 +1127,16 @@ function CategoriesTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-gray-500 dark:text-gray-400 flex-1">{categories.length} categor{categories.length !== 1 ? 'ies' : 'y'}</span>
-        <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />Add Category</button>
+        <span className="text-sm text-gray-500 dark:text-gray-400 flex-1">{t('admin.categories.count', { count: categories.length })}</span>
+        <button onClick={() => setModal({ type: 'create' })} className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-all"><Plus size={13} />{t('admin.categories.add')}</button>
       </div>
       {error && <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-700 dark:text-red-400 text-sm"><AlertCircle size={14} />{error}</div>}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-gray-200 dark:border-gray-700/60"><Th label="Category" /><Th label="Slug" /><Th label="Description" /><Th label="Order" /><Th label="Created" /><Th label="" /></tr></thead>
+          <thead><tr className="border-b border-gray-200 dark:border-gray-700/60"><Th label={t('admin.categories.col_category')} /><Th label={t('admin.categories.col_slug')} /><Th label={t('admin.categories.col_description')} /><Th label={t('admin.categories.col_order')} /><Th label={t('admin.common.created_at')} /><Th label="" /></tr></thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/40">
             {loading ? [...Array(3)].map((_, i) => <SkeletonRow key={i} cols={6} />)
-              : categories.length === 0 ? <EmptyState icon={Tag} message="No categories yet" sub="Create your first category" />
+              : categories.length === 0 ? <EmptyState icon={Tag} message={t('admin.categories.empty')} sub={t('admin.categories.empty_sub')} />
               : categories.map(cat => (
                 <tr key={cat.slug ?? cat._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                   <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden border border-gray-100 dark:border-gray-700/60 bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center">{cat.image ? <img src={buildImageUrl(cat.image)} alt={cat.name} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} /> : <Tag size={14} className="text-indigo-400" />}</div><p className="font-medium text-gray-900 dark:text-white">{cat.name}</p></div></td>
@@ -1147,13 +1161,14 @@ function CategoriesTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'products',   label: 'Products',   icon: Package        },
-  { id: 'services',   label: 'Services',   icon: Layers         },
-  { id: 'categories', label: 'Categories', icon: Tag            },
-  { id: 'sliders',    label: 'Sliders',    icon: LayoutDashboard },
+  { id: 'products',   labelKey: 'admin.catalog.tab_products',   icon: Package        },
+  { id: 'services',   labelKey: 'admin.catalog.tab_services',   icon: Layers         },
+  { id: 'categories', labelKey: 'admin.catalog.tab_categories', icon: Tag            },
+  { id: 'sliders',    labelKey: 'admin.catalog.tab_sliders',    icon: LayoutDashboard },
 ];
 
 export default function ProductsPage() {
+  const { t } = useTranslation();
   const [tab, setTab]               = useState('products');
   const [categories, setCategories] = useState([]);
   const [services, setServices]     = useState([]);
@@ -1181,16 +1196,16 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Catalog</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.catalog.title')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Manage products, services, categories and carousel slides
+            {t('admin.catalog.subtitle')}
           </p>
         </div>
       </div>
 
       {/* Tab bar */}
       <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl w-full sm:w-fit overflow-x-auto">
-        {TABS.map(({ id, label, icon: Icon }) => (
+        {TABS.map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -1201,7 +1216,7 @@ export default function ProductsPage() {
             }`}
           >
             <Icon size={15} />
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden sm:inline">{t(labelKey)}</span>
           </button>
         ))}
       </div>

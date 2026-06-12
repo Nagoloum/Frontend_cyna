@@ -1,6 +1,7 @@
 // src/components/admin/shared/ConfirmDialog.jsx
 import { AlertTriangle, CheckCircle, Info, Loader2, X, XCircle } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * ConfirmDialog Dialog de confirmation action
@@ -28,14 +29,20 @@ export default function ConfirmDialog({
   open,
   onClose,
   onConfirm,
-  title = 'Confirm action',
-  message = 'Are you sure you want to continue?',
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   loading = false,
 }) {
+  const { t } = useTranslation();
   if (!open) return null;
+
+  const resolvedTitle = title ?? t('admin.common.delete_title');
+  const resolvedMessage = message ?? t('admin.common.delete_body');
+  const resolvedConfirmLabel = confirmLabel ?? t('admin.common.confirm');
+  const resolvedCancelLabel = cancelLabel ?? t('admin.common.cancel');
 
   const config = VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.danger;
   const Icon = config.icon;
@@ -71,9 +78,9 @@ export default function ConfirmDialog({
         </div>
 
         {/* Texte */}
-        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">{resolvedTitle}</h3>
         <div className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-          {message}
+          {resolvedMessage}
         </div>
 
         {/* Actions */}
@@ -89,7 +96,7 @@ export default function ConfirmDialog({
               disabled:opacity-50 transition-all
             "
           >
-            {cancelLabel}
+            {resolvedCancelLabel}
           </button>
           <button
             onClick={onConfirm}
@@ -102,7 +109,7 @@ export default function ConfirmDialog({
             `}
           >
             {loading && <Loader2 size={14} className="animate-spin" />}
-            {loading ? 'Processing…' : confirmLabel}
+            {loading ? t('admin.common.processing') : resolvedConfirmLabel}
           </button>
         </div>
       </div>

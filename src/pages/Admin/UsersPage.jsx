@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, ShieldCheck, ShieldOff,
   CheckCircle, Ban, Loader2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { usersAPI } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 
@@ -30,6 +31,7 @@ function formatDate(d) {
 const fullName = (u) => `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || '—';
 
 function RoleBadge({ role }) {
+  const { t } = useTranslation();
   const isAdmin = role === 'ADMIN';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -37,18 +39,20 @@ function RoleBadge({ role }) {
         ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400'
         : 'bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300'
     }`}>
-      {isAdmin ? 'Admin' : 'Customer'}
+      {isAdmin ? t('admin.users.role_admin') : t('admin.users.role_customer')}
     </span>
   );
 }
 
 function StatusBadge({ active }) {
+  const { t } = useTranslation();
   return active
-    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400"><CheckCircle size={11} /> Active</span>
-    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400"><Ban size={11} /> Suspended</span>;
+    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400"><CheckCircle size={11} /> {t('admin.common.active')}</span>
+    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400"><Ban size={11} /> {t('admin.users.status_suspended')}</span>;
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const [users, setUsers]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -74,11 +78,11 @@ export default function UsersPage() {
       setUsers(Array.isArray(list) ? list : []);
       setPagination((prev) => ({ ...prev, page: params.page, total }));
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Failed to load users.');
+      setError(err.response?.data?.message ?? t('admin.users.load_failed'));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, search]);
+  }, [pagination.page, pagination.limit, search, t]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -96,7 +100,7 @@ export default function UsersPage() {
 
   const toggleActive = async (user) => {
     const next = !user.isActive;
-    if (!next && !window.confirm(`Suspend ${user.email}? They will be signed out and unable to log in.`)) {
+    if (!next && !window.confirm(t('admin.users.suspend_confirm', { email: user.email }))) {
       return;
     }
     setActingId(user._id);
@@ -105,7 +109,7 @@ export default function UsersPage() {
       await usersAPI.setActive(user._id, next);
       await fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Failed to update user status.');
+      setError(err.response?.data?.message ?? t('admin.users.status_update_failed'));
     } finally {
       setActingId(null);
     }
@@ -116,9 +120,9 @@ export default function UsersPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Users</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.users.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          {pagination.total > 0 ? `${pagination.total} users total` : 'Manage customer accounts'}
+          {pagination.total > 0 ? t('admin.users.total_count', { count: pagination.total }) : t('admin.users.subtitle')}
         </p>
       </div>
 
@@ -126,7 +130,7 @@ export default function UsersPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
           <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
           <span>{error}</span>
-          <button onClick={() => fetchUsers()} className="ml-auto text-xs underline">Retry</button>
+          <button onClick={() => fetchUsers()} className="ml-auto text-xs underline">{t('admin.common.retry')}</button>
         </div>
       )}
 
@@ -138,13 +142,13 @@ export default function UsersPage() {
               type="text"
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search by name or email…"
+              placeholder={t('admin.users.search_placeholder')}
               className="w-full h-9 pl-9 pr-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
             />
           </div>
           {!loading && (
             <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">
-              {pagination.total} result{pagination.total !== 1 ? 's' : ''}
+              {t('admin.users.result_count', { count: pagination.total })}
             </span>
           )}
         </div>
@@ -153,9 +157,16 @@ export default function UsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700/60">
-                {['Name', 'Email', 'Role', 'Status', 'Joined', ''].map((col) => (
-                  <th key={col} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    {col}
+                {[
+                  { id: 'name', label: t('admin.users.col_name') },
+                  { id: 'email', label: t('admin.users.col_email') },
+                  { id: 'role', label: t('admin.users.col_role') },
+                  { id: 'status', label: t('admin.users.col_status') },
+                  { id: 'joined', label: t('admin.users.col_joined') },
+                  { id: 'actions', label: '' },
+                ].map((col) => (
+                  <th key={col.id} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {col.label}
                   </th>
                 ))}
               </tr>
@@ -176,8 +187,8 @@ export default function UsersPage() {
                   <td colSpan={6} className="px-4 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-gray-500">
                       <UsersIcon size={36} className="opacity-20" />
-                      <p className="text-sm font-medium">No users found</p>
-                      {search && <p className="text-xs">Try a different search term</p>}
+                      <p className="text-sm font-medium">{t('admin.users.empty')}</p>
+                      {search && <p className="text-xs">{t('admin.users.empty_search_hint')}</p>}
                     </div>
                   </td>
                 </tr>
@@ -194,7 +205,7 @@ export default function UsersPage() {
                       <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{formatDate(user.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
                         {isSelf ? (
-                          <span className="text-[11px] text-gray-400">You</span>
+                          <span className="text-[11px] text-gray-400">{t('admin.users.you')}</span>
                         ) : (
                           <button
                             onClick={() => toggleActive(user)}
@@ -208,7 +219,7 @@ export default function UsersPage() {
                             {actingId === user._id
                               ? <Loader2 size={13} className="animate-spin" />
                               : active ? <ShieldOff size={13} /> : <ShieldCheck size={13} />}
-                            {active ? 'Suspend' : 'Reactivate'}
+                            {active ? t('admin.users.action_suspend') : t('admin.users.action_reactivate')}
                           </button>
                         )}
                       </td>
@@ -222,7 +233,7 @@ export default function UsersPage() {
 
         {pagination.total > pagination.limit && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700/60">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Page {pagination.page} / {totalPages}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('admin.common.page_of', { page: pagination.page, total: totalPages })}</span>
             <div className="flex items-center gap-1">
               <button onClick={() => fetchUsers({ page: pagination.page - 1 })} disabled={pagination.page <= 1}
                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 transition-all"

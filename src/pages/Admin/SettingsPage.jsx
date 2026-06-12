@@ -82,7 +82,8 @@ function Section({ title, subtitle, icon: Icon, children }) {
 }
 
 // ── Save button ───────────────────────────────────────────────────────────────
-function SaveBtn({ loading, label = 'Save', onClick }) {
+function SaveBtn({ loading, label, onClick }) {
+  const { t } = useTranslation();
   return (
     <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
       <button
@@ -96,7 +97,7 @@ function SaveBtn({ loading, label = 'Save', onClick }) {
         "
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-        {loading ? 'Saving…' : label}
+        {loading ? t('admin.common.saving') : (label ?? t('admin.common.save'))}
       </button>
     </div>
   );
@@ -135,6 +136,7 @@ function PwdField({ label, value, onChange, placeholder }) {
 // Main component
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
+  const { t, i18n } = useTranslation();
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -150,19 +152,18 @@ export default function Settings() {
     if (theme === 'system') localStorage.removeItem(THEME_KEY);
     else localStorage.setItem(THEME_KEY, theme);
     applyTheme(theme);
-    showToast('Apparence enregistrée');
+    showToast(t('admin.settings.appearance_saved'));
     setTimeout(() => setSavingAppearance(false), 250);
   };
 
   // ── Language ──────────────────────────────────────────────────────────────
-  const { i18n } = useTranslation();
   const [lang, setLang] = useState(localStorage.getItem('lang') || i18n.language || 'fr');
   const [savingLang, setSavingLang] = useState(false);
   const saveLanguage = () => {
     setSavingLang(true);
     i18n.changeLanguage(lang);
     localStorage.setItem('lang', lang);
-    showToast('Langue enregistrée');
+    showToast(t('admin.settings.language_saved'));
     setTimeout(() => setSavingLang(false), 250);
   };
 
@@ -170,9 +171,9 @@ export default function Settings() {
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [savingPwd, setSavingPwd] = useState(false);
   const changePassword = async () => {
-    if (!pwd.current || !pwd.next || !pwd.confirm) { showToast('Veuillez remplir tous les champs.', 'error'); return; }
-    if (pwd.next !== pwd.confirm) { showToast('Les mots de passe ne correspondent pas.', 'error'); return; }
-    if (pwd.next.length < 8) { showToast('Le mot de passe doit contenir au moins 8 caractères.', 'error'); return; }
+    if (!pwd.current || !pwd.next || !pwd.confirm) { showToast(t('admin.settings.fill_all_fields'), 'error'); return; }
+    if (pwd.next !== pwd.confirm) { showToast(t('admin.settings.pwd_mismatch'), 'error'); return; }
+    if (pwd.next.length < 8) { showToast(t('admin.settings.pwd_too_short'), 'error'); return; }
     setSavingPwd(true);
     try {
       const res = await usersAPI.changePassword({
@@ -181,13 +182,13 @@ export default function Settings() {
         confirmPassword: pwd.confirm,
       });
       if (res?.data?.success === false) {
-        showToast(res.data.message || 'Erreur lors de la mise à jour.', 'error');
+        showToast(res.data.message || t('admin.settings.update_error'), 'error');
       } else {
-        showToast('Mot de passe mis à jour.');
+        showToast(t('admin.settings.pwd_updated'));
         setPwd({ current: '', next: '', confirm: '' });
       }
     } catch (e) {
-      showToast(e.response?.data?.message ?? 'Erreur lors de la mise à jour.', 'error');
+      showToast(e.response?.data?.message ?? t('admin.settings.update_error'), 'error');
     } finally { setSavingPwd(false); }
   };
 
@@ -202,13 +203,13 @@ export default function Settings() {
     try {
       const res = await usersAPI.delete(tokenUser.id);
       if (res?.data?.success === false) {
-        showToast(res.data.message || 'Suppression impossible.', 'error');
+        showToast(res.data.message || t('admin.settings.delete_failed'), 'error');
         setDeleting(false);
         return;
       }
       navigate('/logout');
     } catch (e) {
-      showToast(e.response?.data?.message ?? 'Suppression impossible.', 'error');
+      showToast(e.response?.data?.message ?? t('admin.settings.delete_failed'), 'error');
       setDeleting(false);
     }
   };
@@ -235,10 +236,10 @@ export default function Settings() {
     setSaving2FA(true);
     try {
       const res = await authAPI.activateEmail2FA();
-      if (res?.data?.success === false) showToast(res.data.message || 'Erreur.', 'error');
-      else { setTwoFAMethod('EMAIL'); setTotpSetup(null); showToast('2FA par email activé.'); }
+      if (res?.data?.success === false) showToast(res.data.message || t('admin.settings.generic_error'), 'error');
+      else { setTwoFAMethod('EMAIL'); setTotpSetup(null); showToast(t('admin.settings.twofa_email_enabled_toast')); }
     } catch (e) {
-      showToast(e.response?.data?.message ?? 'Erreur.', 'error');
+      showToast(e.response?.data?.message ?? t('admin.settings.generic_error'), 'error');
     } finally { setSaving2FA(false); }
   };
 
@@ -248,37 +249,37 @@ export default function Settings() {
       const res = await authAPI.setupTotp();
       const d = res?.data?.data ?? res?.data;
       if (res?.data?.success === false || !d?.qrDataUrl) {
-        showToast(res?.data?.message || 'Erreur lors de la configuration.', 'error');
+        showToast(res?.data?.message || t('admin.settings.twofa_setup_error'), 'error');
         return;
       }
       setTotpSetup({ qrDataUrl: d.qrDataUrl, secret: d.secret });
       setTotpCode('');
     } catch (e) {
-      showToast(e.response?.data?.message ?? 'Erreur lors de la configuration.', 'error');
+      showToast(e.response?.data?.message ?? t('admin.settings.twofa_setup_error'), 'error');
     } finally { setSaving2FA(false); }
   };
 
   const confirmTotp = async () => {
-    if (totpCode.trim().length < 6) { showToast('Entrez le code à 6 chiffres.', 'error'); return; }
+    if (totpCode.trim().length < 6) { showToast(t('admin.settings.enter_6_digit_code'), 'error'); return; }
     setSaving2FA(true);
     try {
       const res = await authAPI.activateTotp(totpCode.trim());
-      if (res?.data?.success === false) showToast(res.data.message || 'Code incorrect.', 'error');
-      else { setTwoFAMethod('TOTP'); setTotpSetup(null); setTotpCode(''); showToast('Google Authenticator activé.'); }
+      if (res?.data?.success === false) showToast(res.data.message || t('admin.settings.invalid_code'), 'error');
+      else { setTwoFAMethod('TOTP'); setTotpSetup(null); setTotpCode(''); showToast(t('admin.settings.twofa_totp_enabled_toast')); }
     } catch (e) {
-      showToast(e.response?.data?.message ?? 'Erreur.', 'error');
+      showToast(e.response?.data?.message ?? t('admin.settings.generic_error'), 'error');
     } finally { setSaving2FA(false); }
   };
 
   const disable2FA = async () => {
-    if (!disablePwd) { showToast('Mot de passe requis.', 'error'); return; }
+    if (!disablePwd) { showToast(t('admin.settings.password_required'), 'error'); return; }
     setSaving2FA(true);
     try {
       const res = await authAPI.disable2FA(disablePwd);
-      if (res?.data?.success === false) showToast(res.data.message || 'Erreur.', 'error');
-      else { setTwoFAMethod('NONE'); setDisableOpen(false); setDisablePwd(''); showToast('2FA désactivé.'); }
+      if (res?.data?.success === false) showToast(res.data.message || t('admin.settings.generic_error'), 'error');
+      else { setTwoFAMethod('NONE'); setDisableOpen(false); setDisablePwd(''); showToast(t('admin.settings.twofa_disabled_toast')); }
     } catch (e) {
-      showToast(e.response?.data?.message ?? 'Erreur.', 'error');
+      showToast(e.response?.data?.message ?? t('admin.settings.generic_error'), 'error');
     } finally { setSaving2FA(false); }
   };
 
@@ -294,22 +295,22 @@ export default function Settings() {
 
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{t('admin.settings.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          Configure your interface preferences
+          {t('admin.settings.subtitle')}
         </p>
       </div>
 
       {/* Appearance */}
-      <Section icon={Palette} title="Appearance" subtitle="Choose your theme saved locally on this device">
+      <Section icon={Palette} title={t('admin.settings.appearance')} subtitle={t('admin.settings.appearance_sub')}>
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Theme</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('admin.settings.theme')}</p>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'light',  label: 'Light',  icon: Sun     },
-                { value: 'dark',   label: 'Dark',   icon: Moon    },
-                { value: 'system', label: 'System', icon: Monitor },
+                { value: 'light',  label: t('admin.settings.theme_light'),  icon: Sun     },
+                { value: 'dark',   label: t('admin.settings.theme_dark'),   icon: Moon    },
+                { value: 'system', label: t('admin.settings.theme_system'), icon: Monitor },
               ].map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
@@ -333,7 +334,7 @@ export default function Settings() {
       </Section>
 
       {/* Language */}
-      <Section icon={Globe} title="Langue" subtitle="Langue de l'interface">
+      <Section icon={Globe} title={t('admin.settings.language')} subtitle={t('admin.settings.language_sub')}>
         <div className="grid grid-cols-2 gap-2 max-w-sm">
           {[
             { value: 'fr', label: 'Français' },
@@ -356,11 +357,11 @@ export default function Settings() {
       </Section>
 
       {/* Security — password */}
-      <Section icon={Lock} title="Mot de passe" subtitle="Saisissez votre mot de passe actuel pour le modifier">
+      <Section icon={Lock} title={t('admin.settings.pwd_section_title')} subtitle={t('admin.settings.pwd_section_sub')}>
         <div className="space-y-3">
           {/* Mot de passe actuel — pleine largeur */}
           <PwdField
-            label="Mot de passe actuel"
+            label={t('admin.settings.pwd_current')}
             value={pwd.current}
             onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))}
             placeholder="••••••••"
@@ -368,24 +369,24 @@ export default function Settings() {
           {/* Nouveau + Confirmer — côte à côte sur sm+, empilés sur mobile */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <PwdField
-              label="Nouveau mot de passe"
+              label={t('admin.settings.pwd_new')}
               value={pwd.next}
               onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))}
-              placeholder="Au moins 8 caractères"
+              placeholder={t('admin.settings.pwd_new_placeholder')}
             />
             <PwdField
-              label="Confirmer le nouveau mot de passe"
+              label={t('admin.settings.pwd_confirm')}
               value={pwd.confirm}
               onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))}
-              placeholder="Répétez le mot de passe"
+              placeholder={t('admin.settings.pwd_confirm_placeholder')}
             />
           </div>
         </div>
-        <SaveBtn loading={savingPwd} label="Changer le mot de passe" onClick={changePassword} />
+        <SaveBtn loading={savingPwd} label={t('admin.settings.change_pwd_btn')} onClick={changePassword} />
       </Section>
 
       {/* Two-factor authentication */}
-      <Section icon={ShieldCheck} title="Authentification à deux facteurs (2FA)" subtitle="Sécurisez l'accès à votre compte administrateur">
+      <Section icon={ShieldCheck} title={t('admin.settings.twofa_title')} subtitle={t('admin.settings.twofa_sub')}>
         {loading2FA ? (
           <div className="h-12 rounded-xl bg-gray-100 dark:bg-gray-700 animate-pulse" />
         ) : (
@@ -395,12 +396,12 @@ export default function Settings() {
               <div className="flex items-center gap-2.5">
                 <span className={`w-2.5 h-2.5 rounded-full ${twoFAMethod !== 'NONE' ? 'bg-green-500' : 'bg-gray-400'}`} />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {twoFAMethod === 'TOTP' ? 'Google Authenticator activé' : twoFAMethod === 'EMAIL' ? 'Code par email activé' : 'Désactivé'}
+                  {twoFAMethod === 'TOTP' ? t('admin.settings.twofa_totp_enabled') : twoFAMethod === 'EMAIL' ? t('admin.settings.twofa_email_enabled') : t('admin.settings.twofa_disabled')}
                 </span>
               </div>
               {twoFAMethod !== 'NONE' && (
                 <button onClick={() => setDisableOpen(true)} className="text-xs font-semibold text-red-500 hover:underline">
-                  Désactiver
+                  {t('admin.settings.disable')}
                 </button>
               )}
             </div>
@@ -411,19 +412,19 @@ export default function Settings() {
                 <button type="button" onClick={enableEmail2FA} disabled={saving2FA || twoFAMethod === 'EMAIL'} className={methodCardCls(twoFAMethod === 'EMAIL')}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <Mail size={16} className="text-indigo-500" />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Code par email</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{t('admin.settings.twofa_email_method')}</span>
                     {twoFAMethod === 'EMAIL' && <CheckCircle size={14} className="text-green-500 ml-auto" />}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Recevez un code à 6 chiffres par email à chaque connexion.</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('admin.settings.twofa_email_desc')}</p>
                 </button>
 
                 <button type="button" onClick={startTotpSetup} disabled={saving2FA} className={methodCardCls(twoFAMethod === 'TOTP')}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <Smartphone size={16} className="text-indigo-500" />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Google Authenticator</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{t('admin.settings.twofa_totp_method')}</span>
                     {twoFAMethod === 'TOTP' && <CheckCircle size={14} className="text-green-500 ml-auto" />}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Utilisez une application TOTP (Google Authenticator, Authy…).</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('admin.settings.twofa_totp_desc')}</p>
                 </button>
               </div>
             )}
@@ -432,22 +433,22 @@ export default function Settings() {
             {totpSetup && (
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Scannez ce QR code avec Google Authenticator, puis entrez le code à 6 chiffres généré.
+                  {t('admin.settings.twofa_scan_instruction')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-                  <img src={totpSetup.qrDataUrl} alt="QR code 2FA" className="w-40 h-40 rounded-xl border border-gray-200 dark:border-gray-700 bg-white" />
+                  <img src={totpSetup.qrDataUrl} alt={t('admin.settings.twofa_qr_alt')} className="w-40 h-40 rounded-xl border border-gray-200 dark:border-gray-700 bg-white" />
                   <div className="flex-1 space-y-3 w-full">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Clé manuelle</p>
+                      <p className="text-xs text-gray-400 mb-1">{t('admin.settings.twofa_manual_key')}</p>
                       <code className="block text-xs break-all px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">{totpSetup.secret}</code>
                     </div>
-                    <input value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="Code à 6 chiffres" className={pwdInputCls} />
+                    <input value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder={t('admin.settings.twofa_code_placeholder')} className={pwdInputCls} />
                     <div className="flex gap-2">
                       <button onClick={() => { setTotpSetup(null); setTotpCode(''); }} disabled={saving2FA} className="flex-1 h-9 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50">
-                        Annuler
+                        {t('admin.common.cancel')}
                       </button>
                       <button onClick={confirmTotp} disabled={saving2FA} className="flex-1 h-9 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50 inline-flex items-center justify-center gap-2">
-                        {saving2FA ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />} Activer
+                        {saving2FA ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />} {t('admin.settings.activate')}
                       </button>
                     </div>
                   </div>
@@ -465,19 +466,19 @@ export default function Settings() {
             <ShieldAlert size={15} className="text-red-500" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">Zone de danger</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Actions irréversibles</p>
+            <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">{t('admin.settings.danger_zone')}</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('admin.settings.danger_zone_sub')}</p>
           </div>
         </div>
         <div className="px-6 py-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            La suppression de votre compte est définitive et irréversible. Toutes vos données seront effacées.
+            {t('admin.settings.delete_account_warning')}
           </p>
           <button
             onClick={() => setConfirmDelete(true)}
             className="inline-flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-semibold border border-red-300 dark:border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
           >
-            <Trash2 size={14} /> Supprimer mon compte
+            <Trash2 size={14} /> {t('admin.settings.delete_account')}
           </button>
         </div>
       </div>
@@ -489,18 +490,18 @@ export default function Settings() {
           <div className="relative w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl p-6">
             <div className="flex items-center gap-2 mb-2 text-red-500">
               <ShieldAlert size={18} />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Supprimer votre compte ?</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{t('admin.settings.delete_confirm_title')}</h3>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-              Cette action est définitive. Toutes vos données seront supprimées.
+              {t('admin.settings.delete_confirm_body')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="flex-1 h-10 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-all">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button onClick={deleteAccount} disabled={deleting} className="flex-1 h-10 rounded-xl text-sm font-medium bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-all inline-flex items-center justify-center gap-2">
                 {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                {deleting ? 'Suppression…' : 'Supprimer'}
+                {deleting ? t('admin.common.deleting') : t('admin.settings.delete_btn')}
               </button>
             </div>
           </div>
@@ -514,18 +515,18 @@ export default function Settings() {
           <div className="relative w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl p-6">
             <div className="flex items-center gap-2 mb-2 text-gray-900 dark:text-white">
               <ShieldAlert size={18} className="text-amber-500" />
-              <h3 className="font-semibold">Désactiver le 2FA ?</h3>
+              <h3 className="font-semibold">{t('admin.settings.disable_twofa_title')}</h3>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Saisissez votre mot de passe pour confirmer la désactivation.
+              {t('admin.settings.disable_twofa_body')}
             </p>
-            <input type="password" value={disablePwd} onChange={(e) => setDisablePwd(e.target.value)} placeholder="Mot de passe" className={pwdInputCls} />
+            <input type="password" value={disablePwd} onChange={(e) => setDisablePwd(e.target.value)} placeholder={t('admin.settings.password_placeholder')} className={pwdInputCls} />
             <div className="flex gap-3 mt-5">
               <button onClick={() => { setDisableOpen(false); setDisablePwd(''); }} disabled={saving2FA} className="flex-1 h-10 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button onClick={disable2FA} disabled={saving2FA} className="flex-1 h-10 rounded-xl text-sm font-medium bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 inline-flex items-center justify-center gap-2">
-                {saving2FA ? <Loader2 size={14} className="animate-spin" /> : null} Désactiver
+                {saving2FA ? <Loader2 size={14} className="animate-spin" /> : null} {t('admin.settings.disable')}
               </button>
             </div>
           </div>

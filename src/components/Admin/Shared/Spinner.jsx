@@ -1,4 +1,5 @@
 // src/components/admin/shared/Spinner.jsx
+import { useTranslation } from 'react-i18next';
 
 /**
  * Spinner Loading indicator
@@ -26,20 +27,22 @@ const COLORS = {
 export default function Spinner({
   size   = 'md',
   color  = 'indigo',
-  label  = 'Loading…',
+  label,
   center = false,
 }) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('admin.common.loading');
   const spinner = (
     <div
       role="status"
-      aria-label={label}
+      aria-label={resolvedLabel}
       className={`
         rounded-full animate-spin flex-shrink-0
         ${SIZES[size]  ?? SIZES.md}
         ${COLORS[color] ?? COLORS.indigo}
       `}
     >
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{resolvedLabel}</span>
     </div>
   );
 
@@ -55,22 +58,26 @@ export default function Spinner({
 }
 
 // ── Variante pleine page ──────────────────────────────────────────────────────
-export function PageLoader({ message = 'Loading…' }) {
+export function PageLoader({ message }) {
+  const { t } = useTranslation();
+  const resolvedMessage = message ?? t('admin.common.loading');
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-4">
       <Spinner size="lg" color="indigo" />
-      <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">{message}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">{resolvedMessage}</p>
     </div>
   );
 }
 
 // ── Variante overlay ──────────────────────────────────────────────────────────
-export function OverlayLoader({ message = 'Loading…' }) {
+export function OverlayLoader({ message }) {
+  const { t } = useTranslation();
+  const resolvedMessage = message === undefined ? t('admin.common.loading') : message;
   return (
     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl gap-3">
       <Spinner size="lg" color="indigo" />
-      {message && (
-        <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{message}</p>
+      {resolvedMessage && (
+        <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{resolvedMessage}</p>
       )}
     </div>
   );

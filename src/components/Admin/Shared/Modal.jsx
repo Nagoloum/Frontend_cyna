@@ -2,6 +2,7 @@
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Modal Generic overlay rendered via Portal (always covers full viewport)
@@ -34,6 +35,7 @@ export default function Modal({
   footer,
   children,
 }) {
+  const { t } = useTranslation();
   // Lock body scroll when open
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
@@ -88,7 +90,7 @@ export default function Modal({
               <button
                 onClick={onClose}
                 className="ml-auto p-1.5 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
-                aria-label="Close"
+                aria-label={t('admin.common.close')}
               >
                 <X size={16} />
               </button>
