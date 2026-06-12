@@ -7,6 +7,7 @@ import {
     Tooltip,
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -26,6 +27,7 @@ const COLORS = [
  *   loading {boolean}
  */
 export default function SalesPieChart({ data = [], loading = false }) {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(null);
@@ -94,7 +96,7 @@ export default function SalesPieChart({ data = [], loading = false }) {
   if (!data.length) {
     return (
       <div className="w-full h-[280px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-        No data for this period
+        {t('admin.dashboard.no_data_period')}
       </div>
     );
   }
@@ -107,7 +109,7 @@ export default function SalesPieChart({ data = [], loading = false }) {
         {/* Total au centre */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">
-            Total
+            {t('admin.dashboard.total')}
           </span>
           <span className="text-lg font-bold text-gray-900 dark:text-white">
             {total.toLocaleString('fr-FR')} €

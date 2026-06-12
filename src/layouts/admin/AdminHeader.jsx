@@ -1,10 +1,87 @@
 // src/layouts/admin/AdminHeader.jsx
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, ChevronDown, User, LogOut, Settings, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Shield, ChevronDown, User, LogOut, Settings, RefreshCw, Globe, Check } from 'lucide-react';
 import ThemeToggle from '../../components/Kit/ThemeToggle';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleAdminUserMenu, setAdminShowUserMenu, setAdminRefreshing } from '../../store/slices/uiSlice';
+
+// ── Language switcher ───────────────────────────────────────────────────────
+// Sélecteur de langue compact, accessible depuis toutes les pages admin
+// (desktop + mobile). Met à jour i18n instantanément et persiste le choix.
+const LANGS = [
+  { code: 'fr', label: 'Français', short: 'FR' },
+  { code: 'en', label: 'English',  short: 'EN' },
+];
+
+function LanguageSwitcher() {
+  const { i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const current = String(i18n.language || 'en').split('-')[0];
+  const active = LANGS.find((l) => l.code === current) ?? LANGS[1];
+
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const choose = (code) => {
+    i18n.changeLanguage(code);
+    try { localStorage.setItem('lang', code); } catch { /* cookies refusés */ }
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Language"
+        className="
+          flex items-center gap-1.5 h-9 px-2.5 rounded-xl
+          text-gray-600 dark:text-gray-300
+          bg-white dark:bg-gray-800
+          border border-gray-200 dark:border-gray-700
+          hover:border-indigo-400 hover:text-indigo-600
+          dark:hover:border-indigo-500 dark:hover:text-indigo-400
+          transition-all
+        "
+      >
+        <Globe size={15} />
+        <span className="text-xs font-semibold">{active.short}</span>
+        <ChevronDown size={13} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="
+          absolute right-0 top-full mt-2 w-40
+          bg-white dark:bg-gray-800
+          border border-gray-200 dark:border-gray-700
+          rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/30
+          py-1.5 z-50
+          animate-in fade-in slide-in-from-top-2 duration-150
+        ">
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => choose(l.code)}
+              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            >
+              <span className="flex items-center gap-2.5">
+                <span className="text-[10px] font-bold w-6 text-indigo-500">{l.short}</span>
+                {l.label}
+              </span>
+              {l.code === active.code && <Check size={14} className="text-indigo-500" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Global admin refresh bus ────────────────────────────────────────────────
 export const ADMIN_REFRESH_EVENT = 'admin-refresh';
@@ -27,6 +104,7 @@ const getUserFromToken = () => {
 };
 
 export default function AdminHeader() {
+  const { t }         = useTranslation();
   const dispatch      = useAppDispatch();
   const showUserMenu  = useAppSelector((s) => s.ui.adminShowUserMenu);
   const refreshing    = useAppSelector((s) => s.ui.adminRefreshing);
@@ -77,8 +155,8 @@ export default function AdminHeader() {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          title="Refresh dashboard data"
-          aria-label="Refresh"
+          title={t('admin.header.refresh_tooltip')}
+          aria-label={t('admin.header.refresh')}
           className="
             w-9 h-9 flex items-center justify-center rounded-xl
             text-gray-500 dark:text-gray-400
@@ -91,6 +169,9 @@ export default function AdminHeader() {
         >
           <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
         </button>
+
+        {/* Sélecteur de langue (desktop + mobile) */}
+        <LanguageSwitcher />
 
         {/* Theme toggle */}
         <ThemeToggle variant="inline" />
@@ -161,14 +242,14 @@ export default function AdminHeader() {
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <User size={15} className="text-gray-400" />
-                  My Profile
+                  {t('admin.header.my_profile')}
                 </button>
                 <button
                   onClick={() => { dispatch(setAdminShowUserMenu(false)); navigate('/admin/settings'); }}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <Settings size={15} className="text-gray-400" />
-                  Settings
+                  {t('admin.header.settings')}
                 </button>
               </div>
 
@@ -178,7 +259,7 @@ export default function AdminHeader() {
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                   <LogOut size={15} />
-                  Sign Out
+                  {t('admin.header.sign_out')}
                 </button>
               </div>
             </div>

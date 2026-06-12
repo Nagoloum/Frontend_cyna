@@ -1,6 +1,7 @@
 // src/components/admin/shared/ExportButton.jsx
 import { ChevronDown, Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * ExportButton Bouton export CSV / PDF
@@ -15,13 +16,13 @@ import { useEffect, useRef, useState } from 'react';
 
 const FORMAT_CONFIG = {
   csv: {
-    label:    'Export CSV',
+    labelKey: 'admin.common.export_csv',
     icon:     FileSpreadsheet,
     mime:     'text/csv',
     ext:      'csv',
   },
   pdf: {
-    label:    'Export PDF',
+    labelKey: 'admin.common.export_pdf',
     icon:     FileText,
     mime:     'application/pdf',
     ext:      'pdf',
@@ -30,11 +31,13 @@ const FORMAT_CONFIG = {
 
 export default function ExportButton({
   onExport,
-  label    = 'Export',
+  label,
   disabled = false,
   formats  = ['csv', 'pdf'],
   filename = `export_${new Date().toISOString().slice(0, 10)}`,
 }) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('admin.common.export');
   const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState(null); // format en cours
   const [error, setError]     = useState(null);
@@ -68,7 +71,7 @@ export default function ExportButton({
         blob = new Blob([content], { type: FORMAT_CONFIG[format].mime });
       }
 
-      if (!blob) throw new Error('Tocune donnée à exporter.');
+      if (!blob) throw new Error(t('admin.common.export_no_data'));
 
       // Trigger download
       const url = URL.createObjectURL(blob);
@@ -80,7 +83,7 @@ export default function ExportButton({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.message ?? 'Error lors de l\'export.');
+      setError(err.message ?? t('admin.common.export_failed'));
       setTimeout(() => setError(null), 4000);
     } finally {
       setLoading(null);
@@ -110,7 +113,7 @@ export default function ExportButton({
           "
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />}
-          <span className="hidden sm:inline">{label}</span>
+          <span className="hidden sm:inline">{resolvedLabel}</span>
         </button>
         {error && (
           <div className="absolute right-0 top-full mt-1 w-52 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-xs shadow-lg z-50">
@@ -142,7 +145,7 @@ export default function ExportButton({
           ? <Loader2 size={14} className="animate-spin" />
           : <Download size={14} />
         }
-        <span className="hidden sm:inline">{loading ? 'Exporting…' : label}</span>
+        <span className="hidden sm:inline">{loading ? t('admin.common.exporting') : resolvedLabel}</span>
         <ChevronDown
           size={12}
           className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
@@ -178,8 +181,8 @@ export default function ExportButton({
               >
                 <Icon size={15} className="text-gray-400 flex-shrink-0" />
                 {loading === fmt
-                  ? <span className="flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" />Exporting…</span>
-                  : config.label
+                  ? <span className="flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" />{t('admin.common.exporting')}</span>
+                  : t(config.labelKey)
                 }
               </button>
             );

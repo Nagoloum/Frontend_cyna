@@ -1,5 +1,6 @@
 // src/components/admin/dashboard/RevenueLineChart.jsx
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Chart, LineController, LineElement, PointElement,
   CategoryScale, LinearScale, Tooltip, Filler,
@@ -16,6 +17,7 @@ Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearS
  *   loading boolean
  */
 export default function RevenueLineChart({ data = [], period = '7d', loading = false }) {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const chartRef  = useRef(null);
   const isDark    = document.documentElement.classList.contains('dark');
@@ -41,7 +43,7 @@ export default function RevenueLineChart({ data = [], period = '7d', loading = f
       data: {
         labels,
         datasets: [{
-          label: 'Revenue (€)',
+          label: t('admin.dashboard.revenue_dataset_label'),
           data: values,
           borderColor: 'rgba(99, 102, 241, 1)',
           backgroundColor: fill,
@@ -97,7 +99,7 @@ export default function RevenueLineChart({ data = [], period = '7d', loading = f
     });
 
     return () => chartRef.current?.destroy();
-  }, [data, period, loading, isDark]);
+  }, [data, period, loading, isDark, t]);
 
   if (loading) {
     return <div className="w-full h-[320px] bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />;
@@ -107,7 +109,7 @@ export default function RevenueLineChart({ data = [], period = '7d', loading = f
   if (empty) {
     return (
       <div className="w-full h-[320px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-        No paid orders for this period
+        {t('admin.dashboard.no_paid_orders_period')}
       </div>
     );
   }

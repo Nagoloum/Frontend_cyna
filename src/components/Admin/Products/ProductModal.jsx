@@ -2,6 +2,7 @@
 import { AlertCircle, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { buildImageUrl, getImagePath, productsAPI } from '../../../services/api';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
@@ -17,6 +18,7 @@ import {
 import AdminSelect from '../Shared/AdminSelect';
 
 export default function ProductModal({ product = null, services = [], onClose, onSaved }) {
+  const { t } = useTranslation();
   const dispatch     = useAppDispatch();
   const { loading, error, previews, existingImages, form } = useAppSelector((s) => s.productForm);
   const isEdit       = !!product;
@@ -91,11 +93,11 @@ export default function ProductModal({ product = null, services = [], onClose, o
     e.preventDefault();
     dispatch(setProductFormError(null));
 
-    if (!form.name.trim())                            { dispatch(setProductFormError('Product name is required.')); return; }
-    if (!form.serviceId)                              { dispatch(setProductFormError('Please select a service.')); return; }
-    if (form.priceMonth === '' || isNaN(Number(form.priceMonth))) { dispatch(setProductFormError('Monthly price is required.')); return; }
-    if (form.priceYear  === '' || isNaN(Number(form.priceYear)))  { dispatch(setProductFormError('Yearly price is required.')); return; }
-    if (!isEdit && imageFilesRef.current.length === 0) { dispatch(setProductFormError('At least one image is required.')); return; }
+    if (!form.name.trim())                            { dispatch(setProductFormError(t('admin.products.err_name_required'))); return; }
+    if (!form.serviceId)                              { dispatch(setProductFormError(t('admin.products.err_service_required'))); return; }
+    if (form.priceMonth === '' || isNaN(Number(form.priceMonth))) { dispatch(setProductFormError(t('admin.products.err_price_month_required'))); return; }
+    if (form.priceYear  === '' || isNaN(Number(form.priceYear)))  { dispatch(setProductFormError(t('admin.products.err_price_year_required'))); return; }
+    if (!isEdit && imageFilesRef.current.length === 0) { dispatch(setProductFormError(t('admin.products.err_image_required'))); return; }
 
     dispatch(setProductFormLoading(true));
     try {
@@ -129,7 +131,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
 
       onSaved();
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? 'An error occurred.';
+      const msg = err.response?.data?.message ?? err.message ?? t('admin.common.error');
       dispatch(setProductFormError(Array.isArray(msg) ? msg.join(' · ') : msg));
     } finally {
       dispatch(setProductFormLoading(false));
@@ -146,10 +148,10 @@ export default function ProductModal({ product = null, services = [], onClose, o
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              {isEdit ? 'Edit Product' : 'Add Product'}
+              {isEdit ? t('admin.products.edit_modal_title') : t('admin.products.add')}
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {isEdit ? `Editing: ${product.name}` : 'Fill in the details for the new product'}
+              {isEdit ? t('admin.products.editing', { name: product.name }) : t('admin.products.fill_details_new')}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -168,13 +170,13 @@ export default function ProductModal({ product = null, services = [], onClose, o
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Product name <span className="text-red-500">*</span>
+              {t('admin.products.label_name')} <span className="text-red-500">*</span>
             </label>
             <input
               name="name"
               value={form.name}
               onChange={handleChange}
-              placeholder="e.g. EDR Pro Plan"
+              placeholder={t('admin.products.placeholder_name')}
               className={inputCls}
             />
           </div>
@@ -182,12 +184,12 @@ export default function ProductModal({ product = null, services = [], onClose, o
           {/* Service */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Service <span className="text-red-500">*</span>
+              {t('admin.products.label_service')} <span className="text-red-500">*</span>
             </label>
             <AdminSelect name="serviceId" value={form.serviceId} onChange={handleChange}>
-              <option value="">Select a service…</option>
+              <option value="">{t('admin.products.select_service')}</option>
               {services.length === 0 && (
-                <option value="" disabled>No services available</option>
+                <option value="" disabled>{t('admin.products.no_services_available')}</option>
               )}
               {services.map((service) => (
                 <option key={service._id ?? service.slug} value={service._id ?? service.slug}>
@@ -197,7 +199,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
             </AdminSelect>
             {services.length === 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                ⚠ No services found. Create a service first.
+                ⚠ {t('admin.products.no_services_hint')}
               </p>
             )}
           </div>
@@ -206,7 +208,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Monthly (€) <span className="text-red-500">*</span>
+                {t('admin.products.label_price_month')} <span className="text-red-500">*</span>
               </label>
               <input
                 name="priceMonth"
@@ -221,7 +223,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Yearly (€) <span className="text-red-500">*</span>
+                {t('admin.products.label_price_year')} <span className="text-red-500">*</span>
               </label>
               <input
                 name="priceYear"
@@ -236,7 +238,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                Stock
+                {t('admin.products.label_stock')}
               </label>
               <input
                 name="stock"
@@ -257,17 +259,17 @@ export default function ProductModal({ product = null, services = [], onClose, o
                 <input type="checkbox" name="is_selected" checked={form.is_selected} onChange={handleChange} className="sr-only peer" />
                 <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
               </div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Top product</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{t('admin.products.label_top')}</span>
             </label>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 ml-12">
-              Featured in the homepage <strong>Top Products</strong> section.
+              {t('admin.products.label_top_hint')}
             </p>
           </div>
 
           {/* Images */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Product images {!isEdit && <span className="text-red-500">*</span>}
+              {t('admin.products.label_images')} {!isEdit && <span className="text-red-500">*</span>}
             </label>
             {previews.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
@@ -289,7 +291,7 @@ export default function ProductModal({ product = null, services = [], onClose, o
               className="w-full flex items-center justify-center gap-2 h-10 px-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition-all duration-200"
             >
               <Upload size={15} />
-              {previews.length > 0 ? 'Add more images' : 'Upload images'}
+              {previews.length > 0 ? t('admin.products.add_images') : t('admin.products.upload_images_edit')}
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageAdd} className="hidden" />
           </div>
@@ -298,13 +300,13 @@ export default function ProductModal({ product = null, services = [], onClose, o
             <button type="button" onClick={onClose} disabled={loading}
               className="h-10 px-5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-all"
             >
-              Cancel
+              {t('admin.common.cancel')}
             </button>
             <button type="submit" disabled={loading}
               className="h-10 px-6 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >
               {loading && <Loader2 size={14} className="animate-spin" />}
-              {loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Product'}
+              {loading ? t('admin.common.saving') : isEdit ? t('admin.common.save') : t('admin.products.create')}
             </button>
           </div>
         </form>

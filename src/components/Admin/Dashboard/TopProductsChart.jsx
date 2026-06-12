@@ -1,5 +1,6 @@
 // src/components/admin/dashboard/TopProductsChart.jsx
 import { Package } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Horizontal "ranking" chart for top products by paid revenue.
@@ -13,6 +14,7 @@ import { Package } from 'lucide-react';
  *   loading boolean
  */
 export default function TopProductsChart({ data = [], loading = false }) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="space-y-3">
@@ -31,7 +33,7 @@ export default function TopProductsChart({ data = [], loading = false }) {
       <div className="w-full h-[260px] flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500">
         <Package size={26} className="opacity-25" />
         <p className="text-sm text-center max-w-[200px]">
-          No paid orders yet top sellers will show here once revenue is recorded.
+          {t('admin.dashboard.top_products_empty')}
         </p>
       </div>
     );

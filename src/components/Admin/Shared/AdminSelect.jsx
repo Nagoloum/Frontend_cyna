@@ -1,6 +1,7 @@
 import { Check, ChevronDown } from 'lucide-react';
 import { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Fully custom themed select for the admin dashboard.
@@ -27,6 +28,7 @@ export default function AdminSelect({
   children,
   ...rest
 }) {
+  const { t } = useTranslation();
   const triggerRef = useRef(null);
   const menuRef    = useRef(null);
   const [open, setOpen]                 = useState(false);
@@ -192,7 +194,7 @@ export default function AdminSelect({
         >
           <ul className="max-h-64 overflow-y-auto py-1">
             {options.length === 0 && (
-              <li className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No options</li>
+              <li className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">{t('admin.common.no_options')}</li>
             )}
             {(() => {
               // Convention: the first <option> is always the label / placeholder

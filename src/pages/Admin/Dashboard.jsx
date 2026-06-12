@@ -8,6 +8,7 @@ import {
     Users
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     buildRevenueSeries,
     revenueByCategory,
@@ -59,6 +60,7 @@ function ProductThumb({ src, name }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [period, setPeriod]         = useState('7d');
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -81,9 +83,9 @@ export default function DashboardPage() {
       setCommandes( Array.isArray(data.commandes)  ? data.commandes  : []);
       setLastRefresh(new Date());
     } catch (err) {
-      setError(err.response?.data?.message ?? err.message ?? 'Failed to load dashboard data.');
+      setError(err.response?.data?.message ?? err.message ?? t('admin.dashboard.load_error'));
     } finally { setLoading(false); }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -115,12 +117,12 @@ export default function DashboardPage() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-0 sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.nav.dashboard')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Overview of your SaaS catalog
+            {t('admin.dashboard.subtitle')}
             {lastRefresh && (
               <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                · Updated {lastRefresh.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                · {t('admin.dashboard.updated_at', { time: lastRefresh.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) })}
               </span>
             )}
           </p>
@@ -137,10 +139,10 @@ export default function DashboardPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400">
           <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold">Failed to load data</p>
+            <p className="text-sm font-semibold">{t('admin.dashboard.load_error_title')}</p>
             <p className="text-xs mt-0.5 opacity-80">{error}</p>
           </div>
-          <button onClick={fetchData} className="ml-auto text-xs underline underline-offset-2 flex-shrink-0">Retry</button>
+          <button onClick={fetchData} className="ml-auto text-xs underline underline-offset-2 flex-shrink-0">{t('admin.common.retry')}</button>
         </div>
       )}
 
@@ -150,36 +152,36 @@ export default function DashboardPage() {
       {/* ── KPI Cards: 2 cols mobile, 4 cols desktop ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KPICard
-          title="Total Products"
+          title={t('admin.dashboard.kpi_total_products')}
           value={loading ? '…' : fmt(products.length)}
-          subtitle={loading ? '' : `${topProducts.length} top product${topProducts.length !== 1 ? 's' : ''}`}
+          subtitle={loading ? '' : t('admin.dashboard.kpi_top_products_count', { count: topProducts.length })}
           icon={Package}
           iconBg="bg-indigo-50 dark:bg-indigo-500/10"
           iconColor="text-indigo-600 dark:text-indigo-400"
           loading={loading}
         />
         <KPICard
-          title="Services"
+          title={t('admin.dashboard.kpi_services')}
           value={loading ? '…' : fmt(services.length)}
-          subtitle={loading ? '' : `${availableServices.length} available`}
+          subtitle={loading ? '' : t('admin.dashboard.kpi_services_available', { count: availableServices.length })}
           icon={Layers}
           iconBg="bg-violet-50 dark:bg-violet-500/10"
           iconColor="text-violet-600 dark:text-violet-400"
           loading={loading}
         />
         <KPICard
-          title="Categories"
+          title={t('admin.dashboard.kpi_categories')}
           value={loading ? '…' : fmt(categories.length)}
-          subtitle={loading ? '' : `${categories.length} configured`}
+          subtitle={loading ? '' : t('admin.dashboard.kpi_categories_configured', { count: categories.length })}
           icon={Tag}
           iconBg="bg-fuchsia-50 dark:bg-fuchsia-500/10"
           iconColor="text-fuchsia-600 dark:text-fuchsia-400"
           loading={loading}
         />
         <KPICard
-          title="Avg. Monthly Price"
+          title={t('admin.dashboard.kpi_avg_monthly_price')}
           value={loading ? '…' : fmtEur(avgPrice)}
-          subtitle={loading ? '' : 'Across all products'}
+          subtitle={loading ? '' : t('admin.dashboard.kpi_across_all_products')}
           icon={TrendingUp}
           iconBg="bg-green-50 dark:bg-green-500/10"
           iconColor="text-green-600 dark:text-green-400"
@@ -190,22 +192,22 @@ export default function DashboardPage() {
       {/* ── Users + Catalog summary ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <KPICard
-          title="Registered Users"
+          title={t('admin.dashboard.kpi_registered_users')}
           value={loading ? '…' : fmt(users.length)}
-          subtitle="Total user accounts"
+          subtitle={t('admin.dashboard.kpi_total_user_accounts')}
           icon={Users}
           iconBg="bg-blue-50 dark:bg-blue-500/10"
           iconColor="text-blue-600 dark:text-blue-400"
           loading={loading}
         />
         <div className="sm:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-4 flex flex-col gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catalog Summary</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('admin.dashboard.catalog_summary')}</p>
           <div className="flex flex-wrap gap-3">
             {[
-              { label: 'Top products',  value: topProducts.length,            color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-500/10'   },
-              { label: 'Services',      value: availableServices.length,       color: 'text-violet-600 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-500/10'   },
-              { label: 'Categories',    value: categories.length,              color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10' },
-              { label: 'Paid orders',   value: commandes.filter(c => String(c?.statut ?? '').toUpperCase() === 'PAID').length, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10' },
+              { label: t('admin.dashboard.summary_top_products'),  value: topProducts.length,            color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-500/10'   },
+              { label: t('admin.dashboard.summary_services'),      value: availableServices.length,       color: 'text-violet-600 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-500/10'   },
+              { label: t('admin.dashboard.summary_categories'),    value: categories.length,              color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10' },
+              { label: t('admin.dashboard.summary_paid_orders'),   value: commandes.filter(c => String(c?.statut ?? '').toUpperCase() === 'PAID').length, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10' },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${bg}`}>
                 <span className={`text-lg font-bold tabular-nums ${color}`}>{loading ? '…' : value}</span>
@@ -221,9 +223,9 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Revenue Overview</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('admin.dashboard.revenue_overview')}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Sum of paid orders · {fmtEur(periodRevenue)} this period
+                {t('admin.dashboard.revenue_overview_subtitle', { amount: fmtEur(periodRevenue) })}
               </p>
             </div>
             <TrendingUp size={15} className="text-gray-300 dark:text-gray-600" />
@@ -233,11 +235,11 @@ export default function DashboardPage() {
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Sales by Category</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid orders attributed to product categories</p>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('admin.dashboard.sales_by_category')}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('admin.dashboard.sales_by_category_subtitle')}</p>
           </div>
           {!loading && salesPieData.length === 0
-            ? <EmptyChart message="No paid orders attributed to a category yet" icon={Tag} />
+            ? <EmptyChart message={t('admin.dashboard.no_orders_category')} icon={Tag} />
             : <SalesPieChart data={salesPieData} loading={loading} />}
         </div>
       </div>
@@ -247,8 +249,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Top Products by Revenue</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Best-selling products from paid orders</p>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('admin.dashboard.top_products_by_revenue')}</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('admin.dashboard.top_products_by_revenue_subtitle')}</p>
             </div>
             <BarChart3 size={15} className="text-gray-300 dark:text-gray-600" />
           </div>
@@ -258,8 +260,8 @@ export default function DashboardPage() {
         {/* ── Recent Products ── */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Products</h3>
-            <span className="text-xs text-gray-400 dark:text-gray-500">{products.length} total</span>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('admin.dashboard.recent_products')}</h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{t('admin.dashboard.total_count', { count: products.length })}</span>
           </div>
 
           {loading ? (
@@ -275,7 +277,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : products.length === 0 ? (
-            <EmptyChart message="No products yet" icon={Package} />
+            <EmptyChart message={t('admin.dashboard.no_products')} icon={Package} />
           ) : (
             <div className="space-y-1.5">
               {[...products]
@@ -293,7 +295,7 @@ export default function DashboardPage() {
                     </div>
                     {p.is_selected ? (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                        Top
+                        {t('admin.dashboard.badge_top')}
                       </span>
                     ) : (
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">—</span>
@@ -302,7 +304,7 @@ export default function DashboardPage() {
                 ))}
               {products.length > 6 && (
                 <p className="text-xs text-center text-gray-400 dark:text-gray-500 pt-1.5">
-                  +{products.length - 6} more products
+                  {t('admin.dashboard.more_products', { count: products.length - 6 })}
                 </p>
               )}
             </div>

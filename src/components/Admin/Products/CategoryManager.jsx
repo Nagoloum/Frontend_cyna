@@ -1,11 +1,13 @@
 // src/components/admin/products/CategoryManager.jsx
 import { createPortal } from 'react-dom';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus, Edit2, Trash2, Check, Loader2, Tag, AlertCircle, Image } from 'lucide-react';
 import { categoriesAPI } from '../../../services/api';
 import { confirmDialog, notify } from '../../ui/feedback';
 
 function CategoryRow({ cat, onEdit, onDelete }) {
+  const { t } = useTranslation();
   return (
     <div className="group flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors duration-150">
       <div className="flex items-center gap-2.5 min-w-0">
@@ -21,7 +23,7 @@ function CategoryRow({ cat, onEdit, onDelete }) {
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{cat.name}</p>
           <p className="text-xs text-gray-400 dark:text-gray-500">
             /{cat.slug}
-            {cat.order !== undefined && ` · order ${cat.order}`}
+            {cat.order !== undefined && ` · ${t('admin.categories.order_label', { order: cat.order })}`}
           </p>
         </div>
       </div>
@@ -42,6 +44,7 @@ function CategoryRow({ cat, onEdit, onDelete }) {
 }
 
 export default function CategoryManager({ categories: initialCategories = [], onClose, onSaved }) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState(initialCategories);
   const [editingCat, setEditingCat] = useState(null);
   const [newName, setNewName]       = useState('');
@@ -75,8 +78,8 @@ export default function CategoryManager({ categories: initialCategories = [], on
       const res = await categoriesAPI.create(formData);
       // Backend returns 200 with { success: false, message } on validation errors.
       if (res.data && res.data.success === false) {
-        setError(res.data.message ?? 'Error while creating.');
-        notify.error('Create failed', res.data.message ?? 'Error while creating.');
+        setError(res.data.message ?? t('admin.common.error'));
+        notify.error(t('admin.common.save_failed'), res.data.message ?? t('admin.common.error'));
         return;
       }
       const created = res.data?.data ?? res.data;
@@ -86,9 +89,9 @@ export default function CategoryManager({ categories: initialCategories = [], on
       setNewImageFile(null);
       onSaved?.();
     } catch (err) {
-      const msg = err.response?.data?.message ?? 'Error while creating.';
+      const msg = err.response?.data?.message ?? t('admin.common.error');
       setError(msg);
-      notify.error('Create failed', msg);
+      notify.error(t('admin.common.save_failed'), msg);
     } finally {
       setLoadingSlug(null);
     }
@@ -105,8 +108,8 @@ export default function CategoryManager({ categories: initialCategories = [], on
       if (editingCat.order !== undefined) payload.order = editingCat.order;
       const res = await categoriesAPI.update(editingCat.slug, payload);
       if (res.data && res.data.success === false) {
-        setError(res.data.message ?? 'Error updating category.');
-        notify.error('Update failed', res.data.message ?? 'Error updating category.');
+        setError(res.data.message ?? t('admin.common.error'));
+        notify.error(t('admin.common.save_failed'), res.data.message ?? t('admin.common.error'));
         return;
       }
       const updated = res.data?.data ?? res.data;
@@ -114,9 +117,9 @@ export default function CategoryManager({ categories: initialCategories = [], on
       setEditingCat(null);
       onSaved?.();
     } catch (err) {
-      const msg = err.response?.data?.message ?? 'Error updating category.';
+      const msg = err.response?.data?.message ?? t('admin.common.error');
       setError(msg);
-      notify.error('Update failed', msg);
+      notify.error(t('admin.common.save_failed'), msg);
     } finally {
       setLoadingSlug(null);
     }
@@ -126,10 +129,10 @@ export default function CategoryManager({ categories: initialCategories = [], on
 
   const handleDelete = async (cat) => {
     const ok = await confirmDialog({
-      title: 'Delete category',
-      message: `Are you sure you want to delete "${cat.name}"? This may affect associated products.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: t('admin.categories.delete_confirm_title'),
+      message: t('admin.categories.delete_confirm_message', { name: cat.name }),
+      confirmLabel: t('admin.common.delete'),
+      cancelLabel: t('admin.common.cancel'),
       variant: 'danger',
     });
     if (!ok) return;
@@ -139,12 +142,12 @@ export default function CategoryManager({ categories: initialCategories = [], on
     try {
       await categoriesAPI.delete(cat.slug);
       setCategories((prev) => prev.filter((c) => c.slug !== cat.slug));
-      notify.success('Category deleted', `"${cat.name}" has been removed.`);
+      notify.success(t('admin.categories.deleted'), t('admin.categories.removed_detail', { name: cat.name }));
       onSaved?.();
     } catch (err) {
-      const msg = err.response?.data?.message ?? 'Error while deleting.';
+      const msg = err.response?.data?.message ?? t('admin.common.error');
       setError(msg);
-      notify.error('Delete failed', msg);
+      notify.error(t('admin.common.delete_failed'), msg);
     } finally {
       setLoadingSlug(null);
     }
@@ -160,9 +163,9 @@ export default function CategoryManager({ categories: initialCategories = [], on
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Manage Categories</h2>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('admin.categories.manage_title')}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {categories.length} category{categories.length !== 1 ? 's' : ''}
+              {t('admin.categories.count', { count: categories.length })}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -181,13 +184,13 @@ export default function CategoryManager({ categories: initialCategories = [], on
 
           {/* Create form */}
           <div className="space-y-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">New category</p>
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{t('admin.categories.new_modal_title')}</p>
             <div className="flex items-center gap-2">
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="Category name…"
+                placeholder={t('admin.categories.placeholder_name_short')}
                 className={inputCls}
               />
               <input
@@ -196,7 +199,7 @@ export default function CategoryManager({ categories: initialCategories = [], on
                 value={newOrder}
                 onChange={(e) => setNewOrder(e.target.value)}
                 placeholder={String(defaultNextOrder)}
-                title="Display order"
+                title={t('admin.categories.display_order')}
                 className="w-16 h-9 px-2 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
               />
             </div>
@@ -204,7 +207,7 @@ export default function CategoryManager({ categories: initialCategories = [], on
               <label className="flex-1 flex items-center gap-2 h-9 px-3 rounded-xl text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 cursor-pointer hover:border-indigo-400 transition-colors overflow-hidden">
                 <Image size={13} className="flex-shrink-0" />
                 <span className="truncate">
-                  {newImageFile ? newImageFile.name : 'Upload image (optional)'}
+                  {newImageFile ? newImageFile.name : t('admin.categories.upload_image_optional')}
                 </span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => setNewImageFile(e.target.files?.[0] ?? null)} />
               </label>
@@ -228,8 +231,8 @@ export default function CategoryManager({ categories: initialCategories = [], on
             {categories.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-gray-400 dark:text-gray-500">
                 <Tag size={28} className="opacity-20" />
-                <p className="text-sm">No categories yet</p>
-                <p className="text-xs">Create your first category above</p>
+                <p className="text-sm">{t('admin.categories.empty')}</p>
+                <p className="text-xs">{t('admin.categories.empty_sub_above')}</p>
               </div>
             ) : categories.map((cat) =>
               editingCat?.slug === cat.slug ? (
@@ -270,7 +273,7 @@ export default function CategoryManager({ categories: initialCategories = [], on
           <button onClick={onClose}
             className="w-full h-9 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
           >
-            Close
+            {t('admin.common.close')}
           </button>
         </div>
       </div>

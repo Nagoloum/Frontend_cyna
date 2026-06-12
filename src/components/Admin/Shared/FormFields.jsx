@@ -1,6 +1,7 @@
 // src/components/admin/shared/FormFields.jsx
 import { useState } from 'react';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // ── Styles communs ────────────────────────────────────────────────────────────
 const BASE_INPUT = `
@@ -104,8 +105,10 @@ export function InputField({
 // ── PasswordField ─────────────────────────────────────────────────────────────
 export function PasswordField({
   label, id, name, value, onChange,
-  placeholder = 'Mot de passe', required, disabled, error, hint, className = '',
+  placeholder, required, disabled, error, hint, className = '',
 }) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('admin.common.password');
   const [show, setShow] = useState(false);
   const inputId = id ?? name;
 
@@ -120,7 +123,7 @@ export function PasswordField({
           type={show ? 'text' : 'password'}
           value={value}
           onChange={onChange}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           required={required}
           disabled={disabled}
           className={`h-10 ${BASE_INPUT} pr-10 ${error ? BORDER_ERROR : BORDER_DEFAULT}`}

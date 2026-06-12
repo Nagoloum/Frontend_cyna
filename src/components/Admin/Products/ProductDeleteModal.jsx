@@ -1,9 +1,11 @@
 // src/components/admin/products/ProductDeleteModal.jsx
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 
 export default function ProductDeleteModal({ product, onClose, onConfirm }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
@@ -35,16 +37,16 @@ export default function ProductDeleteModal({ product, onClose, onConfirm }) {
 
         {/* Texte */}
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-          Delete this product?
+          {t('admin.products.delete_title')}
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-          You are about to permanently delete:
+          {t('admin.products.delete_intro')}
         </p>
         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4 px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-xl">
           {product?.name}
         </p>
         <p className="text-xs text-red-500 dark:text-red-400 mb-6">
-          ⚠️ This action is irreversible. The product will be removed from the catalog and will no longer be accessible on the site.
+          ⚠️ {t('admin.products.delete_warning')}
         </p>
 
         {/* Actions */}
@@ -54,7 +56,7 @@ export default function ProductDeleteModal({ product, onClose, onConfirm }) {
             disabled={loading}
             className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-all"
           >
-            Cancel
+            {t('admin.common.cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -62,7 +64,7 @@ export default function ProductDeleteModal({ product, onClose, onConfirm }) {
             className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {loading && <Loader2 size={14} className="animate-spin" />}
-            {loading ? 'Deleting…' : 'Delete'}
+            {loading ? t('admin.common.deleting') : t('admin.common.delete')}
           </button>
         </div>
       </div>
