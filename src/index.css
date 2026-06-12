@@ -17,6 +17,17 @@
   outline: none;
 }
 
+/* Champs de formulaire (inputs, textareas, selects) : ils possèdent déjà leur
+   propre style de focus (bordure + ring Tailwind). On retire l'anneau de focus
+   global pour éviter le double contour. S'applique partout dans le projet
+   (dashboard + côté utilisateur). */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
 /* Lien d'évitement (skip link) : hors écran sauf au focus clavier. */
 .skip-link {
   position: absolute;
