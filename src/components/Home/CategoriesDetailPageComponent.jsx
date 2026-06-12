@@ -76,7 +76,7 @@ export default function CategoryDetailPage() {
       if (sort === "priority") {
         if (a.stock === 0 && b.stock !== 0) return 1;
         if (b.stock === 0 && a.stock !== 0) return -1;
-        return (b.priority ?? 0) - (a.priority ?? 0);
+        return (b.is_selected ? 1 : 0) - (a.is_selected ? 1 : 0);
       }
       if (sort === "price-asc") return (a.priceMonth ?? 0) - (b.priceMonth ?? 0);
       if (sort === "price-desc") return (b.priceMonth ?? 0) - (a.priceMonth ?? 0);

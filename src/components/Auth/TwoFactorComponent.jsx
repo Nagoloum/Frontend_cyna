@@ -30,16 +30,19 @@ export default function TwoFactorPageComponent() {
     const tokenInvalid = !token || isExpired(token);
     const alreadyVerified = localStorage.getItem('twoFAVerified') === '1';
     const method = localStorage.getItem('twoFAMethod') || 'EMAIL';
+    // Destination apres validation : le back-office pour un admin, l'accueil sinon.
+    const destination = role === 'ADMIN' ? '/admin/dashboard' : '/home';
 
     useEffect(() => {
-        if (!tokenInvalid && role === 'ADMIN' && !alreadyVerified) {
+        if (!tokenInvalid && !alreadyVerified) {
             inputRefs.current[0]?.focus();
         }
-    }, [tokenInvalid, role, alreadyVerified]);
+    }, [tokenInvalid, alreadyVerified]);
 
     if (tokenInvalid) return <Navigate to="/auth" replace />;
-    if (role !== 'ADMIN') return <Navigate to="/home" replace />;
-    if (alreadyVerified) return <Navigate to="/admin/dashboard" replace />;
+    // La 2FA s'applique a tout utilisateur qui l'a activee, pas seulement aux
+    // admins : sinon un compte avec jeton pre-auth resterait bloque cote API.
+    if (alreadyVerified) return <Navigate to={destination} replace />;
 
     const handleChange = (element, index) => {
         if (isNaN(element.value)) return false;
@@ -86,10 +89,15 @@ export default function TwoFactorPageComponent() {
             const result = res.data;
 
             if (result?.success) {
+                // Le serveur renvoie un jeton complet (sans flag pre-auth) une
+                // fois le second facteur valide : il remplace le jeton pre-auth.
+                if (result.data?.token) {
+                    localStorage.setItem('token', result.data.token);
+                }
                 localStorage.setItem('twoFAVerified', '1');
                 localStorage.removeItem('twoFARequired');
                 localStorage.removeItem('twoFAMethod');
-                navigate('/admin/dashboard', { replace: true });
+                navigate(destination, { replace: true });
             } else {
                 setError(result?.message || t('twoFactor.invalid_code'));
             }

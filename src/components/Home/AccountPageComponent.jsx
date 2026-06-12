@@ -11,8 +11,10 @@ import {
     Clock,
     Copy,
     CreditCard,
+    Download,
     Edit2, Eye, EyeOff,
     KeyRound,
+    Loader2,
     Lock, LogOut, MapPin, Package,
     Plus,
     Receipt,
@@ -833,6 +835,29 @@ function OrdersTab() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(null);
+  const [dlError, setDlError] = useState("");
+
+  const handleDownloadInvoice = async (reference) => {
+    if (!reference) return;
+    setDownloading(reference);
+    setDlError("");
+    try {
+      const blob = await commandesAPI.downloadInvoice(reference);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `facture-${reference}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setDlError(t("account.invoice_error"));
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   useEffect(() => {
     commandesAPI.getByUser({ limit: 50 })
@@ -933,9 +958,28 @@ function OrdersTab() {
                 })}
               </div>
             )}
+
+            {order.statut === "PAID" && (
+              <div className="mt-3 pt-3 border-t border-[var(--border)] flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadInvoice(order.reference)}
+                  disabled={downloading === order.reference}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline disabled:opacity-60"
+                >
+                  {downloading === order.reference
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : <Download size={14} />}
+                  {t("account.download_invoice")}
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
+      {dlError && (
+        <p className="text-xs text-red-500 mt-3 text-right">{dlError}</p>
+      )}
     </div>
   );
 }
