@@ -8,7 +8,7 @@ export default function ErrorPage() {
       {/* Image à gauche (moitié de l'écran sur desktop, pleine largeur sur mobile) */}
       <div className="w-full lg:w-1/2 relative overflow-hidden">
         <img
-          src="images/404.jpeg"
+          src="/images/404.png"
           alt="Error background"
           className="absolute inset-0 w-full h-full object-cover"
         />

@@ -1167,11 +1167,22 @@ const TABS = [
   { id: 'sliders',    labelKey: 'admin.catalog.tab_sliders',    icon: LayoutDashboard },
 ];
 
+const VALID_TABS = ['products', 'services', 'categories', 'sliders'];
+
 export default function ProductsPage() {
   const { t } = useTranslation();
-  const [tab, setTab]               = useState('products');
+  const [searchParams] = useSearchParams();
+  const initialTab = VALID_TABS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'products';
+  const [tab, setTab]               = useState(initialTab);
   const [categories, setCategories] = useState([]);
   const [services, setServices]     = useState([]);
+
+  // Sync the active tab when the URL query (?tab=…) changes — drives the
+  // dashboard quick-action shortcuts (e.g. "Catégories" → ?tab=categories).
+  useEffect(() => {
+    const q = searchParams.get('tab');
+    if (VALID_TABS.includes(q)) setTab(q);
+  }, [searchParams]);
 
   const reloadShared = useCallback(() => {
     categoriesAPI.getAll().then(r => setCategories(extractList(r.data))).catch(() => {});

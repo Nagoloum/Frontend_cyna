@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Shield, ChevronDown, User, LogOut, Settings, RefreshCw, Globe, Check } from 'lucide-react';
+import { Shield, ShieldAlert, ChevronDown, User, LogOut, Settings, RefreshCw, Globe, Check } from 'lucide-react';
 import ThemeToggle from '../../components/Kit/ThemeToggle';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleAdminUserMenu, setAdminShowUserMenu, setAdminRefreshing } from '../../store/slices/uiSlice';
@@ -108,6 +108,8 @@ export default function AdminHeader() {
   const dispatch      = useAppDispatch();
   const showUserMenu  = useAppSelector((s) => s.ui.adminShowUserMenu);
   const refreshing    = useAppSelector((s) => s.ui.adminRefreshing);
+  const twoFA         = useAppSelector((s) => s.auth.twoFactorMethod);
+  const twoFAOn       = twoFA != null && twoFA !== 'NONE';
   const userMenuRef   = useRef(null);
   const navigate      = useNavigate();
 
@@ -176,16 +178,24 @@ export default function AdminHeader() {
         {/* Theme toggle */}
         <ThemeToggle variant="inline" />
 
-        {/* Badge 2FA */}
-        <div className="
-          hidden sm:flex items-center gap-1.5
-          bg-green-50 dark:bg-green-500/10
-          border border-green-200 dark:border-green-500/20
-          px-2.5 py-1 rounded-full
-        ">
-          <Shield size={12} className="text-green-500" />
-          <span className="text-xs font-semibold text-green-600 dark:text-green-400">2FA</span>
-        </div>
+        {/* Badge 2FA dynamique (masqué pendant le chargement du statut) */}
+        {twoFA != null && (
+          <div className={`
+            hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border
+            ${twoFAOn
+              ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20'
+              : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}
+          `}>
+            {twoFAOn
+              ? <Shield size={12} className="text-green-500" />
+              : <ShieldAlert size={12} className="text-red-500" />}
+            <span className={`text-xs font-semibold ${
+              twoFAOn ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+            }`}>
+              {t(twoFAOn ? 'admin.nav.two_fa_enabled' : 'admin.nav.two_fa_disabled')}
+            </span>
+          </div>
+        )}
 
         {/* Menu utilisateur */}
         <div className="relative" ref={userMenuRef}>
