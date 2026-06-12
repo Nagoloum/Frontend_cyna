@@ -63,6 +63,9 @@ export const extractTotal = (responseData) =>
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  // Envoie automatiquement le cookie httpOnly accessToken sur chaque requête
+  // cross-origin (défini par le backend sur login/2FA).
+  withCredentials: true,
 });
 
 export const setAuthToken = (token) => {
@@ -227,6 +230,10 @@ export const authAPI = {
     localStorage.removeItem('twoFAVerified');
     localStorage.removeItem('twoFARequired');
     setAuthToken(null);
+
+    // Efface le cookie httpOnly côté serveur (le JS ne peut pas le lire/supprimer
+    // directement — seul le backend peut le révoquer via Set-Cookie).
+    api.post('/auth/logout').catch(() => { /* fire-and-forget */ });
   },
 
   logout: () => {
