@@ -938,6 +938,8 @@
       "col_stock": "Stock",
       "col_top": "Top",
       "label_name": "Nom",
+      "label_description": "Description",
+      "placeholder_description": "Décrivez le produit…",
       "label_service": "Service",
       "label_price_month": "Mensuel (€)",
       "label_price_year": "Annuel (€)",
