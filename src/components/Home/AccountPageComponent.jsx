@@ -1,32 +1,63 @@
-import { adressesAPI, authAPI, cartesAPI, commandesAPI, usersAPI, pushAPI } from "@/services/api";
-import { isPushSupported, isPushSubscribed, getPushPermission, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
-import { Elements, CardNumberElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { jsPDF } from "jspdf";
+import {
+  adressesAPI,
+  authAPI,
+  cartesAPI,
+  commandesAPI,
+  usersAPI,
+  pushAPI,
+} from "@/services/api";
+import {
+  isPushSupported,
+  isPushSubscribed,
+  getPushPermission,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/push";
+import {
+  Elements,
+  CardNumberElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe";
 import StripeCardFields from "@/components/ui/StripeCardFields";
 import {
-    AlertCircle,
-    Ban,
-    Bell,
-    BellOff,
-    Calendar,
-    Check,
-    CheckCircle2, ChevronRight,
-    Clock,
-    Copy,
-    CreditCard,
-    Download,
-    Edit2, Eye, EyeOff,
-    KeyRound,
-    Loader2,
-    Lock, LogOut, Mail, MapPin, Package,
-    Plus,
-    Receipt,
-    RefreshCw,
-    Save,
-    Shield, ShieldCheck, ShieldOff,
-    Smartphone,
-    Sparkles,
-    Star, Trash2, User, X,
+  AlertCircle,
+  Ban,
+  Bell,
+  BellOff,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Copy,
+  CreditCard,
+  Download,
+  Edit2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Lock,
+  LogOut,
+  Mail,
+  MapPin,
+  Package,
+  Plus,
+  Receipt,
+  RefreshCw,
+  Save,
+  Shield,
+  ShieldCheck,
+  ShieldOff,
+  Smartphone,
+  Sparkles,
+  Star,
+  Trash2,
+  User,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -37,8 +68,12 @@ const getUser = () => {
   try {
     const t = localStorage.getItem("token");
     if (!t) return null;
-    return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-  } catch { return null; }
+    return JSON.parse(
+      atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+  } catch {
+    return null;
+  }
 };
 
 /**
@@ -52,7 +87,6 @@ const apiMessage = (err, fallback) => {
   return fallback;
 };
 
-
 // ── Reusable "set as default" switch (addresses / cards) ──────────────────────
 const DefaultToggle = ({ checked, onChange, label }) => (
   <label className="flex items-center gap-2.5 cursor-pointer pt-1">
@@ -65,7 +99,9 @@ const DefaultToggle = ({ checked, onChange, label }) => (
       />
       <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
     </div>
-    <span className="text-sm" style={{ color: "var(--text-primary)" }}>{label}</span>
+    <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+      {label}
+    </span>
   </label>
 );
 
@@ -74,9 +110,13 @@ const fmtDateLong = (iso) => {
   if (!iso) return "—";
   try {
     return new Date(iso).toLocaleDateString(undefined, {
-      day: "2-digit", month: "short", year: "numeric",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     });
-  } catch { return "—"; }
+  } catch {
+    return "—";
+  }
 };
 
 const fmtEur = (n) =>
@@ -89,14 +129,27 @@ const daysBetween = (from, to) => {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 };
 
-const Field = ({ label, type = "text", value, onChange, placeholder, disabled, inputMode }) => (
+const Field = ({
+  label,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  inputMode,
+}) => (
   <div>
-    <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>{label}</label>
+    <label
+      className="block text-xs font-[Kumbh Sans] font-600 mb-1.5"
+      style={{ color: "var(--text-muted)" }}
+    >
+      {label}
+    </label>
     <input
       type={type}
       inputMode={inputMode}
       value={value}
-      onChange={e => onChange(e.target.value)}
+      onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
       className="w-full px-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all disabled:opacity-50"
@@ -109,11 +162,13 @@ const Notify = ({ msg }) => {
   if (!msg) return null;
   const isErr = msg.type === "error";
   return (
-    <div className={`flex items-center gap-2 p-3 rounded-xl text-sm mb-4 ${
-      isErr
-        ? "bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-600"
-        : "bg-green-50 dark:bg-green-500/10 border border-green-200 text-green-600"
-    }`}>
+    <div
+      className={`flex items-center gap-2 p-3 rounded-xl text-sm mb-4 ${
+        isErr
+          ? "bg-red-50 dark:bg-red-500/10 border border-red-200 text-red-600"
+          : "bg-green-50 dark:bg-green-500/10 border border-green-200 text-green-600"
+      }`}
+    >
       {isErr ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
       {msg.text}
     </div>
@@ -125,27 +180,39 @@ function AddressModal({ address, onClose, onSaved }) {
   const { t } = useTranslation();
   const isEdit = !!address;
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
   const [form, setForm] = useState({
-    firstName:        address?.firstName        ?? "",
-    lastName:         address?.lastName         ?? "",
-    adresse:          address?.adresse          ?? "",
-    complementAdresse:address?.complementAdresse?? "",
-    city:             address?.city             ?? "",
-    region:           address?.region           ?? "",
-    country:          address?.country          ?? "",
-    codePostal:       address?.codePostal       ?? "",
-    phone:            address?.phone            ?? "",
-    isDefault:        address?.isDefault        ?? false,
+    firstName: address?.firstName ?? "",
+    lastName: address?.lastName ?? "",
+    adresse: address?.adresse ?? "",
+    complementAdresse: address?.complementAdresse ?? "",
+    city: address?.city ?? "",
+    region: address?.region ?? "",
+    country: address?.country ?? "",
+    codePostal: address?.codePostal ?? "",
+    phone: address?.phone ?? "",
+    isDefault: address?.isDefault ?? false,
   });
 
-  const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const required = ["firstName","lastName","adresse","city","region","country","codePostal","phone"];
-    const missing = required.find(k => !String(form[k] ?? "").trim());
-    if (missing) { setError(t("account.fill_required")); return; }
+    const required = [
+      "firstName",
+      "lastName",
+      "adresse",
+      "city",
+      "region",
+      "country",
+      "codePostal",
+      "phone",
+    ];
+    const missing = required.find((k) => !String(form[k] ?? "").trim());
+    if (missing) {
+      setError(t("account.fill_required"));
+      return;
+    }
     setSaving(true);
     try {
       const res = isEdit
@@ -162,48 +229,126 @@ function AddressModal({ address, onClose, onSaved }) {
         const saved = res.data?.data ?? res.data;
         const savedId = saved?._id ?? address?._id;
         if (savedId) {
-          try { await adressesAPI.setDefault(savedId); } catch { /* non-bloquant */ }
+          try {
+            await adressesAPI.setDefault(savedId);
+          } catch {
+            /* non-bloquant */
+          }
         }
       }
       onSaved();
     } catch (err) {
       setError(apiMessage(err, t("account.address_error")));
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h3 className="font-semibold text-[var(--text-primary)]">{isEdit ? t("account.edit_address") : t("account.new_address")}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"><X size={15} /></button>
+          <h3 className="font-semibold text-[var(--text-primary)]">
+            {isEdit ? t("account.edit_address") : t("account.new_address")}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"
+          >
+            <X size={15} />
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
-          {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
+          {error && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_fn")} value={form.firstName} onChange={set("firstName")} placeholder={t("account.ph_fn")} />
-            <Field label={t("account.field_ln")} value={form.lastName}  onChange={set("lastName")}  placeholder={t("account.ph_ln")} />
+            <Field
+              label={t("account.field_fn")}
+              value={form.firstName}
+              onChange={set("firstName")}
+              placeholder={t("account.ph_fn")}
+            />
+            <Field
+              label={t("account.field_ln")}
+              value={form.lastName}
+              onChange={set("lastName")}
+              placeholder={t("account.ph_ln")}
+            />
           </div>
-          <Field label={t("account.field_addr")}       value={form.adresse}    onChange={set("adresse")}   placeholder={t("account.ph_addr")} />
-          <Field label={t("account.field_complement")} value={form.complementAdresse} onChange={set("complementAdresse")} placeholder={t("account.ph_complement")} />
+          <Field
+            label={t("account.field_addr")}
+            value={form.adresse}
+            onChange={set("adresse")}
+            placeholder={t("account.ph_addr")}
+          />
+          <Field
+            label={t("account.field_complement")}
+            value={form.complementAdresse}
+            onChange={set("complementAdresse")}
+            placeholder={t("account.ph_complement")}
+          />
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_city")}   value={form.city}   onChange={set("city")}   placeholder={t("account.ph_city")} />
-            <Field label={t("account.field_region")} value={form.region} onChange={set("region")} placeholder={t("account.ph_region")} />
+            <Field
+              label={t("account.field_city")}
+              value={form.city}
+              onChange={set("city")}
+              placeholder={t("account.ph_city")}
+            />
+            <Field
+              label={t("account.field_region")}
+              value={form.region}
+              onChange={set("region")}
+              placeholder={t("account.ph_region")}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t("account.field_postal")}  value={form.codePostal} onChange={set("codePostal")} placeholder={t("account.ph_postal")} inputMode="numeric" />
-            <Field label={t("account.field_country")} value={form.country}    onChange={set("country")}   placeholder={t("account.ph_country")} />
+            <Field
+              label={t("account.field_postal")}
+              value={form.codePostal}
+              onChange={set("codePostal")}
+              placeholder={t("account.ph_postal")}
+              inputMode="numeric"
+            />
+            <Field
+              label={t("account.field_country")}
+              value={form.country}
+              onChange={set("country")}
+              placeholder={t("account.ph_country")}
+            />
           </div>
-          <Field label={t("account.field_phone")} value={form.phone} onChange={set("phone")} placeholder={t("account.ph_phone")} inputMode="tel" />
-          <DefaultToggle checked={form.isDefault} onChange={set("isDefault")} label={t("account.default_address")} />
+          <Field
+            label={t("account.field_phone")}
+            value={form.phone}
+            onChange={set("phone")}
+            placeholder={t("account.ph_phone")}
+            inputMode="tel"
+          />
+          <DefaultToggle
+            checked={form.isDefault}
+            onChange={set("isDefault")}
+            label={t("account.default_address")}
+          />
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
-            <button type="button" onClick={onClose} disabled={saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all"
+            >
               {t("account.cancel")}
             </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all"
+            >
               {saving ? t("account.saving") : t("account.save_address")}
             </button>
           </div>
@@ -228,14 +373,17 @@ function CardModalForm({ card, onClose, onSaved }) {
   const elements = useElements();
   const isEdit = !!card;
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
   const [carteName, setCarteName] = useState(card?.carteName ?? "");
   const [isDefault, setIsDefault] = useState(card?.isDefault ?? false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!carteName.trim()) { setError(t("checkout.error_cardholder")); return; }
+    if (!carteName.trim()) {
+      setError(t("checkout.error_cardholder"));
+      return;
+    }
 
     // En édition, la carte est déjà tokenisée chez Stripe : on ne modifie que
     // le nom du titulaire et le statut « par défaut ».
@@ -243,70 +391,126 @@ function CardModalForm({ card, onClose, onSaved }) {
       setSaving(true);
       try {
         const res = await cartesAPI.update(card._id, { carteName, isDefault });
-        if (res?.data?.success === false) { setError(res.data.message || t("account.card_error")); return; }
+        if (res?.data?.success === false) {
+          setError(res.data.message || t("account.card_error"));
+          return;
+        }
         onSaved();
       } catch (err) {
         setError(apiMessage(err, t("account.card_error")));
-      } finally { setSaving(false); }
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
     // Création : SetupIntent (0 €) → confirmation Stripe → enregistrement en base.
-    if (!stripe || !elements) { setError(t("account.stripe_unavailable")); return; }
+    if (!stripe || !elements) {
+      setError(t("account.stripe_unavailable"));
+      return;
+    }
     setSaving(true);
     try {
       const si = await cartesAPI.createSetupIntent();
       const clientSecret = si?.data?.data?.clientSecret;
-      if (!clientSecret) { setError(t("account.card_error")); return; }
+      if (!clientSecret) {
+        setError(t("account.card_error"));
+        return;
+      }
 
-      const { error: stripeErr, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardNumberElement),
-          billing_details: { name: carteName },
+      const { error: stripeErr, setupIntent } = await stripe.confirmCardSetup(
+        clientSecret,
+        {
+          payment_method: {
+            card: elements.getElement(CardNumberElement),
+            billing_details: { name: carteName },
+          },
         },
-      });
-      if (stripeErr) { setError(stripeErr.message || t("account.card_error")); return; }
+      );
+      if (stripeErr) {
+        setError(stripeErr.message || t("account.card_error"));
+        return;
+      }
 
       const res = await cartesAPI.create({
         carteName,
         stripePaymentMethodId: setupIntent.payment_method,
         isDefault,
       });
-      if (res?.data?.success === false) { setError(res.data.message || t("account.card_error")); return; }
+      if (res?.data?.success === false) {
+        setError(res.data.message || t("account.card_error"));
+        return;
+      }
       onSaved();
     } catch (err) {
       setError(apiMessage(err, t("account.card_error")));
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h3 className="font-semibold text-[var(--text-primary)]">{isEdit ? t("account.edit_card") : t("account.new_card")}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"><X size={15} /></button>
+          <h3 className="font-semibold text-[var(--text-primary)]">
+            {isEdit ? t("account.edit_card") : t("account.new_card")}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"
+          >
+            <X size={15} />
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
-          {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
+          {error && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+              {error}
+            </div>
+          )}
 
-          <Field label={t("account.field_cardholder")} value={carteName} onChange={setCarteName} placeholder="John Doe" />
+          <Field
+            label={t("account.field_cardholder")}
+            value={carteName}
+            onChange={setCarteName}
+            placeholder="John Doe"
+          />
 
           {isEdit ? (
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("account.card_edit_hint")}</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {t("account.card_edit_hint")}
+            </p>
           ) : (
             <StripeCardFields />
           )}
 
-          <DefaultToggle checked={isDefault} onChange={setIsDefault} label={t("account.default_card")} />
-          <p className="text-xs text-[var(--text-muted)]">🔒 {t("account.card_security")}</p>
+          <DefaultToggle
+            checked={isDefault}
+            onChange={setIsDefault}
+            label={t("account.default_card")}
+          />
+          <p className="text-xs text-[var(--text-muted)]">
+            🔒 {t("account.card_security")}
+          </p>
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
-            <button type="button" onClick={onClose} disabled={saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all"
+            >
               {t("account.cancel")}
             </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all"
+            >
               {saving ? t("account.saving") : t("account.save_card")}
             </button>
           </div>
@@ -320,19 +524,22 @@ function CardModalForm({ card, onClose, onSaved }) {
 function AddressesTab() {
   const { t } = useTranslation();
   const [addresses, setAddresses] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [modal, setModal]         = useState(null);
-  const [msg, setMsg]             = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null);
+  const [msg, setMsg] = useState(null);
 
   const load = () => {
     setLoading(true);
-    adressesAPI.getByUser()
-      .then(r => setAddresses(r.data?.data ?? r.data ?? []))
+    adressesAPI
+      .getByUser()
+      .then((r) => setAddresses(r.data?.data ?? r.data ?? []))
       .catch(() => setAddresses([]))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleDelete = async (id) => {
     try {
@@ -351,7 +558,10 @@ function AddressesTab() {
     try {
       const res = await adressesAPI.setDefault(id);
       if (res?.data?.success === false) {
-        setMsg({ type: "error", text: res.data.message || t("account.address_error") });
+        setMsg({
+          type: "error",
+          text: res.data.message || t("account.address_error"),
+        });
       } else {
         setMsg({ type: "success", text: t("account.default_updated") });
         load();
@@ -366,46 +576,80 @@ function AddressesTab() {
     <div>
       <Notify msg={msg} />
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("account.addresses_title")}</p>
-        <button onClick={() => setModal({ type: "create" })} className="btn-primary gap-2 h-9 px-4 text-sm">
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          {t("account.addresses_title")}
+        </p>
+        <button
+          onClick={() => setModal({ type: "create" })}
+          className="btn-primary gap-2 h-9 px-4 text-sm"
+        >
           <Plus size={14} /> {t("account.add_address")}
         </button>
       </div>
 
       {loading ? (
-        <div className="space-y-3 mb-6 lg:mb-0">{[0,1].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}</div>
+        <div className="space-y-3 mb-6 lg:mb-0">
+          {[0, 1].map((i) => (
+            <div key={i} className="skeleton h-24 rounded-2xl" />
+          ))}
+        </div>
       ) : addresses.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center mb-6 lg:mb-0">
-          <MapPin size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_addresses")}</p>
+          <MapPin
+            size={28}
+            style={{ color: "var(--text-muted)", margin: "0 auto 8px" }}
+          />
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {t("account.no_addresses")}
+          </p>
         </div>
       ) : (
         <div className="space-y-3 mb-6 lg:mb-0">
-          {addresses.map(a => (
+          {addresses.map((a) => (
             <div key={a._id} className="cyna-card p-4 flex items-start gap-3">
-              <MapPin size={16} style={{ color: "var(--accent)", marginTop: 2, flexShrink: 0 }} />
+              <MapPin
+                size={16}
+                style={{ color: "var(--accent)", marginTop: 2, flexShrink: 0 }}
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
                   {a.firstName} {a.lastName}
-                  {a.isDefault && <span className="badge badge-accent text-[10px] px-2 py-0.5">{t("account.default_badge")}</span>}
+                  {a.isDefault && (
+                    <span className="badge badge-accent text-[10px] px-2 py-0.5">
+                      {t("account.default_badge")}
+                    </span>
+                  )}
                 </p>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">{a.adresse}{a.complementAdresse ? `, ${a.complementAdresse}` : ""}</p>
-                <p className="text-xs text-[var(--text-secondary)]">{a.codePostal} {a.city}, {a.region}, {a.country}</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  {a.adresse}
+                  {a.complementAdresse ? `, ${a.complementAdresse}` : ""}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {a.codePostal} {a.city}, {a.region}, {a.country}
+                </p>
                 <p className="text-xs text-[var(--text-muted)]">{a.phone}</p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 {!a.isDefault && (
-                  <button onClick={() => handleSetDefault(a._id)} title={t("account.set_default")} aria-label={t("account.set_default")}
-                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
+                  <button
+                    onClick={() => handleSetDefault(a._id)}
+                    title={t("account.set_default")}
+                    aria-label={t("account.set_default")}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors"
+                  >
                     <Star size={13} />
                   </button>
                 )}
-                <button onClick={() => setModal({ type: "edit", data: a })}
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
+                <button
+                  onClick={() => setModal({ type: "edit", data: a })}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors"
+                >
                   <Edit2 size={13} />
                 </button>
-                <button onClick={() => handleDelete(a._id)}
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => handleDelete(a._id)}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition-colors"
+                >
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -414,31 +658,68 @@ function AddressesTab() {
         </div>
       )}
 
-      {modal?.type === "create" && <AddressModal onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
-      {modal?.type === "edit"   && <AddressModal address={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
+      {modal?.type === "create" && (
+        <AddressModal
+          onClose={() => setModal(null)}
+          onSaved={() => {
+            setModal(null);
+            load();
+          }}
+        />
+      )}
+      {modal?.type === "edit" && (
+        <AddressModal
+          address={modal.data}
+          onClose={() => setModal(null)}
+          onSaved={() => {
+            setModal(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
 
 // ── Subscription status pill ──────────────────────────────────────────────────
 const SUB_STATUS = {
-  ACTIF:    { key: "status_active",   cls: "bg-green-50 text-green-600 border-green-200" },
-  PENDING:  { key: "status_pending",  cls: "bg-amber-50 text-amber-600 border-amber-200" },
-  CANCELED: { key: "status_canceled", cls: "bg-red-50 text-red-600 border-red-200" },
-  DESACTIF: { key: "status_inactive", cls: "bg-gray-50 text-gray-600 border-gray-200" },
-  FINISHED: { key: "status_expired",  cls: "bg-gray-50 text-gray-600 border-gray-200" },
+  ACTIF: {
+    key: "status_active",
+    cls: "bg-green-50 text-green-600 border-green-200",
+  },
+  PENDING: {
+    key: "status_pending",
+    cls: "bg-amber-50 text-amber-600 border-amber-200",
+  },
+  CANCELED: {
+    key: "status_canceled",
+    cls: "bg-red-50 text-red-600 border-red-200",
+  },
+  DESACTIF: {
+    key: "status_inactive",
+    cls: "bg-gray-50 text-gray-600 border-gray-200",
+  },
+  FINISHED: {
+    key: "status_expired",
+    cls: "bg-gray-50 text-gray-600 border-gray-200",
+  },
 };
 function SubStatusPill({ statut }) {
   const { t } = useTranslation();
   const m = SUB_STATUS[statut] ?? SUB_STATUS.ACTIF;
   return (
-    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}>
+    <span
+      className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}
+    >
       {t(`account.${m.key}`)}
     </span>
   );
 }
 
-const subPeriodeLabel = (p, t) => String(p).toUpperCase() === "ANNEE" ? t("account.yearly") : t("account.monthly");
+const subPeriodeLabel = (p, t) =>
+  String(p).toUpperCase() === "ANNEE"
+    ? t("account.yearly")
+    : t("account.monthly");
 
 // ── Subscription detail modal ────────────────────────────────────────────────
 function SubscriptionDetailModal({ subscription, onClose }) {
@@ -446,35 +727,48 @@ function SubscriptionDetailModal({ subscription, onClose }) {
   const [copied, setCopied] = useState(false);
 
   const remaining = daysBetween(new Date(), subscription.dateFin);
-  const total     = daysBetween(subscription.dateDebut, subscription.dateFin) ?? 1;
-  const elapsed   = Math.max(0, total - (remaining ?? 0));
-  const progress  = Math.min(100, Math.max(0, (elapsed / total) * 100));
+  const total = daysBetween(subscription.dateDebut, subscription.dateFin) ?? 1;
+  const elapsed = Math.max(0, total - (remaining ?? 0));
+  const progress = Math.min(100, Math.max(0, (elapsed / total) * 100));
 
   const copyLicense = async () => {
     try {
       await navigator.clipboard.writeText(subscription.keyLicence);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
-    } catch { /* clipboard unavailable */ }
+    } catch {
+      /* clipboard unavailable */
+    }
   };
 
-  const daysLabel = (n) => n != null && n > 0
-    ? `${n} ${n > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
-    : t("account.status_expired");
+  const daysLabel = (n) =>
+    n != null && n > 0
+      ? `${n} ${n > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
+      : t("account.status_expired");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-[var(--border)]">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <SubStatusPill statut={subscription.statut} />
-              <span className="text-[10px] font-mono text-[var(--text-muted)]">{subscription.commandeReference}</span>
+              <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                {subscription.commandeReference}
+              </span>
             </div>
-            <h3 className="font-semibold text-[var(--text-primary)] truncate">{subscription.product?.name}</h3>
+            <h3 className="font-semibold text-[var(--text-primary)] truncate">
+              {subscription.product?.name}
+            </h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors flex-shrink-0"
+          >
             <X size={15} />
           </button>
         </div>
@@ -482,13 +776,21 @@ function SubscriptionDetailModal({ subscription, onClose }) {
         <div className="p-6 space-y-5">
           {/* License code */}
           <div>
-            <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>
-              <KeyRound size={11} className="inline mr-1" /> {t("account.license_label")}
+            <label
+              className="block text-xs font-[Kumbh Sans] font-600 mb-1.5"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <KeyRound size={11} className="inline mr-1" />{" "}
+              {t("account.license_label")}
             </label>
             <div className="flex items-stretch gap-2">
               <code
                 className="flex-1 px-3 py-2.5 rounded-xl font-mono text-sm tracking-wider truncate"
-                style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                style={{
+                  background: "var(--bg-subtle)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
               >
                 {subscription.keyLicence}
               </code>
@@ -496,14 +798,19 @@ function SubscriptionDetailModal({ subscription, onClose }) {
                 onClick={copyLicense}
                 className="px-3 rounded-xl text-xs font-medium transition-colors"
                 style={{
-                  background: copied ? "var(--success, #10b981)" : "var(--accent)",
+                  background: copied
+                    ? "var(--success, #10b981)"
+                    : "var(--accent)",
                   color: "#fff",
                 }}
               >
                 {copied ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </div>
-            <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>
+            <p
+              className="text-[11px] mt-1.5"
+              style={{ color: "var(--text-muted)" }}
+            >
               {t("account.license_hint")}
             </p>
           </div>
@@ -511,36 +818,76 @@ function SubscriptionDetailModal({ subscription, onClose }) {
           {/* Progress bar */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>{t("account.period_progress")}</span>
-              <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+              <span
+                className="text-xs font-[Kumbh Sans] font-600"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {t("account.period_progress")}
+              </span>
+              <span
+                className="text-xs font-semibold"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {daysLabel(remaining)}
               </span>
             </div>
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-muted)" }}>
+            <div
+              className="h-2 rounded-full overflow-hidden"
+              style={{ background: "var(--bg-muted)" }}
+            >
               <div
                 className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${progress}%`, background: "linear-gradient(90deg, rgba(99,102,241,0.95), rgba(139,92,246,0.95))" }}
+                style={{
+                  width: `${progress}%`,
+                  background:
+                    "linear-gradient(90deg, rgba(99,102,241,0.95), rgba(139,92,246,0.95))",
+                }}
               />
             </div>
           </div>
 
           {/* Grid: details */}
           <div className="grid grid-cols-2 gap-3">
-            <DetailCell icon={Calendar} label={t("account.start_date")} value={fmtDateLong(subscription.dateDebut)} />
-            <DetailCell icon={Clock}    label={t("account.expires_on")} value={fmtDateLong(subscription.dateFin)} />
-            <DetailCell icon={Receipt}  label={t("account.plan_label")} value={subPeriodeLabel(subscription.periode, t)} />
-            <DetailCell icon={Package}  label={t("account.quantity_label")} value={`× ${subscription.quantity ?? 1}`} />
+            <DetailCell
+              icon={Calendar}
+              label={t("account.start_date")}
+              value={fmtDateLong(subscription.dateDebut)}
+            />
+            <DetailCell
+              icon={Clock}
+              label={t("account.expires_on")}
+              value={fmtDateLong(subscription.dateFin)}
+            />
+            <DetailCell
+              icon={Receipt}
+              label={t("account.plan_label")}
+              value={subPeriodeLabel(subscription.periode, t)}
+            />
+            <DetailCell
+              icon={Package}
+              label={t("account.quantity_label")}
+              value={`× ${subscription.quantity ?? 1}`}
+            />
           </div>
 
           {/* Pricing */}
           <div
             className="flex items-center justify-between p-4 rounded-xl"
-            style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
+            style={{
+              background: "var(--bg-subtle)",
+              border: "1px solid var(--border)",
+            }}
           >
-            <p className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>
+            <p
+              className="text-xs font-[Kumbh Sans] font-600"
+              style={{ color: "var(--text-muted)" }}
+            >
               {t("account.subscription_cost")}
             </p>
-            <span className="font-[Kumbh Sans] font-700 text-lg" style={{ color: "var(--accent)" }}>
+            <span
+              className="font-[Kumbh Sans] font-700 text-lg"
+              style={{ color: "var(--accent)" }}
+            >
               {fmtEur(subscription.price)}
             </span>
           </div>
@@ -552,11 +899,25 @@ function SubscriptionDetailModal({ subscription, onClose }) {
 
 function DetailCell({ icon: Icon, label, value }) {
   return (
-    <div className="p-3 rounded-xl" style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
-      <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+    <div
+      className="p-3 rounded-xl"
+      style={{
+        background: "var(--bg-subtle)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <p
+        className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider mb-1"
+        style={{ color: "var(--text-muted)" }}
+      >
         <Icon size={11} /> {label}
       </p>
-      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{value}</p>
+      <p
+        className="text-sm font-medium"
+        style={{ color: "var(--text-primary)" }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -565,68 +926,134 @@ function DetailCell({ icon: Icon, label, value }) {
 function SubEditModal({ subscription, onClose, onSaved }) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(String(subscription.quantity ?? 1));
-  const [periode, setPeriode]   = useState(subscription.periode ?? "MOIS");
+  const [periode, setPeriode] = useState(subscription.periode ?? "MOIS");
 
-  const unitPrice = periode === "ANNEE"
-    ? Number(subscription.product?.priceYear ?? 0)
-    : Number(subscription.product?.priceMonth ?? 0);
+  const unitPrice =
+    periode === "ANNEE"
+      ? Number(subscription.product?.priceYear ?? 0)
+      : Number(subscription.product?.priceMonth ?? 0);
   const newTotal = unitPrice * Math.max(1, Number(quantity) || 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     const q = Number(quantity);
-    if (!Number.isFinite(q) || q <= 0) { setError(t("account.invalid_quantity")); return; }
+    if (!Number.isFinite(q) || q <= 0) {
+      setError(t("account.invalid_quantity"));
+      return;
+    }
     setSaving(true);
     try {
-      const res = await commandesAPI.updateAbonnement(subscription._id, { quantity: q, periode });
-      if (res?.data?.success === false) { setError(res.data.message || t("account.subscription_error")); return; }
+      const res = await commandesAPI.updateAbonnement(subscription._id, {
+        quantity: q,
+        periode,
+      });
+      if (res?.data?.success === false) {
+        setError(res.data.message || t("account.subscription_error"));
+        return;
+      }
       onSaved();
     } catch (err) {
       setError(apiMessage(err, t("account.subscription_error")));
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h3 className="font-semibold text-[var(--text-primary)]">{t("account.modify_subscription")}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"><X size={15} /></button>
+          <h3 className="font-semibold text-[var(--text-primary)]">
+            {t("account.modify_subscription")}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"
+          >
+            <X size={15} />
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
-          <p className="text-sm font-medium text-[var(--text-primary)]">{subscription.product?.name}</p>
+          {error && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            {subscription.product?.name}
+          </p>
 
-          <Field label={t("account.quantity_label")} type="number" inputMode="numeric" value={quantity} onChange={setQuantity} />
+          <Field
+            label={t("account.quantity_label")}
+            type="number"
+            inputMode="numeric"
+            value={quantity}
+            onChange={setQuantity}
+          />
 
           <div>
-            <label className="block text-xs font-[Kumbh Sans] font-600 mb-1.5" style={{ color: "var(--text-muted)" }}>{t("account.plan_label")}</label>
+            <label
+              className="block text-xs font-[Kumbh Sans] font-600 mb-1.5"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("account.plan_label")}
+            </label>
             <div className="flex gap-2">
               {["MOIS", "ANNEE"].map((p) => (
-                <button key={p} type="button" onClick={() => setPeriode(p)}
-                  className={`flex-1 h-10 rounded-xl border text-sm font-medium transition-all ${periode === p ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]"}`}>
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeriode(p)}
+                  className={`flex-1 h-10 rounded-xl border text-sm font-medium transition-all ${periode === p ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]"}`}
+                >
                   {p === "ANNEE" ? t("account.yearly") : t("account.monthly")}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
-            <span className="text-xs font-[Kumbh Sans] font-600" style={{ color: "var(--text-muted)" }}>{t("account.new_total")}</span>
-            <span className="font-[Kumbh Sans] font-700 text-base" style={{ color: "var(--accent)" }}>{fmtEur(newTotal)}</span>
+          <div
+            className="flex items-center justify-between p-3 rounded-xl"
+            style={{
+              background: "var(--bg-subtle)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <span
+              className="text-xs font-[Kumbh Sans] font-600"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("account.new_total")}
+            </span>
+            <span
+              className="font-[Kumbh Sans] font-700 text-base"
+              style={{ color: "var(--accent)" }}
+            >
+              {fmtEur(newTotal)}
+            </span>
           </div>
 
           <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
-            <button type="button" onClick={onClose} disabled={saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all"
+            >
               {t("account.cancel")}
             </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 h-10 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all"
+            >
               {saving ? t("account.saving") : t("account.save")}
             </button>
           </div>
@@ -637,21 +1064,47 @@ function SubEditModal({ subscription, onClose, onSaved }) {
 }
 
 // ── Reusable confirm modal (résilier / renouveler) ────────────────────────────
-function ConfirmActionModal({ title, body, confirmLabel, busy, danger, onCancel, onConfirm }) {
+function ConfirmActionModal({
+  title,
+  body,
+  confirmLabel,
+  busy,
+  danger,
+  onCancel,
+  onConfirm,
+}) {
   const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !busy && onCancel()} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={() => !busy && onCancel()}
+      />
       <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl p-6">
-        <h3 className="font-semibold mb-2" style={{ color: danger ? "var(--danger)" : "var(--text-primary)" }}>{title}</h3>
-        <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>{body}</p>
+        <h3
+          className="font-semibold mb-2"
+          style={{ color: danger ? "var(--danger)" : "var(--text-primary)" }}
+        >
+          {title}
+        </h3>
+        <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
+          {body}
+        </p>
         <div className="flex gap-3">
-          <button type="button" onClick={onCancel} disabled={busy}
-            className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="flex-1 h-10 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] disabled:opacity-50 transition-all"
+          >
             {t("account.cancel")}
           </button>
-          <button type="button" onClick={onConfirm} disabled={busy}
-            className={`flex-1 h-10 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition-all inline-flex items-center justify-center gap-2 ${danger ? "bg-red-600 hover:bg-red-700" : "bg-[var(--accent)] hover:opacity-90"}`}>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className={`flex-1 h-10 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition-all inline-flex items-center justify-center gap-2 ${danger ? "bg-red-600 hover:bg-red-700" : "bg-[var(--accent)] hover:opacity-90"}`}
+          >
             {busy ? <RefreshCw size={14} className="animate-spin" /> : null}
             {busy ? t("account.processing") : confirmLabel}
           </button>
@@ -664,34 +1117,47 @@ function ConfirmActionModal({ title, body, confirmLabel, busy, danger, onCancel,
 // ── Subscriptions tab ─────────────────────────────────────────────────────────
 function SubscriptionsTab() {
   const { t } = useTranslation();
-  const [subs, setSubs]       = useState([]);
+  const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg]         = useState(null);
+  const [msg, setMsg] = useState(null);
   const [selected, setSelected] = useState(null); // detail modal
-  const [editing, setEditing]   = useState(null); // edit modal
-  const [confirm, setConfirm]   = useState(null); // { type: 'resilier' | 'renew', sub }
-  const [busy, setBusy]         = useState(false);
+  const [editing, setEditing] = useState(null); // edit modal
+  const [confirm, setConfirm] = useState(null); // { type: 'resilier' | 'renew', sub }
+  const [busy, setBusy] = useState(false);
 
   const load = () => {
     setLoading(true);
-    commandesAPI.getAbonnements()
-      .then(r => setSubs(r.data?.data ?? r.data ?? []))
+    commandesAPI
+      .getAbonnements()
+      .then((r) => setSubs(r.data?.data ?? r.data ?? []))
       .catch(() => setSubs([]))
       .finally(() => setLoading(false));
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 3500); };
+  const flash = (type, text) => {
+    setMsg({ type, text });
+    setTimeout(() => setMsg(null), 3500);
+  };
 
   const doResilier = async (sub) => {
     setBusy(true);
     try {
       const res = await commandesAPI.resilierAbonnement(sub._id);
-      if (res?.data?.success === false) flash("error", res.data.message || t("account.subscription_error"));
-      else { flash("success", t("account.resilier_success")); load(); }
+      if (res?.data?.success === false)
+        flash("error", res.data.message || t("account.subscription_error"));
+      else {
+        flash("success", t("account.resilier_success"));
+        load();
+      }
     } catch (e) {
       flash("error", apiMessage(e, t("account.subscription_error")));
-    } finally { setBusy(false); setConfirm(null); }
+    } finally {
+      setBusy(false);
+      setConfirm(null);
+    }
   };
 
   const doRenew = async (sub) => {
@@ -699,94 +1165,173 @@ function SubscriptionsTab() {
     try {
       const res = await commandesAPI.renouvelerAbonnement(sub._id);
       const body = res?.data;
-      if (!body?.success) { flash("error", body?.message || t("account.subscription_error")); return; }
+      if (!body?.success) {
+        flash("error", body?.message || t("account.subscription_error"));
+        return;
+      }
       const payload = body.data ?? {};
 
       if (payload.status === "REQUIRES_ACTION" && payload.clientSecret) {
         const stripe = await stripePromise;
-        if (!stripe) { flash("error", t("account.stripe_unavailable")); return; }
-        const { error: scaErr, paymentIntent } = await stripe.confirmCardPayment(payload.clientSecret);
-        if (scaErr) { flash("error", scaErr.message || t("account.subscription_error")); return; }
-        if (paymentIntent?.status !== "succeeded") { flash("error", t("account.subscription_error")); return; }
-        const cRes = await commandesAPI.confirmRenouvellement(sub._id, paymentIntent.id);
-        if (cRes?.data?.success === false) { flash("error", cRes.data.message || t("account.subscription_error")); return; }
+        if (!stripe) {
+          flash("error", t("account.stripe_unavailable"));
+          return;
+        }
+        const { error: scaErr, paymentIntent } =
+          await stripe.confirmCardPayment(payload.clientSecret);
+        if (scaErr) {
+          flash("error", scaErr.message || t("account.subscription_error"));
+          return;
+        }
+        if (paymentIntent?.status !== "succeeded") {
+          flash("error", t("account.subscription_error"));
+          return;
+        }
+        const cRes = await commandesAPI.confirmRenouvellement(
+          sub._id,
+          paymentIntent.id,
+        );
+        if (cRes?.data?.success === false) {
+          flash("error", cRes.data.message || t("account.subscription_error"));
+          return;
+        }
       } else if (payload.status !== "PAID") {
-        flash("error", body?.message || t("account.subscription_error")); return;
+        flash("error", body?.message || t("account.subscription_error"));
+        return;
       }
 
-      flash("success", t("account.renew_success")); load();
+      flash("success", t("account.renew_success"));
+      load();
     } catch (e) {
       flash("error", apiMessage(e, t("account.subscription_error")));
-    } finally { setBusy(false); setConfirm(null); }
+    } finally {
+      setBusy(false);
+      setConfirm(null);
+    }
   };
 
-  const actionBtn = "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[var(--border)] transition-colors disabled:opacity-50";
+  const actionBtn =
+    "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[var(--border)] transition-colors disabled:opacity-50";
 
   return (
     <div>
       <Notify msg={msg} />
       <div className="cyna-card p-6 mb-6 lg:mb-0">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[var(--text-primary)]">{t("account.subscriptions_title")}</h2>
+          <h2 className="font-semibold text-[var(--text-primary)]">
+            {t("account.subscriptions_title")}
+          </h2>
           {!loading && subs.length > 0 && (
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("account.subscriptions_count", { count: subs.length })}</span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {t("account.subscriptions_count", { count: subs.length })}
+            </span>
           )}
         </div>
 
         {loading ? (
-          <div className="space-y-3">{[0, 1].map(i => <div key={i} className="skeleton h-28 rounded-2xl" />)}</div>
+          <div className="space-y-3">
+            {[0, 1].map((i) => (
+              <div key={i} className="skeleton h-28 rounded-2xl" />
+            ))}
+          </div>
         ) : subs.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
-            <Sparkles size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_subscriptions")}</p>
+            <Sparkles
+              size={28}
+              style={{ color: "var(--text-muted)", margin: "0 auto 8px" }}
+            />
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              {t("account.no_subscriptions")}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {subs.map((s) => {
               const remaining = daysBetween(new Date(), s.dateFin);
-              const daysLeft = remaining != null && remaining > 0
-                ? `${remaining} ${remaining > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
-                : t("account.status_expired");
+              const daysLeft =
+                remaining != null && remaining > 0
+                  ? `${remaining} ${remaining > 1 ? t("account.days_remaining") : t("account.day_remaining")}`
+                  : t("account.status_expired");
               const isCanceled = s.statut === "CANCELED";
               return (
-                <div key={s._id} className="rounded-2xl border border-[var(--border)] p-4" style={{ background: "var(--bg-card)" }}>
+                <div
+                  key={s._id}
+                  className="rounded-2xl border border-[var(--border)] p-4"
+                  style={{ background: "var(--bg-card)" }}
+                >
                   <div className="flex items-start gap-3 flex-wrap">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--bg-subtle)" }}>
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "var(--bg-subtle)" }}
+                    >
                       <Sparkles size={16} style={{ color: "var(--accent)" }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="font-medium text-sm text-[var(--text-primary)] truncate">{s.product?.name}</p>
+                        <p className="font-medium text-sm text-[var(--text-primary)] truncate">
+                          {s.product?.name}
+                        </p>
                         <SubStatusPill statut={s.statut} />
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)" }}>
+                        <span
+                          className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+                          style={{
+                            background: "var(--bg-subtle)",
+                            color: "var(--text-secondary)",
+                          }}
+                        >
                           {subPeriodeLabel(s.periode, t)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
-                        <span className="inline-flex items-center gap-1"><Clock size={11} /> {daysLeft}</span>
+                      <div
+                        className="flex items-center gap-3 text-xs"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={11} /> {daysLeft}
+                        </span>
                         <span style={{ color: "var(--text-muted)" }}>·</span>
                         <span>{fmtDateLong(s.dateFin)}</span>
                       </div>
                     </div>
-                    <span className="font-[Kumbh Sans] font-700 text-sm flex-shrink-0" style={{ color: "var(--accent)" }}>{fmtEur(s.price)}</span>
+                    <span
+                      className="font-[Kumbh Sans] font-700 text-sm flex-shrink-0"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      {fmtEur(s.price)}
+                    </span>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 mt-3 pt-3 flex-wrap" style={{ borderTop: "1px solid var(--border)" }}>
-                    <button onClick={() => setSelected(s)} className="text-xs font-medium inline-flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                  <div
+                    className="flex items-center gap-2 mt-3 pt-3 flex-wrap"
+                    style={{ borderTop: "1px solid var(--border)" }}
+                  >
+                    <button
+                      onClick={() => setSelected(s)}
+                      className="text-xs font-medium inline-flex items-center gap-1"
+                      style={{ color: "var(--text-muted)" }}
+                    >
                       {t("account.view_details")} <ChevronRight size={12} />
                     </button>
                     <div className="ml-auto flex items-center gap-1.5 flex-wrap">
-                      {!isCanceled && (
+                      {/* {!isCanceled && (
                         <button onClick={() => setEditing(s)} className={`${actionBtn} text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]`}>
                           <Edit2 size={12} /> {t("account.modify")}
                         </button>
-                      )}
-                      <button onClick={() => setConfirm({ type: "renew", sub: s })} className={`${actionBtn} text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]`}>
+                      )} */}
+                      <button
+                        onClick={() => setConfirm({ type: "renew", sub: s })}
+                        className={`${actionBtn} text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]`}
+                      >
                         <RefreshCw size={12} /> {t("account.renew")}
                       </button>
                       {!isCanceled && (
-                        <button onClick={() => setConfirm({ type: "resilier", sub: s })} className={`${actionBtn} text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10`}>
+                        <button
+                          onClick={() =>
+                            setConfirm({ type: "resilier", sub: s })
+                          }
+                          className={`${actionBtn} text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10`}
+                        >
                           <Ban size={12} /> {t("account.resilier")}
                         </button>
                       )}
@@ -799,13 +1344,22 @@ function SubscriptionsTab() {
         )}
       </div>
 
-      {selected && <SubscriptionDetailModal subscription={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <SubscriptionDetailModal
+          subscription={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
 
       {editing && (
         <SubEditModal
           subscription={editing}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); flash("success", t("account.modify_success")); load(); }}
+          onSaved={() => {
+            setEditing(null);
+            flash("success", t("account.modify_success"));
+            load();
+          }}
         />
       )}
 
@@ -824,13 +1378,642 @@ function SubscriptionsTab() {
       {confirm?.type === "renew" && (
         <ConfirmActionModal
           title={t("account.confirm_renew_title")}
-          body={t("account.confirm_renew_body", { price: fmtEur(confirm.sub.price) })}
+          body={t("account.confirm_renew_body", {
+            price: fmtEur(confirm.sub.price),
+          })}
           confirmLabel={t("account.renew")}
           busy={busy}
           onCancel={() => setConfirm(null)}
           onConfirm={() => doRenew(confirm.sub)}
         />
       )}
+    </div>
+  );
+}
+
+// ── Client-side PDF invoice generator ────────────────────────────────────────
+function generateInvoicePDF(order) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const PW = 210;
+  const mg = 18;
+  const ACCENT = [99, 102, 241];
+  const GRAY = [100, 116, 139];
+  const DARK = [15, 23, 42];
+  const LIGHT = [248, 250, 252];
+  const BORDER = [226, 232, 240];
+  const GREEN = [22, 163, 74];
+
+  const fmtShort = (iso) =>
+    iso ? new Date(iso).toLocaleDateString("fr-FR") : "—";
+  const fmtLong = (iso) =>
+    iso
+      ? new Date(iso).toLocaleDateString("fr-FR", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })
+      : "—";
+  const fmtMoney = (n) =>
+    Number(n ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) +
+    " €";
+
+  let y = mg;
+
+  // ── 1. Header ─────────────────────────────────────────────────────────────
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...ACCENT);
+  doc.text("CYNA", mg, y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(...DARK);
+  doc.text("FACTURE", PW - mg, y, { align: "right" });
+
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  doc.text("Solutions de cybersécurité SaaS", mg, y);
+
+  const statusLabel =
+    { PAID: "Payée", PENDING: "En attente", CANCEL: "Annulée" }[
+      order.statut
+    ] ?? order.statut;
+  [
+    `Réf. : ${order.reference}`,
+    `Date : ${fmtLong(order.createdAt)}`,
+    `Statut : ${statusLabel}`,
+  ].forEach((line, i) => {
+    doc.text(line, PW - mg, y + i * 4.5, { align: "right" });
+  });
+
+  y += 14;
+  doc.setDrawColor(...ACCENT);
+  doc.setLineWidth(0.7);
+  doc.line(mg, y, PW - mg, y);
+  y += 10;
+
+  // ── 2. Billing address (left) + Card (right) ──────────────────────────────
+  const midX = PW / 2 + 2;
+  let yL = y;
+  let yR = y;
+
+  if (order.addresseFacturation) {
+    const a = order.addresseFacturation;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text("ADRESSE DE FACTURATION", mg, yL);
+    yL += 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK);
+    doc.text(`${a.firstName} ${a.lastName}`, mg, yL);
+    yL += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...GRAY);
+    [
+      a.adresse,
+      a.complementAdresse,
+      `${a.codePostal} ${a.city}`,
+      `${a.region} — ${a.country}`,
+      a.phone,
+    ]
+      .filter(Boolean)
+      .forEach((line) => {
+        doc.text(line, mg, yL);
+        yL += 4.5;
+      });
+  }
+
+  if (order.cb) {
+    const cb = order.cb;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text("MOYEN DE PAIEMENT", midX, yR);
+    yR += 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK);
+    doc.text(cb.carteNumber, midX, yR);
+    yR += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...GRAY);
+    doc.text(cb.carteName, midX, yR);
+    yR += 4.5;
+    doc.text(`Expire le ${cb.carteDate}`, midX, yR);
+    yR += 4.5;
+  }
+
+  y = Math.max(yL, yR) + 6;
+  doc.setDrawColor(...BORDER);
+  doc.setLineWidth(0.3);
+  doc.line(mg, y, PW - mg, y);
+  y += 8;
+
+  // ── 3. Products table ──────────────────────────────────────────────────────
+  if (order.abonnements?.length > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text("DÉTAIL DES PRODUITS", mg, y);
+    y += 6;
+
+    const COL = {
+      name:   { x: mg,        label: "Produit" },
+      period: { x: mg + 72,   label: "Période" },
+      qty:    { x: mg + 97,   label: "Qté" },
+      start:  { x: mg + 110,  label: "Début" },
+      end:    { x: mg + 133,  label: "Fin" },
+      price:  { x: PW - mg,   label: "Prix", align: "right" },
+    };
+
+    doc.setFillColor(...LIGHT);
+    doc.rect(mg, y - 4, PW - mg * 2, 7, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...DARK);
+    Object.values(COL).forEach((c) => {
+      doc.text(c.label, c.x, y, { align: c.align ?? "left" });
+    });
+    y += 4;
+
+    doc.setDrawColor(...BORDER);
+    doc.setLineWidth(0.2);
+    doc.line(mg, y, PW - mg, y);
+    y += 4.5;
+
+    order.abonnements.forEach((ab, i) => {
+      if (i % 2 === 1) {
+        doc.setFillColor(250, 250, 252);
+        doc.rect(mg, y - 3.5, PW - mg * 2, 8, "F");
+      }
+      const name = ab.product?.name ?? "Produit";
+      const trimName = name.length > 32 ? name.slice(0, 31) + "…" : name;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      doc.text(trimName, COL.name.x, y);
+
+      doc.setTextColor(...GRAY);
+      doc.text(
+        ab.periode === "ANNEE" ? "Annuel" : "Mensuel",
+        COL.period.x,
+        y,
+      );
+      doc.text(String(ab.quantity ?? 1), COL.qty.x, y);
+      doc.text(fmtShort(ab.dateDebut), COL.start.x, y);
+      doc.text(fmtShort(ab.dateFin), COL.end.x, y);
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...DARK);
+      doc.text(fmtMoney(ab.price), COL.price.x, y, { align: "right" });
+
+      y += 8;
+    });
+
+    doc.setDrawColor(...BORDER);
+    doc.setLineWidth(0.3);
+    doc.line(mg, y, PW - mg, y);
+    y += 8;
+  }
+
+  // ── 4. Totals ──────────────────────────────────────────────────────────────
+  const totX = PW - mg - 65;
+  const hasReduction =
+    order.totalPriceAfterReduction != null &&
+    order.totalPriceAfterReduction !== order.totalPrice;
+  const finalTotal = hasReduction
+    ? order.totalPriceAfterReduction
+    : order.totalPrice;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...GRAY);
+  doc.text("Sous-total", totX, y);
+  doc.text(fmtMoney(order.totalPrice), PW - mg - 3, y, { align: "right" });
+  y += 8;
+
+  if (hasReduction) {
+    doc.setTextColor(...GREEN);
+    doc.text("Réduction (coupon)", totX, y);
+    doc.text(
+      `-${fmtMoney(order.totalPrice - order.totalPriceAfterReduction)}`,
+      PW - mg - 3,
+      y,
+      { align: "right" },
+    );
+    y += 8;
+  }
+
+  // Bandeau TOTAL : hauteur généreuse + padding horizontal
+  const bandH = 14;
+  const bandPad = 6;
+  doc.setFillColor(...ACCENT);
+  doc.rect(totX - bandPad, y - 6, PW - mg - totX + bandPad + 3, bandH, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text("TOTAL TTC", totX - 1, y + 2);
+  doc.text(fmtMoney(finalTotal), PW - mg - 4, y + 2, { align: "right" });
+  y += bandH + 6;
+
+  // ── 5. Footer ──────────────────────────────────────────────────────────────
+  const footerY = 285;
+  doc.setDrawColor(...BORDER);
+  doc.setLineWidth(0.3);
+  doc.line(mg, footerY - 5, PW - mg, footerY - 5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+  doc.text(
+    `CYNA — Document généré le ${new Date().toLocaleDateString("fr-FR")} — Réf. ${order.reference}`,
+    PW / 2,
+    footerY,
+    { align: "center" },
+  );
+
+  doc.save(`facture-${order.reference}.pdf`);
+}
+
+// ── Order status badge (module-level so InvoiceDetailModal can use it) ────────
+const statusBadge = (statut) => {
+  const map = {
+    PAID: { label: "Paid", cls: "bg-green-50 text-green-600 border-green-200" },
+    PENDING: {
+      label: "Pending",
+      cls: "bg-amber-50 text-amber-600 border-amber-200",
+    },
+    CANCEL: {
+      label: "Cancelled",
+      cls: "bg-red-50 text-red-600 border-red-200",
+    },
+  };
+  const m = map[statut] ?? {
+    label: statut,
+    cls: "bg-gray-50 text-gray-600 border-gray-200",
+  };
+  return (
+    <span
+      className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}
+    >
+      {m.label}
+    </span>
+  );
+};
+
+// ── Invoice detail modal ──────────────────────────────────────────────────────
+function InvoiceDetailModal({ reference, onClose }) {
+  const { t } = useTranslation();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [dlError, setDlError] = useState("");
+
+  useEffect(() => {
+    commandesAPI
+      .getByReference(reference)
+      .then((r) => setOrder(r.data?.data ?? r.data))
+      .catch(() =>
+        setLoadError("Impossible de charger les détails de la commande."),
+      )
+      .finally(() => setLoading(false));
+  }, [reference]);
+
+  const handleDownload = () => {
+    if (!order) return;
+    setDlError("");
+    try {
+      generateInvoicePDF(order);
+    } catch {
+      setDlError(t("account.invoice_error"));
+    }
+  };
+
+  const hasReduction =
+    order &&
+    order.totalPriceAfterReduction != null &&
+    order.totalPriceAfterReduction !== order.totalPrice;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
+        {/* Sticky header */}
+        <div
+          className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] sticky top-0 z-10"
+          style={{ background: "var(--bg-card)" }}
+        >
+          <div>
+            <p
+              className="text-xs font-mono mb-0.5"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("account.order_prefix")}
+              {reference}
+            </p>
+            <h3 className="font-semibold text-[var(--text-primary)]">
+              Détail de la facture
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] transition-colors"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {loading && (
+            <div className="flex items-center gap-3 py-8 justify-center text-[var(--text-secondary)]">
+              <Loader2 size={18} className="animate-spin" />
+              <span className="text-sm">Chargement…</span>
+            </div>
+          )}
+
+          {loadError && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+              {loadError}
+            </div>
+          )}
+
+          {order && (
+            <div className="space-y-6">
+              {/* Summary cells */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DetailCell
+                  icon={Calendar}
+                  label="Date"
+                  value={fmtDateLong(order.createdAt)}
+                />
+                <DetailCell
+                  icon={Package}
+                  label="Articles"
+                  value={`${order.nbreProducts} ${order.nbreProducts > 1 ? t("account.items") : t("account.item")}`}
+                />
+                <DetailCell
+                  icon={Clock}
+                  label={t("account.plan_label")}
+                  value={subPeriodeLabel(order.periode, t)}
+                />
+                <div
+                  className="p-3 rounded-xl"
+                  style={{
+                    background: "var(--bg-subtle)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <p
+                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider mb-2"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    <Receipt size={11} /> Statut
+                  </p>
+                  {statusBadge(order.statut)}
+                </div>
+              </div>
+
+              {/* Amounts */}
+              <div
+                className="p-4 rounded-xl space-y-2"
+                style={{
+                  background: "var(--bg-subtle)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    Sous-total
+                  </span>
+                  <span style={{ color: "var(--text-primary)" }}>
+                    {fmtEur(order.totalPrice)}
+                  </span>
+                </div>
+                {hasReduction && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-600">Réduction (coupon)</span>
+                    <span className="text-green-600">
+                      -{fmtEur(order.totalPrice - order.totalPriceAfterReduction)}
+                    </span>
+                  </div>
+                )}
+                <div
+                  className="flex items-center justify-between font-semibold pt-2"
+                  style={{ borderTop: "1px solid var(--border)" }}
+                >
+                  <span style={{ color: "var(--text-primary)" }}>
+                    {t("account.total_paid")}
+                  </span>
+                  <span className="text-lg" style={{ color: "var(--accent)" }}>
+                    {fmtEur(
+                      hasReduction
+                        ? order.totalPriceAfterReduction
+                        : order.totalPrice,
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Products / subscriptions */}
+              {Array.isArray(order.abonnements) &&
+                order.abonnements.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+                      Produits
+                    </h4>
+                    <div className="space-y-2">
+                      {order.abonnements.map((ab) => (
+                        <div
+                          key={ab._id}
+                          className="rounded-xl border border-[var(--border)] p-3"
+                          style={{ background: "var(--bg-card)" }}
+                        >
+                          <div className="flex items-start gap-3">
+                            {ab.product?.images?.[0]?.url && (
+                              <img
+                                src={ab.product.images[0].url}
+                                alt={ab.product.name}
+                                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <p className="font-medium text-sm text-[var(--text-primary)] truncate">
+                                  {ab.product?.name}
+                                </p>
+                                <span
+                                  className="font-semibold text-sm flex-shrink-0"
+                                  style={{ color: "var(--accent)" }}
+                                >
+                                  {fmtEur(ab.price)}
+                                </span>
+                              </div>
+                              <div
+                                className="flex items-center gap-2 flex-wrap text-xs"
+                                style={{ color: "var(--text-secondary)" }}
+                              >
+                                <span>
+                                  {t("account.quantity_label")} ×{ab.quantity}
+                                </span>
+                                <span style={{ color: "var(--text-muted)" }}>
+                                  ·
+                                </span>
+                                <span>{subPeriodeLabel(ab.periode, t)}</span>
+                                <span style={{ color: "var(--text-muted)" }}>
+                                  ·
+                                </span>
+                                <span>
+                                  {fmtDateLong(ab.dateDebut)} →{" "}
+                                  {fmtDateLong(ab.dateFin)}
+                                </span>
+                              </div>
+                              {ab.keyLicence && (
+                                <div className="flex items-center gap-1.5 mt-1.5">
+                                  <KeyRound
+                                    size={11}
+                                    style={{ color: "var(--text-muted)" }}
+                                  />
+                                  <code
+                                    className="text-xs font-mono tracking-wider"
+                                    style={{ color: "var(--text-secondary)" }}
+                                  >
+                                    {ab.keyLicence}
+                                  </code>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Billing address + card */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {order.addresseFacturation && (
+                  <div
+                    className="rounded-xl border border-[var(--border)] p-4"
+                    style={{ background: "var(--bg-subtle)" }}
+                  >
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-wider mb-3 flex items-center gap-1"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      <MapPin size={11} /> Adresse de facturation
+                    </p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      {order.addresseFacturation.firstName}{" "}
+                      {order.addresseFacturation.lastName}
+                    </p>
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {order.addresseFacturation.adresse}
+                      {order.addresseFacturation.complementAdresse
+                        ? `, ${order.addresseFacturation.complementAdresse}`
+                        : ""}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {order.addresseFacturation.codePostal}{" "}
+                      {order.addresseFacturation.city},{" "}
+                      {order.addresseFacturation.region}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {order.addresseFacturation.country}
+                    </p>
+                    {order.addresseFacturation.phone && (
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {order.addresseFacturation.phone}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {order.cb && (
+                  <div
+                    className="rounded-xl border border-[var(--border)] p-4"
+                    style={{ background: "var(--bg-subtle)" }}
+                  >
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-wider mb-3 flex items-center gap-1"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      <CreditCard size={11} /> Moyen de paiement
+                    </p>
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: "var(--bg-muted)" }}
+                      >
+                        <CreditCard
+                          size={15}
+                          style={{ color: "var(--accent)" }}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {order.cb.carteNumber}
+                        </p>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {order.cb.carteName} · {t("account.card_expires")}{" "}
+                          {order.cb.carteDate}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Download PDF */}
+              {dlError && (
+                <p className="text-xs text-red-500">{dlError}</p>
+              )}
+              <div
+                className="flex justify-end pt-4"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-all"
+                >
+                  <Download size={14} />
+                  {t("account.download_invoice")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -842,21 +2025,16 @@ function OrdersTab() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
   const [dlError, setDlError] = useState("");
+  const [selectedRef, setSelectedRef] = useState(null);
 
   const handleDownloadInvoice = async (reference) => {
     if (!reference) return;
     setDownloading(reference);
     setDlError("");
     try {
-      const blob = await commandesAPI.downloadInvoice(reference);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `facture-${reference}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const r = await commandesAPI.getByReference(reference);
+      const fullOrder = r.data?.data ?? r.data;
+      generateInvoicePDF(fullOrder);
     } catch {
       setDlError(t("account.invoice_error"));
     } finally {
@@ -865,8 +2043,9 @@ function OrdersTab() {
   };
 
   useEffect(() => {
-    commandesAPI.getByUser({ limit: 50 })
-      .then(r => {
+    commandesAPI
+      .getByUser({ limit: 50 })
+      .then((r) => {
         const payload = r.data?.data ?? r.data ?? {};
         // Le backend renvoie { results, total, ... } où `results` est soit un
         // tableau (filtre year), soit un objet groupé par année { "2026": [...] }.
@@ -876,42 +2055,49 @@ function OrdersTab() {
           : results && typeof results === "object"
             ? Object.values(results).flat()
             : [];
-        list.sort((a, b) => new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0));
+        list.sort(
+          (a, b) => new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0),
+        );
         setOrders(list);
       })
       .catch(() => setOrders([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const statusBadge = (statut) => {
-    const map = {
-      PAID:   { label: "Paid",      cls: "bg-green-50 text-green-600 border-green-200" },
-      PENDING:{ label: "Pending",   cls: "bg-amber-50 text-amber-600 border-amber-200" },
-      CANCEL: { label: "Cancelled", cls: "bg-red-50 text-red-600 border-red-200"       },
-    };
-    const m = map[statut] ?? { label: statut, cls: "bg-gray-50 text-gray-600 border-gray-200" };
-    return (
-      <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${m.cls}`}>
-        {m.label}
-      </span>
-    );
-  };
-
   if (loading) {
-    return <div className="space-y-3">{[0, 1, 2].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}</div>;
+    return (
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="skeleton h-24 rounded-2xl" />
+        ))}
+      </div>
+    );
   }
 
   if (orders.length === 0) {
     return (
       <div className="cyna-card p-6 mb-5 lg:mb-0">
-        <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.orders_title")}</h2>
+        <h2 className="font-semibold text-[var(--text-primary)] mb-4">
+          {t("account.orders_title")}
+        </h2>
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
-          <Package size={32} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="font-[Kumbh Sans] font-600 mb-1" style={{ color: "var(--text-secondary)" }}>{t("account.no_orders")}</p>
+          <Package
+            size={32}
+            style={{ color: "var(--text-muted)", margin: "0 auto 8px" }}
+          />
+          <p
+            className="font-[Kumbh Sans] font-600 mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {t("account.no_orders")}
+          </p>
           <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
             {t("account.no_orders_hint")}
           </p>
-          <Link to="/categories" className="btn-primary gap-2 inline-flex items-center">
+          <Link
+            to="/categories"
+            className="btn-primary gap-2 inline-flex items-center"
+          >
             <Star size={14} /> {t("account.explore_solutions")}
           </Link>
         </div>
@@ -921,18 +2107,28 @@ function OrdersTab() {
 
   return (
     <div className="cyna-card p-6 mb-5 lg:mb-0">
-      <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.orders_title")}</h2>
+      <h2 className="font-semibold text-[var(--text-primary)] mb-4">
+        {t("account.orders_title")}
+      </h2>
       <div className="space-y-3">
-        {orders.map(order => (
-          <div key={order._id ?? order.reference} className="rounded-2xl border border-[var(--border)] p-4">
+        {orders.map((order) => (
+          <div
+            key={order._id ?? order.reference}
+            className="rounded-2xl border border-[var(--border)] p-4"
+          >
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="min-w-0">
                 <p className="font-medium text-sm text-[var(--text-primary)]">
-                  {t("account.order_prefix")}{order.reference}
+                  {t("account.order_prefix")}
+                  {order.reference}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                  {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
-                  {order.nbreProducts ? ` · ${order.nbreProducts} ${order.nbreProducts > 1 ? t("account.items") : t("account.item")}` : ""}
+                  {order.createdAt
+                    ? new Date(order.createdAt).toLocaleDateString()
+                    : ""}
+                  {order.nbreProducts
+                    ? ` · ${order.nbreProducts} ${order.nbreProducts > 1 ? t("account.items") : t("account.item")}`
+                    : ""}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -943,47 +2139,71 @@ function OrdersTab() {
               </div>
             </div>
 
-            {Array.isArray(order.abonnements) && order.abonnements.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-1.5">
-                {order.abonnements.map((ab, idx) => {
-                  const pname = ab.product?.name ?? "Product";
-                  return (
-                    <div key={idx} className="flex justify-between text-xs">
-                      <span className="text-[var(--text-secondary)]">
-                        {pname} ×{ab.quantity ?? 1}
-                        <span className="text-[var(--text-muted)] ml-1">
-                          ({ab.periode === "ANNEE" ? t("account.yearly") : t("account.monthly")})
+            {Array.isArray(order.abonnements) &&
+              order.abonnements.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-1.5">
+                  {order.abonnements.map((ab, idx) => {
+                    const pname = ab.product?.name ?? "Product";
+                    return (
+                      <div key={idx} className="flex justify-between text-xs">
+                        <span className="text-[var(--text-secondary)]">
+                          {pname} ×{ab.quantity ?? 1}
+                          <span className="text-[var(--text-muted)] ml-1">
+                            (
+                            {ab.periode === "ANNEE"
+                              ? t("account.yearly")
+                              : t("account.monthly")}
+                            )
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-[var(--text-primary)] font-medium">
-                        {Number(ab.price ?? 0).toFixed(2)} €
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                        <span className="text-[var(--text-primary)] font-medium">
+                          {Number(ab.price ?? 0).toFixed(2)} €
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-            {order.statut === "PAID" && (
-              <div className="mt-3 pt-3 border-t border-[var(--border)] flex justify-end">
+            <div
+              className="mt-3 pt-3 flex items-center justify-between flex-wrap gap-2"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
+              <button
+                onClick={() => setSelectedRef(order.reference)}
+                className="text-xs font-medium inline-flex items-center gap-1"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <Receipt size={12} /> Voir la facture{" "}
+                <ChevronRight size={12} />
+              </button>
+              {order.statut === "PAID" && (
                 <button
                   type="button"
                   onClick={() => handleDownloadInvoice(order.reference)}
                   disabled={downloading === order.reference}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline disabled:opacity-60"
                 >
-                  {downloading === order.reference
-                    ? <Loader2 size={14} className="animate-spin" />
-                    : <Download size={14} />}
+                  {downloading === order.reference ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Download size={14} />
+                  )}
                   {t("account.download_invoice")}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ))}
       </div>
       {dlError && (
         <p className="text-xs text-red-500 mt-3 text-right">{dlError}</p>
+      )}
+      {selectedRef && (
+        <InvoiceDetailModal
+          reference={selectedRef}
+          onClose={() => setSelectedRef(null)}
+        />
       )}
     </div>
   );
@@ -992,20 +2212,23 @@ function OrdersTab() {
 // ── Payment cards tab ─────────────────────────────────────────────────────────
 function CardsTab() {
   const { t } = useTranslation();
-  const [cards, setCards]     = useState([]);
+  const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal]     = useState(null);
-  const [msg, setMsg]         = useState(null);
+  const [modal, setModal] = useState(null);
+  const [msg, setMsg] = useState(null);
 
   const load = () => {
     setLoading(true);
-    cartesAPI.getByUser()
-      .then(r => setCards(r.data?.data ?? r.data ?? []))
+    cartesAPI
+      .getByUser()
+      .then((r) => setCards(r.data?.data ?? r.data ?? []))
       .catch(() => setCards([]))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleDelete = async (id) => {
     try {
@@ -1024,7 +2247,10 @@ function CardsTab() {
     try {
       const res = await cartesAPI.update(id, { isDefault: true });
       if (res?.data?.success === false) {
-        setMsg({ type: "error", text: res.data.message || t("account.card_error") });
+        setMsg({
+          type: "error",
+          text: res.data.message || t("account.card_error"),
+        });
       } else {
         setMsg({ type: "success", text: t("account.default_updated") });
         load();
@@ -1035,28 +2261,43 @@ function CardsTab() {
     setTimeout(() => setMsg(null), 3000);
   };
 
-  const mask = (n) => n ? `•••• •••• •••• ${String(n).slice(-4)}` : "•••• •••• •••• ••••";
+  const mask = (n) =>
+    n ? `•••• •••• •••• ${String(n).slice(-4)}` : "•••• •••• •••• ••••";
 
   return (
     <div>
       <Notify msg={msg} />
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("account.payment_title")}</p>
-        <button onClick={() => setModal({ type: "create" })} className="btn-primary gap-2 h-9 px-4 text-sm">
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          {t("account.payment_title")}
+        </p>
+        <button
+          onClick={() => setModal({ type: "create" })}
+          className="btn-primary gap-2 h-9 px-4 text-sm"
+        >
           <Plus size={14} /> {t("account.add_card")}
         </button>
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[0,1].map(i => <div key={i} className="skeleton h-20 rounded-2xl" />)}</div>
+        <div className="space-y-3">
+          {[0, 1].map((i) => (
+            <div key={i} className="skeleton h-20 rounded-2xl" />
+          ))}
+        </div>
       ) : cards.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center mb-6 lg:mb-0">
-          <CreditCard size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("account.no_cards")}</p>
+          <CreditCard
+            size={28}
+            style={{ color: "var(--text-muted)", margin: "0 auto 8px" }}
+          />
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {t("account.no_cards")}
+          </p>
         </div>
       ) : (
         <div className="space-y-3 mb-6 lg:mb-0">
-          {cards.map(c => (
+          {cards.map((c) => (
             <div key={c._id} className="cyna-card p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[var(--bg-muted)] flex items-center justify-center flex-shrink-0">
                 <CreditCard size={18} style={{ color: "var(--accent)" }} />
@@ -1064,23 +2305,37 @@ function CardsTab() {
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
                   {mask(c.carteNumber)}
-                  {c.isDefault && <span className="badge badge-accent text-[10px] px-2 py-0.5">{t("account.default_badge")}</span>}
+                  {c.isDefault && (
+                    <span className="badge badge-accent text-[10px] px-2 py-0.5">
+                      {t("account.default_badge")}
+                    </span>
+                  )}
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">{c.carteName} {t("account.card_expires")} {c.carteDate}</p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  {c.carteName} {t("account.card_expires")} {c.carteDate}
+                </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 {!c.isDefault && (
-                  <button onClick={() => handleSetDefault(c._id)} title={t("account.set_default")} aria-label={t("account.set_default")}
-                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
+                  <button
+                    onClick={() => handleSetDefault(c._id)}
+                    title={t("account.set_default")}
+                    aria-label={t("account.set_default")}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors"
+                  >
                     <Star size={13} />
                   </button>
                 )}
-                <button onClick={() => setModal({ type: "edit", data: c })}
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors">
+                <button
+                  onClick={() => setModal({ type: "edit", data: c })}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent)] transition-colors"
+                >
                   <Edit2 size={13} />
                 </button>
-                <button onClick={() => handleDelete(c._id)}
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => handleDelete(c._id)}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition-colors"
+                >
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -1089,8 +2344,25 @@ function CardsTab() {
         </div>
       )}
 
-      {modal?.type === "create" && <CardModal onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
-      {modal?.type === "edit"   && <CardModal card={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
+      {modal?.type === "create" && (
+        <CardModal
+          onClose={() => setModal(null)}
+          onSaved={() => {
+            setModal(null);
+            load();
+          }}
+        />
+      )}
+      {modal?.type === "edit" && (
+        <CardModal
+          card={modal.data}
+          onClose={() => setModal(null)}
+          onSaved={() => {
+            setModal(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1098,65 +2370,87 @@ function CardsTab() {
 // ── Notifications tab ─────────────────────────────────────────────────────────
 function SecurityTab() {
   const { t } = useTranslation();
-  const [method, setMethod]   = useState(null);     // null = loading
-  const [step, setStep]       = useState('idle');   // 'idle' | 'totp-code' | 'disable'
-  const [totpData, setTotpData] = useState(null);   // { qrDataUrl, secret }
-  const [code, setCode]       = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy]       = useState(false);
-  const [error, setError]     = useState(null);
+  const [method, setMethod] = useState(null); // null = loading
+  const [step, setStep] = useState("idle"); // 'idle' | 'totp-code' | 'disable'
+  const [totpData, setTotpData] = useState(null); // { qrDataUrl, secret }
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    authAPI.me()
-      .then(u => setMethod(u.twoFactorMethod ?? 'NONE'))
-      .catch(() => setMethod('NONE'));
+    authAPI
+      .me()
+      .then((u) => setMethod(u.twoFactorMethod ?? "NONE"))
+      .catch(() => setMethod("NONE"));
   }, []);
 
   const flash = (msg, isErr) => {
-    if (isErr) setError(msg); else setSuccess(msg);
-    setTimeout(() => { setError(null); setSuccess(null); }, 3500);
+    if (isErr) setError(msg);
+    else setSuccess(msg);
+    setTimeout(() => {
+      setError(null);
+      setSuccess(null);
+    }, 3500);
   };
 
   const handleSetupTotp = async () => {
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       const res = await authAPI.setupTotp();
       setTotpData(res.data?.data ?? res.data);
-      setStep('totp-code');
-    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+      setStep("totp-code");
+    } catch (e) {
+      flash(apiMessage(e, t("account.twofa_error")), true);
+    }
     setBusy(false);
   };
 
   const handleActivateTotp = async () => {
     if (code.length !== 6) return;
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       await authAPI.activateTotp(code.trim());
-      setMethod('TOTP'); setStep('idle'); setCode(''); setTotpData(null);
-      flash(t('account.twofa_totp_enabled'), false);
-    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+      setMethod("TOTP");
+      setStep("idle");
+      setCode("");
+      setTotpData(null);
+      flash(t("account.twofa_totp_enabled"), false);
+    } catch (e) {
+      flash(apiMessage(e, t("account.twofa_error")), true);
+    }
     setBusy(false);
   };
 
   const handleEmailFA = async () => {
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       await authAPI.activateEmail2FA();
-      setMethod('EMAIL');
-      flash(t('account.twofa_email_enabled'), false);
-    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+      setMethod("EMAIL");
+      flash(t("account.twofa_email_enabled"), false);
+    } catch (e) {
+      flash(apiMessage(e, t("account.twofa_error")), true);
+    }
     setBusy(false);
   };
 
   const handleDisable = async () => {
     if (!password.trim()) return;
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       await authAPI.disable2FA(password);
-      setMethod('NONE'); setStep('idle'); setPassword('');
-      flash(t('account.twofa_disabled'), false);
-    } catch (e) { flash(apiMessage(e, t('account.twofa_error')), true); }
+      setMethod("NONE");
+      setStep("idle");
+      setPassword("");
+      flash(t("account.twofa_disabled"), false);
+    } catch (e) {
+      flash(apiMessage(e, t("account.twofa_error")), true);
+    }
     setBusy(false);
   };
 
@@ -1164,118 +2458,185 @@ function SecurityTab() {
     return (
       <div className="cyna-card p-6 flex items-center gap-3 text-[var(--text-secondary)]">
         <Loader2 size={16} className="animate-spin" />
-        <span className="text-sm">{t('common.loading') || 'Chargement…'}</span>
+        <span className="text-sm">{t("common.loading") || "Chargement…"}</span>
       </div>
     );
   }
 
-  const inputCls = "px-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all";
+  const inputCls =
+    "px-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all";
 
   return (
     <div className="space-y-4 mb-6 lg:mb-0">
       <div className="cyna-card p-6 space-y-4">
         <h2 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
-          <Shield size={16} /> {t('account.twofa_title')}
+          <Shield size={16} /> {t("account.twofa_title")}
         </h2>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {t('account.twofa_desc')}
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          {t("account.twofa_desc")}
         </p>
 
         <div className="flex items-center gap-2">
-          {method === 'NONE'
-            ? <ShieldOff size={16} style={{ color: 'var(--text-muted)' }} />
-            : <ShieldCheck size={16} className="text-green-500" />}
-          <span className="text-sm font-medium" style={{ color: method === 'NONE' ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-            {method === 'NONE'  && t('account.twofa_status_none')}
-            {method === 'EMAIL' && t('account.twofa_status_email')}
-            {method === 'TOTP'  && t('account.twofa_status_totp')}
+          {method === "NONE" ? (
+            <ShieldOff size={16} style={{ color: "var(--text-muted)" }} />
+          ) : (
+            <ShieldCheck size={16} className="text-green-500" />
+          )}
+          <span
+            className="text-sm font-medium"
+            style={{
+              color:
+                method === "NONE"
+                  ? "var(--text-secondary)"
+                  : "var(--text-primary)",
+            }}
+          >
+            {method === "NONE" && t("account.twofa_status_none")}
+            {method === "EMAIL" && t("account.twofa_status_email")}
+            {method === "TOTP" && t("account.twofa_status_totp")}
           </span>
         </div>
 
-        {error   && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
         {success && <p className="text-sm text-green-600">{success}</p>}
 
-        {step === 'idle' && method === 'NONE' && (
+        {step === "idle" && method === "NONE" && (
           <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            <button onClick={handleSetupTotp} disabled={busy} className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium">
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Smartphone size={14} />}
-              {t('account.twofa_enable_totp')}
+            <button
+              onClick={handleSetupTotp}
+              disabled={busy}
+              className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium"
+            >
+              {busy ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Smartphone size={14} />
+              )}
+              {t("account.twofa_enable_totp")}
             </button>
-            <button onClick={handleEmailFA} disabled={busy} className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium">
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-              {t('account.twofa_enable_email')}
+            <button
+              onClick={handleEmailFA}
+              disabled={busy}
+              className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium"
+            >
+              {busy ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Mail size={14} />
+              )}
+              {t("account.twofa_enable_email")}
             </button>
           </div>
         )}
 
-        {step === 'totp-code' && totpData && (
+        {step === "totp-code" && totpData && (
           <div className="space-y-3 pt-2">
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {t('account.twofa_totp_scan')}
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              {t("account.twofa_totp_scan")}
             </p>
             {totpData.qrDataUrl && (
-              <img src={totpData.qrDataUrl} alt="QR Code 2FA" className="w-40 h-40 rounded-lg border border-[var(--border)]" />
+              <img
+                src={totpData.qrDataUrl}
+                alt="QR Code 2FA"
+                className="w-40 h-40 rounded-lg border border-[var(--border)]"
+              />
             )}
             {totpData.secret && (
-              <p className="text-xs font-mono p-2 rounded-lg break-all" style={{ background: 'var(--bg-muted)' }}>
-                {t('account.twofa_totp_secret')} {totpData.secret}
+              <p
+                className="text-xs font-mono p-2 rounded-lg break-all"
+                style={{ background: "var(--bg-muted)" }}
+              >
+                {t("account.twofa_totp_secret")} {totpData.secret}
               </p>
             )}
             <div className="flex gap-2 flex-wrap">
               <input
-                type="text" value={code} maxLength={6} placeholder="000000"
-                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                onKeyDown={e => e.key === 'Enter' && handleActivateTotp()}
+                type="text"
+                value={code}
+                maxLength={6}
+                placeholder="000000"
+                onChange={(e) =>
+                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleActivateTotp()}
                 className={`${inputCls} w-32 font-mono text-center`}
               />
-              <button onClick={handleActivateTotp} disabled={busy || code.length !== 6}
-                className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium">
-                {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                {t('account.twofa_verify')}
+              <button
+                onClick={handleActivateTotp}
+                disabled={busy || code.length !== 6}
+                className="btn-primary flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-medium"
+              >
+                {busy ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={14} />
+                )}
+                {t("account.twofa_verify")}
               </button>
-              <button onClick={() => { setStep('idle'); setCode(''); setTotpData(null); }}
+              <button
+                onClick={() => {
+                  setStep("idle");
+                  setCode("");
+                  setTotpData(null);
+                }}
                 className="h-9 px-3 rounded-xl border border-[var(--border)] text-sm"
-                style={{ color: 'var(--text-secondary)' }}>
-                {t('account.cancel')}
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {t("account.cancel")}
               </button>
             </div>
           </div>
         )}
 
-        {step === 'idle' && method !== 'NONE' && (
+        {step === "idle" && method !== "NONE" && (
           <div className="pt-2">
-            <button onClick={() => setStep('disable')}
+            <button
+              onClick={() => setStep("disable")}
               className="h-9 px-4 rounded-xl border border-[var(--border)] text-sm flex items-center gap-2 hover:bg-[var(--bg-muted)] transition-all"
-              style={{ color: 'var(--text-secondary)' }}>
+              style={{ color: "var(--text-secondary)" }}
+            >
               <ShieldOff size={14} />
-              {t('account.twofa_disable_btn')}
+              {t("account.twofa_disable_btn")}
             </button>
           </div>
         )}
 
-        {step === 'disable' && (
+        {step === "disable" && (
           <div className="space-y-3 pt-2">
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {t('account.twofa_disable_confirm')}
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              {t("account.twofa_disable_confirm")}
             </p>
             <div className="flex gap-2 flex-wrap">
               <input
-                type="password" value={password}
-                placeholder={t('account.twofa_password_ph')}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleDisable()}
+                type="password"
+                value={password}
+                placeholder={t("account.twofa_password_ph")}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleDisable()}
                 className={`${inputCls} flex-1 min-w-0`}
               />
-              <button onClick={handleDisable} disabled={busy || !password.trim()}
+              <button
+                onClick={handleDisable}
+                disabled={busy || !password.trim()}
                 className="h-9 px-4 rounded-xl text-sm font-medium flex items-center gap-2 transition-all disabled:opacity-50"
-                style={{ background: 'var(--danger)', color: '#fff' }}>
-                {busy ? <Loader2 size={14} className="animate-spin" /> : <ShieldOff size={14} />}
-                {t('account.twofa_disable')}
+                style={{ background: "var(--danger)", color: "#fff" }}
+              >
+                {busy ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <ShieldOff size={14} />
+                )}
+                {t("account.twofa_disable")}
               </button>
-              <button onClick={() => { setStep('idle'); setPassword(''); }}
+              <button
+                onClick={() => {
+                  setStep("idle");
+                  setPassword("");
+                }}
                 className="h-9 px-3 rounded-xl border border-[var(--border)] text-sm"
-                style={{ color: 'var(--text-secondary)' }}>
-                {t('account.cancel')}
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {t("account.cancel")}
               </button>
             </div>
           </div>
@@ -1287,25 +2648,31 @@ function SecurityTab() {
 
 function NotificationsTab() {
   const { t } = useTranslation();
-  const [supported, setSupported]   = useState(null);   // null = loading
+  const [supported, setSupported] = useState(null); // null = loading
   const [subscribed, setSubscribed] = useState(false);
-  const [permission, setPermission] = useState('default');
-  const [busy, setBusy]             = useState(false);
-  const [error, setError]           = useState(null);
-  const [success, setSuccess]       = useState(null);
+  const [permission, setPermission] = useState("default");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     const ok = isPushSupported();
     setSupported(ok);
     if (ok) {
       setPermission(getPushPermission());
-      isPushSubscribed().then(setSubscribed).catch(() => setSubscribed(false));
+      isPushSubscribed()
+        .then(setSubscribed)
+        .catch(() => setSubscribed(false));
     }
   }, []);
 
   const flash = (msg, isErr) => {
-    if (isErr) setError(msg); else setSuccess(msg);
-    setTimeout(() => { setError(null); setSuccess(null); }, 3500);
+    if (isErr) setError(msg);
+    else setSuccess(msg);
+    setTimeout(() => {
+      setError(null);
+      setSuccess(null);
+    }, 3500);
   };
 
   const handleToggle = async () => {
@@ -1316,15 +2683,26 @@ function NotificationsTab() {
       if (subscribed) {
         await unsubscribeFromPush(pushAPI);
         setSubscribed(false);
-        flash(t("account.push_unsubscribed") || "Notifications désactivées.", false);
+        flash(
+          t("account.push_unsubscribed") || "Notifications désactivées.",
+          false,
+        );
       } else {
         await subscribeToPush(pushAPI);
         setSubscribed(true);
-        setPermission('granted');
-        flash(t("account.push_subscribed") || "Notifications activées !", false);
+        setPermission("granted");
+        flash(
+          t("account.push_subscribed") || "Notifications activées !",
+          false,
+        );
       }
     } catch (err) {
-      flash(err.message || t("account.push_error") || "Erreur lors de l'activation.", true);
+      flash(
+        err.message ||
+          t("account.push_error") ||
+          "Erreur lors de l'activation.",
+        true,
+      );
     }
     setBusy(false);
   };
@@ -1345,41 +2723,65 @@ function NotificationsTab() {
           <Bell size={16} /> {t("account.push_title") || "Notifications push"}
         </h2>
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          {t("account.push_desc") || "Recevez une notification sur cet appareil à la confirmation d'une commande ou à l'expiration d'un abonnement."}
+          {t("account.push_desc") ||
+            "Recevez une notification sur cet appareil à la confirmation d'une commande ou à l'expiration d'un abonnement."}
         </p>
 
         {!supported && (
-          <div className="flex items-start gap-2 p-3 rounded-lg" style={{ background: "var(--bg-muted)", color: "var(--text-secondary)" }}>
+          <div
+            className="flex items-start gap-2 p-3 rounded-lg"
+            style={{
+              background: "var(--bg-muted)",
+              color: "var(--text-secondary)",
+            }}
+          >
             <BellOff size={16} className="mt-0.5 flex-shrink-0" />
             <p className="text-sm">
-              {t("account.push_unsupported") || "Votre navigateur ne supporte pas les notifications push, ou la clé VAPID n'est pas configurée."}
+              {t("account.push_unsupported") ||
+                "Votre navigateur ne supporte pas les notifications push, ou la clé VAPID n'est pas configurée."}
             </p>
           </div>
         )}
 
-        {supported && permission === 'denied' && (
-          <div className="flex items-start gap-2 p-3 rounded-lg" style={{ background: "rgba(239,68,68,0.07)", color: "var(--danger)" }}>
+        {supported && permission === "denied" && (
+          <div
+            className="flex items-start gap-2 p-3 rounded-lg"
+            style={{
+              background: "rgba(239,68,68,0.07)",
+              color: "var(--danger)",
+            }}
+          >
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <p className="text-sm">
-              {t("account.push_denied") || "Vous avez bloqué les notifications dans votre navigateur. Pour les activer, autorisez-les dans les paramètres du site."}
+              {t("account.push_denied") ||
+                "Vous avez bloqué les notifications dans votre navigateur. Pour les activer, autorisez-les dans les paramètres du site."}
             </p>
           </div>
         )}
 
-        {error   && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
         {success && <p className="text-sm text-green-600">{success}</p>}
 
-        {supported && permission !== 'denied' && (
+        {supported && permission !== "denied" && (
           <div className="flex items-center justify-between pt-2">
             <div>
-              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {subscribed
-                  ? (t("account.push_enabled") || "Notifications activées sur cet appareil")
-                  : (t("account.push_disabled") || "Notifications désactivées sur cet appareil")}
+                  ? t("account.push_enabled") ||
+                    "Notifications activées sur cet appareil"
+                  : t("account.push_disabled") ||
+                    "Notifications désactivées sur cet appareil"}
               </p>
               {subscribed && (
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  {t("account.push_enabled_hint") || "Vous serez notifié des confirmations de commande et des expirations."}
+                <p
+                  className="text-xs mt-0.5"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {t("account.push_enabled_hint") ||
+                    "Vous serez notifié des confirmations de commande et des expirations."}
                 </p>
               )}
             </div>
@@ -1392,14 +2794,18 @@ function NotificationsTab() {
                   : "btn-primary"
               }`}
             >
+              {busy ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : subscribed ? (
+                <BellOff size={14} />
+              ) : (
+                <Bell size={14} />
+              )}
               {busy
-                ? <Loader2 size={14} className="animate-spin" />
-                : subscribed ? <BellOff size={14} /> : <Bell size={14} />}
-              {busy
-                ? (t("common.saving") || "…")
+                ? t("common.saving") || "…"
                 : subscribed
-                  ? (t("account.push_disable") || "Désactiver")
-                  : (t("account.push_enable")  || "Activer")}
+                  ? t("account.push_disable") || "Désactiver"
+                  : t("account.push_enable") || "Activer"}
             </button>
           </div>
         )}
@@ -1411,39 +2817,53 @@ function NotificationsTab() {
 // ── Main AccountPage ──────────────────────────────────────────────────────────
 export default function AccountPage() {
   const { t } = useTranslation();
-  const navigate   = useNavigate();
-  const tokenUser  = getUser();
-  const [tab, setTab]       = useState("profile");
-  const [profile, setProfile] = useState({ firstName: "", lastName: "", email: "" });
-  const [pwd, setPwd]       = useState({ current: "", new: "", confirm: "" });
+  const navigate = useNavigate();
+  const tokenUser = getUser();
+  const [tab, setTab] = useState("profile");
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+  });
+  const [pwd, setPwd] = useState({ current: "", new: "", confirm: "" });
   const [showPwd, setShowPwd] = useState(false);
-  const [msg, setMsg]       = useState(null);
+  const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const TABS = [
-    { id: "profile",       label: t("account.tab_profile"),       icon: User       },
-    { id: "password",      label: t("account.tab_password"),      icon: Lock       },
-    { id: "addresses",     label: t("account.tab_addresses"),     icon: MapPin     },
-    { id: "cards",         label: t("account.tab_payment"),       icon: CreditCard },
-    { id: "subscriptions", label: t("account.tab_subscriptions"), icon: Sparkles   },
-    { id: "orders",        label: t("account.tab_orders"),        icon: Package    },
-    { id: "security",      label: t("account.tab_security"),      icon: Shield     },
-    { id: "notifications", label: t("account.tab_notifications"), icon: Bell       },
+    { id: "profile", label: t("account.tab_profile"), icon: User },
+    { id: "password", label: t("account.tab_password"), icon: Lock },
+    { id: "addresses", label: t("account.tab_addresses"), icon: MapPin },
+    { id: "cards", label: t("account.tab_payment"), icon: CreditCard },
+    {
+      id: "subscriptions",
+      label: t("account.tab_subscriptions"),
+      icon: Sparkles,
+    },
+    { id: "orders", label: t("account.tab_orders"), icon: Package },
+    { id: "security", label: t("account.tab_security"), icon: Shield },
+    { id: "notifications", label: t("account.tab_notifications"), icon: Bell },
   ];
 
   // Load the profile once on mount. We must NOT depend on `tokenUser`: getUser()
   // returns a fresh object every render, which would re-run this effect in a loop
   // and overwrite the fields with server data on every keystroke.
   useEffect(() => {
-    if (!getUser()) { navigate("/auth"); return; }
-    authAPI.me()
-      .then(u => setProfile({
-        firstName: u.firstName || "",
-        lastName:  u.lastName  || "",
-        email:     u.email     || "",
-      }))
+    if (!getUser()) {
+      navigate("/auth");
+      return;
+    }
+    authAPI
+      .me()
+      .then((u) =>
+        setProfile({
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email || "",
+        }),
+      )
       .catch(() => {});
   }, [navigate]);
 
@@ -1463,7 +2883,7 @@ export default function AccountPage() {
     try {
       const res = await usersAPI.updateProfile(tokenUser.id, {
         firstName: profile.firstName.trim(),
-        lastName:  profile.lastName.trim(),
+        lastName: profile.lastName.trim(),
         email,
       });
       if (res?.data?.success === false) {
@@ -1478,14 +2898,23 @@ export default function AccountPage() {
   };
 
   const handleChangePassword = async () => {
-    if (!pwd.current || !pwd.new || !pwd.confirm) { notify("error", t("account.fill_required")); return; }
-    if (pwd.new !== pwd.confirm) { notify("error", t("account.password_mismatch")); return; }
-    if (pwd.new.length < 8)      { notify("error", t("account.password_too_short")); return; }
+    if (!pwd.current || !pwd.new || !pwd.confirm) {
+      notify("error", t("account.fill_required"));
+      return;
+    }
+    if (pwd.new !== pwd.confirm) {
+      notify("error", t("account.password_mismatch"));
+      return;
+    }
+    if (pwd.new.length < 8) {
+      notify("error", t("account.password_too_short"));
+      return;
+    }
     setSaving(true);
     try {
       const res = await usersAPI.changePassword({
         currentPassword: pwd.current,
-        newPassword:     pwd.new,
+        newPassword: pwd.new,
         confirmPassword: pwd.confirm,
       });
       if (res?.data?.success === false) {
@@ -1519,13 +2948,27 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="page-enter" style={{ background: "var(--bg-base)", minHeight: "70vh" }}>
+    <div
+      className="page-enter"
+      style={{ background: "var(--bg-base)", minHeight: "70vh" }}
+    >
       {/* Header */}
-      <div style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
+      <div
+        style={{
+          background: "var(--bg-subtle)",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
         <div className="cyna-container py-10 sm:py-14">
           <p className="section-label">{t("account.title")}</p>
           <h1 className="section-title mb-2">{t("account.title")}</h1>
-          <p className="text-sm mb-6" style={{ color: "var(--text-secondary)", fontFamily: "'Kumbh Sans', sans-serif" }}>
+          <p
+            className="text-sm mb-6"
+            style={{
+              color: "var(--text-secondary)",
+              fontFamily: "'Kumbh Sans', sans-serif",
+            }}
+          >
             {t("account.subtitle")}
           </p>
         </div>
@@ -1533,7 +2976,6 @@ export default function AccountPage() {
 
       <div className="cyna-container py-8 sm:py-12">
         <div className="flex flex-col lg:flex-row gap-8">
-
           {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0 lg:mt-0 mt-8">
             <nav className="space-y-1">
@@ -1549,7 +2991,9 @@ export default function AccountPage() {
                 >
                   <Icon size={15} />
                   {label}
-                  {tab !== id && <ChevronRight size={13} className="ml-auto opacity-40" />}
+                  {tab !== id && (
+                    <ChevronRight size={13} className="ml-auto opacity-40" />
+                  )}
                 </button>
               ))}
               <button
@@ -1569,14 +3013,37 @@ export default function AccountPage() {
             {tab === "profile" && (
               <div className="space-y-6 mb-6 lg:mb-0">
                 <div className="cyna-card p-6 space-y-4">
-                  <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.personal_info")}</h2>
+                  <h2 className="font-semibold text-[var(--text-primary)] mb-4">
+                    {t("account.personal_info")}
+                  </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label={t("account.field_first_name")} value={profile.firstName} onChange={v => setProfile(p => ({ ...p, firstName: v }))} />
-                    <Field label={t("account.field_last_name")}  value={profile.lastName}  onChange={v => setProfile(p => ({ ...p, lastName:  v }))} />
+                    <Field
+                      label={t("account.field_first_name")}
+                      value={profile.firstName}
+                      onChange={(v) =>
+                        setProfile((p) => ({ ...p, firstName: v }))
+                      }
+                    />
+                    <Field
+                      label={t("account.field_last_name")}
+                      value={profile.lastName}
+                      onChange={(v) =>
+                        setProfile((p) => ({ ...p, lastName: v }))
+                      }
+                    />
                   </div>
-                  <Field label={t("account.field_email")} type="email" value={profile.email} onChange={v => setProfile(p => ({ ...p, email: v }))} />
+                  <Field
+                    label={t("account.field_email")}
+                    type="email"
+                    value={profile.email}
+                    onChange={(v) => setProfile((p) => ({ ...p, email: v }))}
+                  />
                   <div className="flex justify-end">
-                    <button onClick={handleSaveProfile} disabled={saving} className="btn-primary gap-2">
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                      className="btn-primary gap-2"
+                    >
                       <Save size={14} />
                       {saving ? t("account.saving") : t("account.save")}
                     </button>
@@ -1584,11 +3051,20 @@ export default function AccountPage() {
                 </div>
 
                 {/* Danger zone */}
-                <div className="cyna-card p-6" style={{ borderColor: "rgba(239,68,68,0.4)" }}>
-                  <h2 className="font-semibold mb-1 flex items-center gap-2" style={{ color: "var(--danger)" }}>
+                <div
+                  className="cyna-card p-6"
+                  style={{ borderColor: "rgba(239,68,68,0.4)" }}
+                >
+                  <h2
+                    className="font-semibold mb-1 flex items-center gap-2"
+                    style={{ color: "var(--danger)" }}
+                  >
                     <AlertCircle size={16} /> {t("account.danger_zone")}
                   </h2>
-                  <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+                  <p
+                    className="text-sm mb-4"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
                     {t("account.delete_account_desc")}
                   </p>
                   <button
@@ -1604,39 +3080,55 @@ export default function AccountPage() {
             {/* ── Password ── */}
             {tab === "password" && (
               <div className="cyna-card p-6 space-y-4 mb-6 lg:mb-0">
-                <h2 className="font-semibold text-[var(--text-primary)] mb-4">{t("account.change_password")}</h2>
+                <h2 className="font-semibold text-[var(--text-primary)] mb-4">
+                  {t("account.change_password")}
+                </h2>
                 <Field
                   label={t("account.current_password")}
                   type={showPwd ? "text" : "password"}
                   value={pwd.current}
-                  onChange={v => setPwd(p => ({ ...p, current: v }))}
+                  onChange={(v) => setPwd((p) => ({ ...p, current: v }))}
                   placeholder={t("account.current_password_placeholder")}
                 />
                 <Field
                   label={t("account.new_password")}
                   type={showPwd ? "text" : "password"}
                   value={pwd.new}
-                  onChange={v => setPwd(p => ({ ...p, new: v }))}
+                  onChange={(v) => setPwd((p) => ({ ...p, new: v }))}
                   placeholder={t("account.password_hint")}
                 />
                 <Field
                   label={t("account.confirm_password")}
                   type={showPwd ? "text" : "password"}
                   value={pwd.confirm}
-                  onChange={v => setPwd(p => ({ ...p, confirm: v }))}
+                  onChange={(v) => setPwd((p) => ({ ...p, confirm: v }))}
                   placeholder={t("account.repeat_password")}
                 />
-                <button onClick={() => setShowPwd(v => !v)} className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <button
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="text-xs flex items-center gap-1.5"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   {showPwd ? <EyeOff size={12} /> : <Eye size={12} />}
-                  {showPwd ? t("account.hide_passwords") : t("account.show_passwords")}
+                  {showPwd
+                    ? t("account.hide_passwords")
+                    : t("account.show_passwords")}
                 </button>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {t("account.password_requirement")}
                 </p>
                 <div className="flex justify-end">
-                  <button onClick={handleChangePassword} disabled={saving || !pwd.current || !pwd.new || !pwd.confirm} className="btn-primary gap-2">
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={
+                      saving || !pwd.current || !pwd.new || !pwd.confirm
+                    }
+                    className="btn-primary gap-2"
+                  >
                     <Lock size={14} />
-                    {saving ? t("account.saving") : t("account.change_password_btn")}
+                    {saving
+                      ? t("account.saving")
+                      : t("account.change_password_btn")}
                   </button>
                 </div>
               </div>
@@ -1666,13 +3158,24 @@ export default function AccountPage() {
       {/* ── Delete account confirmation ── */}
       {deleteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !deleting && setDeleteOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !deleting && setDeleteOpen(false)}
+          />
           <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl p-6">
-            <div className="flex items-center gap-2 mb-2" style={{ color: "var(--danger)" }}>
+            <div
+              className="flex items-center gap-2 mb-2"
+              style={{ color: "var(--danger)" }}
+            >
               <AlertCircle size={18} />
-              <h3 className="font-semibold">{t("account.delete_account_confirm_title")}</h3>
+              <h3 className="font-semibold">
+                {t("account.delete_account_confirm_title")}
+              </h3>
             </div>
-            <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
+            <p
+              className="text-sm mb-5"
+              style={{ color: "var(--text-secondary)" }}
+            >
               {t("account.delete_account_confirm_body")}
             </p>
             <div className="flex gap-3">
@@ -1690,7 +3193,8 @@ export default function AccountPage() {
                 disabled={deleting}
                 className="flex-1 h-10 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-all inline-flex items-center justify-center gap-2"
               >
-                <Trash2 size={14} /> {deleting ? t("account.deleting") : t("account.delete_account")}
+                <Trash2 size={14} />{" "}
+                {deleting ? t("account.deleting") : t("account.delete_account")}
               </button>
             </div>
           </div>
