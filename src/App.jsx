@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 // Layouts (eager : coquilles partagées, présentes sur quasi toutes les routes)
@@ -47,6 +47,12 @@ const Messages = lazy(() => import("./pages/Admin/MessagesPage"));
 const TwoFactor = lazy(() => import("./pages/Auth/TwoFactor"));
 const Logout = lazy(() => import("./pages/Auth/Logout"));
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+};
+
 const PageLoader = () => (
   <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
     <div
@@ -82,6 +88,7 @@ function App() {
     // NotifyProvider reads from Redux and renders toast/confirm portals into <body>
     <NotifyProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Redirect racine */}
