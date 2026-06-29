@@ -266,14 +266,14 @@ export function HeroCarousel() {
           </div>
         </Carousel>
       </section>
-      <div className="text-center py-4 sm:py-4 dark:text-white dark:bg-gray-900 bg-gray-200">
+      {/* <div className="text-center py-4 sm:py-4 dark:text-white dark:bg-gray-900 bg-gray-200">
         <h2
           className="font-[Kumbh Sans] font-extrabold text-2xl sm:text-3xl "
           style={{ color: "var(--text-primary)" }}
         >
           {t("home.welcome")}
         </h2>
-      </div>
+      </div> */}
     </>
   );
 }
