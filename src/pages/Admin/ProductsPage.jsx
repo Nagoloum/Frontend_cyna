@@ -27,12 +27,13 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import AdminSelect from "../../components/Admin/Shared/AdminSelect";
+import ProductModal from "../../components/Admin/Products/ProductModal";
 import { ADMIN_REFRESH_EVENT } from "../../layouts/admin/AdminHeader";
 import {
   buildImageUrl,
   categoriesAPI,
   extractList,
-  getImagePath,
+
   productsAPI,
   servicesAPI,
   slidersAPI,
@@ -735,326 +736,8 @@ function SlidersTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRODUCTS TAB  (unchanged from original, kept intact)
+// PRODUCTS TAB
 // ─────────────────────────────────────────────────────────────────────────────
-
-function ProductFormModal({ product, categories, services, onClose, onSaved }) {
-  const { t } = useTranslation();
-  const isEdit = !!product;
-  const fileRef = useRef(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [imageFiles, setImageFiles] = useState([]);
-
-  // Store the original stored paths (strings) so they can be re-sent to the
-  // backend during PATCH; previews are derived URLs for display.
-  const [existingImages, setExistingImages] = useState([]);
-  const [previews, setPreviews] = useState([]);
-
-  const [form, setForm] = useState({
-    name: "",
-    serviceId: "",
-    priceMonth: "",
-    priceYear: "",
-    stock: "",
-    is_selected: false,
-  });
-
-  // Pre-fill / reset whenever the edited product changes (modal can be reused).
-  useEffect(() => {
-    const paths = (product?.images ?? []).map(getImagePath).filter(Boolean);
-    setExistingImages(paths);
-    setPreviews(paths.map(buildImageUrl).filter(Boolean));
-    setImageFiles([]);
-    setError(null);
-    setForm({
-      name: product?.name ?? "",
-      serviceId: refToValue(product?.service ?? product?.serviceId),
-      priceMonth: product?.priceMonth ?? product?.price ?? "",
-      priceYear: product?.priceYear ?? "",
-      stock: product?.stock ?? "",
-      is_selected: product?.is_selected ?? false,
-    });
-    // We intentionally do not include `previews` in the dep array the previews
-    // we just set will trigger the cleanup effect below when the modal unmounts.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product]);
-
-  useEffect(
-    () => () =>
-      previews.forEach((u) => u.startsWith("blob:") && URL.revokeObjectURL(u)),
-    [previews],
-  );
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
-  };
-
-  const addImages = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    setImageFiles((p) => [...p, ...files]);
-    setPreviews((p) => [...p, ...files.map((f) => URL.createObjectURL(f))]);
-    e.target.value = "";
-  };
-
-  const removeImage = (i) => {
-    if (i < existingImages.length)
-      setExistingImages((p) => p.filter((_, j) => j !== i));
-    else {
-      const fi = i - existingImages.length;
-      setImageFiles((p) => p.filter((_, j) => j !== fi));
-      const url = previews[i];
-      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
-    }
-    setPreviews((p) => p.filter((_, j) => j !== i));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    if (!form.name.trim())
-      return setError(t("admin.products.err_name_required"));
-    if (!form.serviceId)
-      return setError(t("admin.products.err_service_required"));
-    if (!form.priceMonth && !form.priceYear)
-      return setError(t("admin.products.err_price_required"));
-    if (!isEdit && imageFiles.length === 0)
-      return setError(t("admin.products.err_image_required"));
-
-    setLoading(true);
-    try {
-      let payload;
-      if (imageFiles.length > 0) {
-        payload = new FormData();
-        payload.append("serviceId", form.serviceId);
-        payload.append("name", form.name.trim());
-        payload.append("priceMonth", String(Number(form.priceMonth) || 0));
-        payload.append("priceYear", String(Number(form.priceYear) || 0));
-        payload.append("stock", String(Number(form.stock) || 0));
-        payload.append("is_selected", String(form.is_selected));
-        imageFiles.forEach((f) => payload.append("images", f));
-        existingImages.forEach((u) => payload.append("existingImages", u));
-      } else {
-        payload = {
-          serviceId: form.serviceId,
-          name: form.name.trim(),
-          priceMonth: Number(form.priceMonth) || 0,
-          priceYear: Number(form.priceYear) || 0,
-          stock: Number(form.stock) || 0,
-          is_selected: form.is_selected,
-        };
-      }
-      if (isEdit) ensureOk(await productsAPI.update(product.slug, payload));
-      else ensureOk(await productsAPI.create(payload));
-      notify.success(
-        isEdit ? t("admin.products.updated") : t("admin.products.created"),
-        form.name.trim(),
-      );
-      emitAdminChange("product");
-      onSaved();
-    } catch (err) {
-      const m =
-        err.response?.data?.message ?? err.message ?? t("admin.common.error");
-      const msg = Array.isArray(m) ? m.join(" · ") : m;
-      setError(msg);
-      notify.error(t("admin.common.save_failed"), msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const inp =
-    "w-full h-10 px-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all";
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">
-              {isEdit
-                ? t("admin.products.edit_modal_title")
-                : t("admin.products.new_modal_title")}
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {isEdit
-                ? t("admin.products.editing", { name: product.name })
-                : t("admin.products.fill_details")}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
-              <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              {t("admin.products.label_name")}{" "}
-              <span className="text-red-500">*</span>
-            </label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder={t("admin.products.placeholder_name")}
-              className={inp}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              {t("admin.products.label_service")}{" "}
-              <span className="text-red-500">*</span>
-            </label>
-            <AdminSelect
-              name="serviceId"
-              value={form.serviceId}
-              onChange={handleChange}
-            >
-              <option value="">{t("admin.products.select_service")}</option>
-              {services.map((s) => (
-                <option key={s._id ?? s.slug} value={s._id ?? s.slug}>
-                  {s.name}
-                </option>
-              ))}
-            </AdminSelect>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              ["priceMonth", t("admin.products.label_price_month")],
-              ["priceYear", t("admin.products.label_price_year")],
-              ["stock", t("admin.products.label_stock")],
-            ].map(([name, label]) => (
-              <div key={name}>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-                  {label}
-                </label>
-                <input
-                  name={name}
-                  type="number"
-                  min="0"
-                  step={name.includes("price") ? "0.01" : "1"}
-                  value={form[name]}
-                  onChange={handleChange}
-                  placeholder="0"
-                  className={inp}
-                />
-              </div>
-            ))}
-          </div>
-          <div>
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  name="is_selected"
-                  checked={form.is_selected}
-                  onChange={handleChange}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 rounded-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4 transition-colors duration-200" />
-              </div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {t("admin.products.label_top")}
-              </span>
-            </label>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 ml-12">
-              {t("admin.products.label_top_hint")}
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              {t("admin.products.label_images")}{" "}
-              {!isEdit && <span className="text-red-500">*</span>}
-            </label>
-            {previews.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {previews.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative group w-20 h-20 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700"
-                  >
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      onError={(e) => (e.target.style.display = "none")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-            >
-              <Upload size={14} />
-              {previews.length > 0
-                ? t("admin.products.add_images")
-                : isEdit
-                  ? t("admin.products.upload_images_edit")
-                  : t("admin.products.upload_images")}
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={addImages}
-              className="hidden"
-            />
-          </div>
-          <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1 h-10 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all"
-            >
-              {t("admin.common.cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 size={13} className="animate-spin" />}
-              {loading
-                ? t("admin.common.saving")
-                : isEdit
-                  ? t("admin.common.save")
-                  : t("admin.products.create")}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body,
-  );
-}
 
 function ProductsTab({ categories, services }) {
   const { t } = useTranslation();
@@ -1385,9 +1068,8 @@ function ProductsTab({ categories, services }) {
       </div>
 
       {(modal?.type === "create" || modal?.type === "edit") && (
-        <ProductFormModal
+        <ProductModal
           product={modal.data}
-          categories={categories}
           services={services}
           onClose={() => setModal(null)}
           onSaved={onSaved}
@@ -2242,19 +1924,12 @@ const VALID_TABS = ["products", "services", "categories", "sliders"];
 export default function ProductsPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const initialTab = VALID_TABS.includes(searchParams.get("tab"))
-    ? searchParams.get("tab")
-    : "products";
-  const [tab, setTab] = useState(initialTab);
+  const [localTab, setLocalTab] = useState("products");
+  const tabFromUrl = searchParams.get("tab");
+  const tab = VALID_TABS.includes(tabFromUrl) ? tabFromUrl : localTab;
+  const setTab = setLocalTab;
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
-
-  // Sync the active tab when the URL query (?tab=…) changes — drives the
-  // dashboard quick-action shortcuts (e.g. "Catégories" → ?tab=categories).
-  useEffect(() => {
-    const q = searchParams.get("tab");
-    if (VALID_TABS.includes(q)) setTab(q);
-  }, [searchParams]);
 
   const reloadShared = useCallback(() => {
     categoriesAPI

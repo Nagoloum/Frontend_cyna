@@ -189,8 +189,8 @@ export default function ProductModal({
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="relative w-full max-w-2xl flex flex-col max-h-[calc(100vh-2rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-t-2xl">
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               {isEdit
@@ -211,7 +211,7 @@ export default function ProductModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 space-y-5">
           {error && (
             <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
               <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
