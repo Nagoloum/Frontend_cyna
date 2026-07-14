@@ -174,7 +174,7 @@ export default function Settings() {
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [savingPwd, setSavingPwd] = useState(false);
   const changePassword = async () => {
-    if (!pwd.current || !pwd.next || !pwd.confirm) { showToast(t('admin.settings.fill_all_fields'), 'error'); return; }
+    if ([pwd.current, pwd.next, pwd.confirm].some((value) => value.trim().length === 0)) { showToast(t('admin.settings.fill_all_fields'), 'error'); return; }
     if (pwd.next !== pwd.confirm) { showToast(t('admin.settings.pwd_mismatch'), 'error'); return; }
     if (pwd.next.length < 8) { showToast(t('admin.settings.pwd_too_short'), 'error'); return; }
     setSavingPwd(true);
