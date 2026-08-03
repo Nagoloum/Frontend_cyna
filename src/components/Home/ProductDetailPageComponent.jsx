@@ -2,7 +2,7 @@ import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, getProductImage, productsAPI } fr
 import { notify } from "@/components/ui/feedback";
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Shield, ShoppingBag, Star, Users, XCircle, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
@@ -73,6 +73,7 @@ const ImageGallery = ({ images }) => {
 export default function ProductDetailPage() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -121,6 +122,15 @@ export default function ProductDetailPage() {
     } catch {
       notify.error(t("product.cart_error"), t("product.cart_error_msg"));
     }
+  };
+
+  // Achat direct : passe au checkout avec ce seul produit, sans toucher au
+  // panier (transmis via l'état de navigation, pas via Redux).
+  const handleSubscribe = () => {
+    if (!product || product.stock === 0) return;
+    navigate("/checkout", {
+      state: { buyNow: { ...product, qty, billingPeriod: billing } },
+    });
   };
 
   if (loading) return (
@@ -267,17 +277,21 @@ export default function ProductDetailPage() {
               </div>
 
               <button
+                onClick={handleSubscribe}
+                disabled={isOut}
+                className="flex-1 btn-primary gap-2 py-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                <Zap size={18} />
+                {isOut ? t("product.service_unavailable") : t("product.subscribe")}
+              </button>
+
+              <button
                 onClick={handleAddToCart}
                 disabled={isOut}
-                className={`flex-1 btn-primary gap-2 py-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none ${added ? "bg-[var(--success)] hover:bg-[var(--success)]" : ""}`}
+                className={`flex-1 btn-ghost gap-2 py-3 justify-center disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none ${added ? "border-[var(--success)] text-[var(--success)]" : ""}`}
               >
                 <ShoppingBag size={18} />
-                {isOut
-                  ? t("product.service_unavailable")
-                  : added
-                    ? t("product.added_to_cart")
-                    : t("product.subscribe")
-                }
+                {added ? t("product.added_to_cart") : t("product.add_to_cart")}
               </button>
             </div>
 

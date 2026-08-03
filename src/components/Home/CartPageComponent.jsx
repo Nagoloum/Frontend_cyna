@@ -1,6 +1,6 @@
 import { buildImageUrl, couponsAPI } from "@/services/api";
 import {
-  AlertCircle, ArrowRight, LogIn, Minus, Package,
+  AlertCircle, ArrowRight, Minus, Package,
   Plus, ShoppingBag, Trash2, Tag, X, Loader2,
 } from "lucide-react";
 import { useState } from "react";
@@ -10,14 +10,6 @@ import { updateCartItem, removeCartItem } from "@/store/slices/cartSlice";
 import { computeTotals, TVA_PERCENT } from "@/lib/pricing";
 import { getAppliedCoupon, setAppliedCoupon } from "@/lib/coupon";
 import { useTranslation } from "react-i18next";
-
-const getUser = () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
-    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-  } catch { return null; }
-};
 
 const fmtEur = (n) =>
   Number(n ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
@@ -36,9 +28,12 @@ function CartItem({ item, onUpdate, onRemove }) {
       style={isOut ? { borderColor: "var(--danger)" } : undefined}
     >
       <div className="flex gap-4">
-        <div
-          className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 border border-[var(--border)]"
+        {/* Visuel et titre cliquables : renvoient vers la fiche produit. */}
+        <Link
+          to={item.slug ? `/products/${item.slug}` : "/products"}
+          className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 border border-[var(--border)] transition-all hover:border-[var(--accent)]"
           style={{ background: "var(--bg-muted)" }}
+          aria-label={item.name}
         >
           {img ? (
             <img src={img} alt={item.name} className="w-full h-full object-cover" />
@@ -47,17 +42,20 @@ function CartItem({ item, onUpdate, onRemove }) {
               <Package size={24} style={{ color: "var(--text-muted)" }} />
             </div>
           )}
-        </div>
+        </Link>
 
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3
-                className="font-[Kumbh Sans] font-700 text-sm sm:text-base line-clamp-2"
+              <Link
+                to={item.slug ? `/products/${item.slug}` : "/products"}
+                className="block hover:text-[var(--accent)] transition-colors"
                 style={{ color: "var(--text-primary)" }}
               >
-                {item.name}
-              </h3>
+                <h3 className="font-[Kumbh Sans] font-700 text-sm sm:text-base line-clamp-2">
+                  {item.name}
+                </h3>
+              </Link>
               {item.service?.name && (
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
                   {item.service.name}
@@ -166,7 +164,6 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const cart     = useAppSelector((s) => s.cart.items);
   const navigate = useNavigate();
-  const user     = getUser();
 
   const handleUpdate = (id, billingPeriod, patch) => {
     dispatch(updateCartItem({ id, billingPeriod, patch }));
@@ -386,20 +383,6 @@ export default function CartPage() {
                     {fmtEur(ttc)}
                   </span>
                 </div>
-
-                {/* Sign-in banner */}
-                {!user && (
-                  <div
-                    className="flex items-start gap-2.5 p-3 rounded-xl mb-3 text-xs"
-                    style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
-                  >
-                    <LogIn size={14} style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
-                    <p style={{ color: "var(--text-secondary)" }}>
-                      <strong style={{ color: "var(--accent)" }}>{t("cart.sign_in")}</strong>{" "}
-                      {t("cart.sign_in_prompt")}
-                    </p>
-                  </div>
-                )}
 
                 {/* Unavailable warning */}
                 {hasUnavailable && (

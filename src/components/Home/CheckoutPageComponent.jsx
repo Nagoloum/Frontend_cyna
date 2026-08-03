@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Elements, CardNumberElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe";
 import StripeCardFields from "@/components/ui/StripeCardFields";
@@ -44,13 +44,22 @@ export default function CheckoutPage() {
 
 // Un invité (non connecté) suit le flux d'achat invité ; un utilisateur
 // connecté garde le flux complet (adresses/cartes enregistrées).
+// Le bouton « S'abonner » d'une fiche produit passe le produit via l'état de
+// navigation (buyNow) : le checkout ne porte alors que ce produit, sans
+// modifier le panier.
 function CheckoutRouter() {
+  const location = useLocation();
+  const buyNow = location.state?.buyNow ?? null;
   const isAuthed =
     typeof window !== "undefined" && !!localStorage.getItem("token");
-  return isAuthed ? <AuthedCheckoutForm /> : <GuestCheckoutForm />;
+  return isAuthed ? (
+    <AuthedCheckoutForm buyNow={buyNow} />
+  ) : (
+    <GuestCheckoutForm buyNow={buyNow} />
+  );
 }
 
-function AuthedCheckoutForm() {
+function AuthedCheckoutForm({ buyNow }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -84,7 +93,9 @@ function AuthedCheckoutForm() {
   const [error, setError] = useState(null);
 
   // Source unique : Redux (synchronisé avec localStorage par le middleware).
-  const cart = useAppSelector((s) => s.cart.items);
+  // En achat direct (buyNow), seul le produit transmis est commandé.
+  const cartItems = useAppSelector((s) => s.cart.items);
+  const cart = buyNow ? [buyNow] : cartItems;
 
   const total = cart.reduce((s, i) => {
     const price = i.billingPeriod === "monthly" ? i.priceMonth : i.priceYear;
@@ -245,9 +256,11 @@ function AuthedCheckoutForm() {
         throw new Error(body?.message || t("checkout.error_payment_failed"));
       }
 
-      // 4) Succès → vider le panier (Redux + localStorage via middleware) et confirmer.
-      dispatch(clearCart());
-      clearAppliedCoupon();
+      // 4) Succès. En achat direct, le panier n'est pas touché.
+      if (!buyNow) {
+        dispatch(clearCart());
+        clearAppliedCoupon();
+      }
       navigate("/checkout/confirmation");
     } catch (err) {
       // Jamais de message technique brut (réseau, 5xx) à l'utilisateur.
@@ -572,13 +585,14 @@ function AuthedCheckoutForm() {
 }
 
 // Flux d'achat invité (sans compte)
-function GuestCheckoutForm() {
+function GuestCheckoutForm({ buyNow }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const stripe = useStripe();
   const elements = useElements();
-  const cart = useAppSelector((s) => s.cart.items);
+  const cartItems = useAppSelector((s) => s.cart.items);
+  const cart = buyNow ? [buyNow] : cartItems;
 
   const [form, setForm] = useState({
     email: "", firstName: "", lastName: "",
@@ -645,17 +659,30 @@ function GuestCheckoutForm() {
 
       // 3) 3-D Secure : on confirme côté client ; le webhook Stripe finalise la
       //    commande côté serveur (l'invité n'est pas encore authentifié).
+      let paymentIntentId = payload.paymentIntentId ?? null;
       if (payload.status === "REQUIRES_ACTION" && payload.clientSecret) {
         const { error: scaErr, paymentIntent } = await stripe.confirmCardPayment(payload.clientSecret);
         if (scaErr) throw new Error(scaErr.message || t("checkout.error_payment_failed"));
         if (paymentIntent?.status !== "succeeded") throw new Error(t("checkout.error_payment_failed"));
+        paymentIntentId = paymentIntent.id;
       } else if (payload.status !== "PAID") {
         throw new Error(body?.message || t("checkout.error_payment_failed"));
       }
 
-      dispatch(clearCart());
-      clearAppliedCoupon();
-      navigate("/checkout/confirmation");
+      if (!buyNow) {
+        dispatch(clearCart());
+        clearAppliedCoupon();
+      }
+      // La page de confirmation propose le téléchargement du reçu (clés de
+      // licence incluses) : l'identifiant du PaymentIntent sert de preuve d'achat.
+      navigate("/checkout/confirmation", {
+        state: {
+          guest: true,
+          orderId: payload.orderId ?? null,
+          paymentIntentId,
+          reference: payload.commande?.reference ?? null,
+        },
+      });
     } catch (err) {
       setError(getApiErrorMessage(err, t("checkout.error_order_generic")));
       setSubmitting(false);

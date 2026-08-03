@@ -561,6 +561,18 @@ export const commandesAPI = {
     return res.data;
   },
 
+  /**
+   * Reçu d'un achat invité (public) : clés de licence + reçu de paiement.
+   * L'identifiant du PaymentIntent Stripe sert de preuve d'achat. Blob PDF.
+   */
+  downloadGuestReceipt: async (orderId, paymentIntentId) => {
+    const res = await api.get(
+      `/commandes/guest/facture/${encodeURIComponent(orderId)}`,
+      { params: { pi: paymentIntentId }, responseType: 'blob' }
+    );
+    return res.data;
+  },
+
   /** Confirm a Stripe payment (after 3-D Secure) - pass the PaymentIntent id. */
   paymentSuccess: (orderId, sessionId, paymentIntentId) =>
     api.get('/commandes/payment/success', {

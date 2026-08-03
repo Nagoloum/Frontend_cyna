@@ -567,7 +567,10 @@
     "message": "Merci pour votre abonnement. Un email de confirmation vous a été envoyé avec tous les détails.",
     "activation": "Vos services seront activés dans les 48 heures.",
     "my_orders": "Mes Commandes",
-    "continue": "Continuer mes achats"
+    "continue": "Continuer mes achats",
+    "download_receipt": "Télécharger le reçu",
+    "guest_receipt_note": "Votre reçu, avec vos clés de licence, vous a aussi été envoyé par email, ainsi que la possibilité de créer votre compte.",
+    "receipt_error": "Le téléchargement du reçu a échoué. Réessayez ou consultez l'email qui vous a été envoyé."
   },
   "contact": {
     "badge": "Nous contacter",
@@ -802,11 +805,8 @@
     "coupon_remove": "Retirer",
     "coupon_invalid": "Code promo invalide ou expiré.",
     "total": "Total",
-    "sign_in": "Connexion",
-    "sign_in_prompt": "pour finaliser votre commande et gérer vos abonnements.",
     "unavailable_warning": "Certains articles de votre panier sont actuellement indisponibles. Retirez-les pour continuer.",
     "proceed_checkout": "Passer la commande",
-    "sign_in_to_order": "Se connecter pour commander",
     "continue_shopping": "Continuer les achats",
     "remove_item": "Retirer l'article",
     "increase_qty": "Augmenter la quantité",
@@ -831,6 +831,7 @@
     "service_unavailable": "Service indisponible",
     "added_to_cart": "Ajouté au panier",
     "subscribe": "S'abonner",
+    "add_to_cart": "Ajouter au panier",
     "view_cart": "Voir le panier →",
     "added_notif": "Ajouté au panier",
     "cart_error": "Erreur panier",

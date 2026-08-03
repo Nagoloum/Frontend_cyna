@@ -567,7 +567,10 @@
     "message": "Thank you for your subscription. A confirmation email has been sent to you with all the details.",
     "activation": "Your services will be activated within the next 48 hours.",
     "my_orders": "My Orders",
-    "continue": "Continue Shopping"
+    "continue": "Continue Shopping",
+    "download_receipt": "Download receipt",
+    "guest_receipt_note": "Your receipt, including your license keys, has also been sent to you by email, along with the option to create your account.",
+    "receipt_error": "The receipt download failed. Try again or check the email we sent you."
   },
   "contact": {
     "badge": "Get in touch",
@@ -802,11 +805,8 @@
     "coupon_remove": "Remove",
     "coupon_invalid": "Invalid or expired promo code.",
     "total": "Total",
-    "sign_in": "Sign in",
-    "sign_in_prompt": "to complete your order and manage your subscriptions.",
     "unavailable_warning": "Some items in your cart are currently unavailable. Remove them to continue.",
     "proceed_checkout": "Proceed to checkout",
-    "sign_in_to_order": "Sign in to order",
     "continue_shopping": "Continue shopping",
     "remove_item": "Remove item",
     "increase_qty": "Increase quantity",
@@ -831,6 +831,7 @@
     "service_unavailable": "Service unavailable",
     "added_to_cart": "Added to cart",
     "subscribe": "Subscribe Now",
+    "add_to_cart": "Add to cart",
     "view_cart": "View Cart →",
     "added_notif": "Added to cart",
     "cart_error": "Cart error",
