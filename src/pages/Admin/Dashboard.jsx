@@ -7,14 +7,8 @@ import {
     TrendingUp,
     Users
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-    buildRevenueSeries,
-    revenueByCategory,
-    topProductsByRevenue,
-    totalPaidRevenue,
-} from '../../components/Admin/Dashboard/analytics';
 import KPICard from '../../components/Admin/Dashboard/KPICard';
 import PeriodSelector from '../../components/Admin/Dashboard/PeriodSelector';
 import QuickActions from '../../components/Admin/Dashboard/QuickActions';
@@ -70,22 +64,26 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState([]);
   const [users,      setUsers]      = useState([]);
   const [services,   setServices]   = useState([]);
-  const [commandes,  setCommandes]  = useState([]);
+  const [stats,      setStats]      = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const data = await dashboardAPI.fetchAll();
+      // Catalogue (compteurs) + statistiques agrégées serveur en parallèle.
+      const [data, statsData] = await Promise.all([
+        dashboardAPI.fetchAll(),
+        dashboardAPI.stats(period).catch(() => null),
+      ]);
       setProducts(  Array.isArray(data.products)   ? data.products   : []);
       setCategories(Array.isArray(data.categories) ? data.categories : []);
       setUsers(     Array.isArray(data.users)      ? data.users      : []);
       setServices(  Array.isArray(data.services)   ? data.services   : []);
-      setCommandes( Array.isArray(data.commandes)  ? data.commandes  : []);
+      setStats(statsData);
       setLastRefresh(new Date());
     } catch (err) {
       setError(err.response?.data?.message ?? err.message ?? t('admin.dashboard.load_error'));
     } finally { setLoading(false); }
-  }, [t]);
+  }, [t, period]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -104,11 +102,12 @@ export default function DashboardPage() {
     : 0;
   const availableServices = services.filter(s => s.available !== false);
 
-  // ── Chart data computed from real PAID commandes ────────────────────────
-  const revenueSeries  = useMemo(() => buildRevenueSeries(commandes, period),     [commandes, period]);
-  const periodRevenue  = useMemo(() => totalPaidRevenue(commandes, period),       [commandes, period]);
-  const salesPieData   = useMemo(() => revenueByCategory(commandes, products).slice(0, 5), [commandes, products]);
-  const topProductData = useMemo(() => topProductsByRevenue(commandes, products, 6),       [commandes, products]);
+  // ── Chart data : agrégation serveur (corrige le calcul client < 1000 cmds) ──
+  const revenueSeries  = stats?.revenueSeries   ?? [];
+  const periodRevenue  = stats?.kpis?.periodRevenue ?? 0;
+  const salesPieData   = stats?.salesByCategory ?? [];
+  const topProductData = stats?.topProducts     ?? [];
+  const paidOrdersCount = stats?.kpis?.totalOrders ?? 0;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -207,7 +206,7 @@ export default function DashboardPage() {
               { label: t('admin.dashboard.summary_top_products'),  value: topProducts.length,            color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-500/10'   },
               { label: t('admin.dashboard.summary_services'),      value: availableServices.length,       color: 'text-violet-600 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-500/10'   },
               { label: t('admin.dashboard.summary_categories'),    value: categories.length,              color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10' },
-              { label: t('admin.dashboard.summary_paid_orders'),   value: commandes.filter(c => String(c?.statut ?? '').toUpperCase() === 'PAID').length, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10' },
+              { label: t('admin.dashboard.summary_paid_orders'),   value: paidOrdersCount, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10' },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${bg}`}>
                 <span className={`text-lg font-bold tabular-nums ${color}`}>{loading ? '…' : value}</span>

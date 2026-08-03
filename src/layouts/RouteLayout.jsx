@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { authAPI } from '../services/api';
 import {
     decrementCountdown, resetAuth,
     setAuthStatus, setRedirectTarget
@@ -176,6 +177,7 @@ export default function RouteLayout({
   const allowedRolesKey = JSON.stringify(allowedRoles);
 
   useEffect(() => {
+    let cancelled = false;
     dispatch(resetAuth());
 
     if (!requireAuth) {
@@ -183,41 +185,54 @@ export default function RouteLayout({
       return;
     }
 
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      dispatch(setRedirectTarget(redirectTo));
-      dispatch(setAuthStatus('redirect'));
-      return;
-    }
-
-    if (isTokenExpired(token)) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      dispatch(setAuthStatus('expired'));
-      return;
-    }
-
-    const parsedRoles = JSON.parse(allowedRolesKey);
-    const role = getRoleFromToken(token);
-    if (parsedRoles.length > 0) {
-      if (!role || !parsedRoles.includes(role)) {
+    // Applique la décision d'accès a partir d'un token (roles + 2FA).
+    const applyDecision = (token) => {
+      if (cancelled) return;
+      const parsedRoles = JSON.parse(allowedRolesKey);
+      const role = getRoleFromToken(token);
+      if (parsedRoles.length > 0 && (!role || !parsedRoles.includes(role))) {
         dispatch(setAuthStatus('denied'));
         return;
       }
-    }
+      if (role === 'ADMIN' && parsedRoles.includes('ADMIN')) {
+        const verified = localStorage.getItem('twoFAVerified') === '1';
+        if (!verified) {
+          dispatch(setRedirectTarget('/2FA'));
+          dispatch(setAuthStatus('twoFA'));
+          return;
+        }
+      }
+      dispatch(setAuthStatus('ok'));
+    };
 
-    if (role === 'ADMIN' && parsedRoles.includes('ADMIN')) {
-      const verified = localStorage.getItem('twoFAVerified') === '1';
-      if (!verified) {
-        dispatch(setRedirectTarget('/2FA'));
-        dispatch(setAuthStatus('twoFA'));
+    (async () => {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        dispatch(setRedirectTarget(redirectTo));
+        dispatch(setAuthStatus('redirect'));
         return;
       }
-    }
 
-    const t = setTimeout(() => dispatch(setAuthStatus('ok')), 2000);
-    return () => clearTimeout(t);
+      // Access token expiré : on tente un renouvellement transparent via le
+      // refresh token (cookie httpOnly) avant de déclarer la session expirée.
+      if (isTokenExpired(token)) {
+        const newToken = await authAPI.refresh();
+        if (cancelled) return;
+        if (newToken) {
+          applyDecision(newToken);
+          return;
+        }
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        dispatch(setAuthStatus('expired'));
+        return;
+      }
+
+      applyDecision(token);
+    })();
+
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireAuth, redirectTo, allowedRolesKey]);
 

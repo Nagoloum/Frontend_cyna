@@ -84,39 +84,73 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Rafraichissement de session (single-flight) : une seule requete /auth/refresh
+// est en vol a la fois ; les 401 concurrents attendent la meme promesse.
+let refreshPromise = null;
+
+const doLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('twoFAVerified');
+  localStorage.removeItem('twoFARequired');
+  setAuthToken(null);
+  notify.warning(
+    'Session expirée',
+    'Veuillez vous reconnecter pour continuer.',
+    { duration: 5000 }
+  );
+  setTimeout(() => { window.location.href = '/auth'; }, 600);
+};
+
+// Tente d'echanger le refresh token (cookie httpOnly) contre un nouvel access
+// token. Renvoie le nouveau token, ou null si le refresh a echoue.
+const tryRefresh = () => {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_URL}/auth/refresh`, {}, { withCredentials: true })
+      .then((res) => {
+        const newToken = res?.data?.data?.token;
+        if (newToken) {
+          localStorage.setItem('token', newToken);
+          setAuthToken(newToken);
+          return newToken;
+        }
+        return null;
+      })
+      .catch(() => null)
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+};
+
 // Réponses d'erreur :
-// - Le backend renvoie désormais de vrais codes HTTP 4xx pour les erreurs
-//   métier, marquées par l'en-tête `X-App-Error`. Ces réponses portent notre
-//   enveloppe { success:false, message } : on les "re-résout" pour que le code
-//   appelant continue de lire `res.data.success` exactement comme avant (il
-//   recevait un 200 auparavant). Comportement frontend strictement inchangé.
-// - Un 401 SANS ce marqueur = session expirée / non authentifié (guard) →
+// - Le backend renvoie de vrais codes HTTP 4xx pour les erreurs métier, marquées
+//   par l'en-tête `X-App-Error`. Ces réponses portent notre enveloppe
+//   { success:false, message } : on les "re-résout" pour que le code appelant
+//   continue de lire `res.data.success`.
+// - Un 401 SANS ce marqueur = access token expiré → on tente un /auth/refresh
+//   transparent (une fois) puis on rejoue la requête. Si le refresh échoue →
 //   déconnexion automatique (sauf sur les endpoints d'auth publics).
 // - Les erreurs techniques (5xx, réseau) continuent d'être rejetées.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
     const isAppError = error.response?.headers?.['x-app-error'] === '1';
+    const original = error.config ?? {};
+    const isAuthUrl = String(original.url ?? '').includes('/auth/');
 
-    if (
-      status === 401 &&
-      !isAppError &&
-      localStorage.getItem('token') &&
-      !String(error.config?.url ?? '').includes('/auth/')
-    ) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('twoFAVerified');
-      localStorage.removeItem('twoFARequired');
-      setAuthToken(null);
-      notify.warning(
-        'Session expirée',
-        'Veuillez vous reconnecter pour continuer.',
-        { duration: 5000 }
-      );
-      // Defer redirect slightly so the toast renders before navigation.
-      setTimeout(() => { window.location.href = '/auth'; }, 600);
+    if (status === 401 && !isAppError && !isAuthUrl && !original._retry) {
+      original._retry = true;
+      const newToken = await tryRefresh();
+      if (newToken) {
+        // Rejoue la requête d'origine avec le nouveau token.
+        original.headers = original.headers ?? {};
+        original.headers['Authorization'] = `Bearer ${newToken}`;
+        return api(original);
+      }
+      // Refresh impossible : déconnexion (seulement si on avait un token).
+      if (localStorage.getItem('token')) doLogout();
       return Promise.reject(error);
     }
 
@@ -245,6 +279,26 @@ export const authAPI = {
   me: async () => {
     const res = await api.get('/auth/user/me');
     return res.data?.data ?? res.data;
+  },
+
+  /**
+   * POST /auth/refresh — échange le refresh token (cookie httpOnly) contre un
+   * nouvel access token. Met à jour le token stocké et renvoie le nouveau token
+   * (ou null si la session ne peut pas être renouvelée).
+   */
+  refresh: async () => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+      const newToken = res?.data?.data?.token;
+      if (newToken) {
+        localStorage.setItem('token', newToken);
+        setAuthToken(newToken);
+        return newToken;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   },
 
   /** POST /auth/register */
@@ -628,13 +682,15 @@ export const searchAPI = {
 
 export const dashboardAPI = {
   fetchAll: async () => {
-    const [pR, cR, uR, sR, slR, oR] = await Promise.allSettled([
+    // Le CA/analytique n'est plus agrégé côté client : on ne télécharge plus la
+    // collection commandes. On récupère seulement les listes catalogue (bornées)
+    // pour les compteurs et la liste "produits récents".
+    const [pR, cR, uR, sR, slR] = await Promise.allSettled([
       api.get('/products',   { params: { limit: 1000 } }),
       api.get('/categories'),
       api.get('/users'),
       api.get('/services'),
       api.get('/sliders'),
-      api.get('/commandes',  { params: { limit: 1000, sortBy: 'createdAt', sortOrder: 'desc' } }),
     ]);
     const extract = (res) =>
       res.status === 'rejected' ? [] : extractList(res.value.data);
@@ -644,8 +700,17 @@ export const dashboardAPI = {
       users:      extract(uR),
       services:   extract(sR),
       sliders:    extract(slR),
-      commandes:  extract(oR),
     };
+  },
+
+  /**
+   * GET /commandes/stats?period= — statistiques agrégées côté serveur
+   * (CA, panier moyen, abonnements actifs, séries par période, top produits,
+   * CA par catégorie). Corrige le calcul client limité à 1000 commandes.
+   */
+  stats: async (period = '7d') => {
+    const res = await api.get('/commandes/stats', { params: { period } });
+    return res.data?.data ?? null;
   },
 };
 

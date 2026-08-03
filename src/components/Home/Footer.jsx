@@ -97,10 +97,10 @@ export default function Footer() {
             {/* Socials */}
             <div className="flex items-center gap-2">
               {[
-                { icon: Twitter, href: "#", label: "Twitter" },
-                { icon: Linkedin, href: "#", label: "LinkedIn" },
-                { icon: Github, href: "#", label: "GitHub" },
-                { icon: Mail, href: "#", label: "Email" },
+                { icon: Twitter, href: "https://twitter.com/cyna", label: "Twitter" },
+                { icon: Linkedin, href: "https://www.linkedin.com/company/cyna", label: "LinkedIn" },
+                { icon: Github, href: "https://github.com/cyna", label: "GitHub" },
+                { icon: Mail, href: "mailto:support@cyna.fr", label: "Email" },
               ].map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}

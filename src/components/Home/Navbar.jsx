@@ -66,13 +66,17 @@ export default function Navbar() {
   const user = getUser();
   const isLoggedIn = !!user;
 
-  const isFr = i18n.language === "fr";
+  // Sélecteur de langue à 3 états : Français → English → العربية → …
+  const LANGS = ["fr", "en", "ar"];
+  const LANG_LABEL = { fr: "FR", en: "EN", ar: "ع" };
+  const currentLang = LANGS.includes(i18n.language) ? i18n.language : "en";
+  const isFr = currentLang === "fr";
+  const nextLang = LANGS[(LANGS.indexOf(currentLang) + 1) % LANGS.length];
   const toggleLang = () => {
-    const next = isFr ? "en" : "fr";
-    i18n.changeLanguage(next);
+    i18n.changeLanguage(nextLang);
     // Préférence persistée uniquement avec le consentement cookies.
-    if (cookiesAllowed()) localStorage.setItem("lang", next);
-    dispatch(setLanguageIsFrench(next === "fr"));
+    if (cookiesAllowed()) localStorage.setItem("lang", nextLang);
+    dispatch(setLanguageIsFrench(nextLang === "fr"));
   };
 
   useEffect(() => {
@@ -170,9 +174,9 @@ export default function Navbar() {
                 color: "var(--text-secondary)",
                 fontFamily: "'Kumbh Sans', sans-serif",
               }}
-              title={isFr ? "Switch to English" : "Passer en français"}
+              title={`${LANG_LABEL[currentLang]} → ${LANG_LABEL[nextLang]}`}
             >
-              {isFr ? "EN" : "FR"}
+              {LANG_LABEL[nextLang]}
             </button>
 
             <Link
@@ -317,7 +321,7 @@ export default function Navbar() {
                   fontFamily: "'Kumbh Sans', sans-serif",
                 }}
               >
-                {isFr ? "EN" : "FR"}
+                {LANG_LABEL[nextLang]}
               </button>
             </div>
 

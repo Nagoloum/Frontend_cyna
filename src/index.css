@@ -45,6 +45,28 @@ select:focus-visible {
   top: 8px;
 }
 
+/* ─── SUPPORT RTL (arabe) ────────────────────────────────────────────────── */
+/* Le sens (dir="rtl") est posé sur <html> par i18n.js selon la langue active.
+   On aligne le texte et on repositionne les éléments ancrés à gauche. */
+[dir="rtl"] {
+  text-align: right;
+}
+[dir="rtl"] .skip-link {
+  left: auto;
+  right: 8px;
+}
+/* Champs de saisie : le texte suit le sens du document. */
+[dir="rtl"] input,
+[dir="rtl"] textarea {
+  text-align: right;
+}
+/* Les listes numériques / prix restent en LTR pour rester lisibles. */
+[dir="rtl"] .tabular-nums,
+[dir="rtl"] [class*="tabular"] {
+  direction: ltr;
+  display: inline-block;
+}
+
 /* Respect de la préférence "réduire les animations". */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

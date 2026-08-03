@@ -66,9 +66,9 @@ export default function ErrorPage() {
             {/* Lien support (optionnel) */}
             <p className="mt-12 text-sm text-gray-500 dark:text-gray-400">
               Need help?{' '}
-              <a href="#" className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+              <Link to="/contact" className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
                 Contact support <span aria-hidden="true">→</span>
-              </a>
+              </Link>
             </p>
           </div>
         </div>
