@@ -1,6 +1,6 @@
 import { loadStripe } from "@stripe/stripe-js";
 
-// Publishable key (pk_...) — set VITE_STRIPE_PUBLISHABLE_KEY in the frontend .env.
+// Publishable key (pk_...) - set VITE_STRIPE_PUBLISHABLE_KEY in the frontend .env.
 // When absent, stripePromise is null and callers show a clean "unavailable" message.
 const STRIPE_PK = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 

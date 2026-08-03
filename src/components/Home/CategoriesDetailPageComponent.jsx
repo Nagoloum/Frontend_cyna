@@ -1,13 +1,14 @@
 import { buildImageUrl, categoriesAPI, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
 import { ArrowLeft, Filter, Package } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
 import Card from "@/components/ui/Card";
+import LoadError from "@/components/ui/LoadError";
 
 const SkeletonProduct = () => (
   <div className="cyna-card overflow-hidden">
@@ -30,11 +31,13 @@ export default function CategoryDetailPage() {
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [sort, setSort] = useState("priority");
   const [showAvail, setShowAvail] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
+    setError(false);
     categoriesAPI.getBySlugForUser(slug)
       .then((catRes) => {
         const payload = catRes.data?.data ?? catRes.data ?? {};
@@ -57,9 +60,11 @@ export default function CategoryDetailPage() {
           setProducts(catProds);
         });
       })
-      .catch(() => { })
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => { load(); }, [load]);
 
   const handleAddToCart = (product) => {
     try {
@@ -173,6 +178,8 @@ export default function CategoryDetailPage() {
           <div className="products-grid mb-6 lg:mb-10">
             {Array.from({ length: 8 }).map((_, i) => <SkeletonProduct key={i} />)}
           </div>
+        ) : error ? (
+          <LoadError onRetry={load} className="mb-6 lg:mb-10" />
         ) : sortedProducts.length === 0 ? (
           <div className="rounded-2xl mb-6 lg:mb-10 border border-dashed border-[var(--border)] p-16 text-center" style={{ background: "var(--bg-subtle)" }}>
             <Package size={36} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />

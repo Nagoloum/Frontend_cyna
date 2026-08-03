@@ -1,4 +1,3 @@
-// src/layouts/admin/AdminFooter.jsx
 import { useTranslation } from 'react-i18next';
 
 const APP_VERSION = '1.0.0'; // Sync with your package.json if needed

@@ -61,7 +61,7 @@ function AuthedCheckoutForm() {
 
   const [step, setStep] = useState(0);
 
-  // ── Address ───────────────────────────────────────────────────────────────
+  // Address
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -71,7 +71,7 @@ function AuthedCheckoutForm() {
     city: "", region: "", country: "France", codePostal: "", phone: "",
   });
 
-  // ── Payment cards ─────────────────────────────────────────────────────────
+  // Payment cards
   const [savedCards, setSavedCards] = useState([]);
   const [loadingCards, setLoadingCards] = useState(true);
   const [selectedCardId, setSelectedCardId] = useState(null);
@@ -79,7 +79,7 @@ function AuthedCheckoutForm() {
   const [savingCard, setSavingCard] = useState(false);
   const [pay, setPay] = useState({ carteName: "" });
 
-  // ── Submission ────────────────────────────────────────────────────────────
+  // Submission
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -94,7 +94,7 @@ function AuthedCheckoutForm() {
   const appliedCoupon = getAppliedCoupon();
   const { tva: tvaAmount, ttc: totalTTC, discount: discountAmount } = computeTotals(total, appliedCoupon?.discount || 0);
 
-  // ── Load saved addresses + cards ──────────────────────────────────────────
+  // Load saved addresses + cards
   useEffect(() => {
     adressesAPI.getByUser()
       .then(r => {
@@ -117,7 +117,7 @@ function AuthedCheckoutForm() {
       .finally(() => setLoadingCards(false));
   }, []);
 
-  // ── Validation per step ───────────────────────────────────────────────────
+  // Validation per step
   const validateAddress = () => {
     if (selectedAddressId && !newAddress) return null;
     const required = ["firstName", "lastName", "adresse", "city", "region", "country", "codePostal", "phone"];
@@ -140,7 +140,7 @@ function AuthedCheckoutForm() {
       return;
     }
 
-    // Step 1 (payment). Validate, then — for a NEW card — save it to Stripe
+    // Step 1 (payment). Validate, then - for a NEW card - save it to Stripe
     // (SetupIntent, no charge) + DB now, while the Stripe fields are still mounted.
     const err = validatePayment();
     if (err) { setError(err); return; }
@@ -177,7 +177,7 @@ function AuthedCheckoutForm() {
         setSelectedCardId(created._id);
         setNewCard(false);
       } catch (e) {
-        setError(e.response?.data?.message ?? e.message ?? t("checkout.error_save_card"));
+        setError(getApiErrorMessage(e, t("checkout.error_save_card")));
         setSavingCard(false);
         return;
       }
@@ -187,7 +187,7 @@ function AuthedCheckoutForm() {
     setStep(2);
   };
 
-  // ── Confirm purchase ──────────────────────────────────────────────────────
+  // Confirm purchase
   const handleConfirm = async () => {
     if (!cart.length) { setError(t("checkout.empty_cart")); return; }
     if (!selectedCardId) { setError(t("checkout.error_save_card")); return; }
@@ -257,7 +257,7 @@ function AuthedCheckoutForm() {
     }
   };
 
-  // ── Helpers for card display ──────────────────────────────────────────────
+  // Helpers for card display
   const maskCard = (n) => n ? `•••• •••• •••• ${String(n).slice(-4)}` : "•••• •••• •••• ••••";
 
   const selectedAddress = savedAddresses.find(a => a._id === selectedAddressId);
@@ -315,7 +315,7 @@ function AuthedCheckoutForm() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form */}
           <div className="lg:col-span-2 lg:mb-8 mb-0">
-            {/* ── Step 0: Address ── */}
+            {/* Step 0: Address */}
             {step === 0 && (
               <div className="cyna-card p-6">
                 <div className="flex items-center gap-2 mb-6">
@@ -381,7 +381,7 @@ function AuthedCheckoutForm() {
               </div>
             )}
 
-            {/* ── Step 1: Payment ── */}
+            {/* Step 1: Payment */}
             {step === 1 && (
               <div className="cyna-card p-6">
                 <div className="flex items-center gap-2 mb-6">
@@ -459,7 +459,7 @@ function AuthedCheckoutForm() {
               </div>
             )}
 
-            {/* ── Step 2: Confirmation ── */}
+            {/* Step 2: Confirmation */}
             {step === 2 && (
               <div className="cyna-card p-6">
                 <div className="flex items-center gap-2 mb-6">
@@ -571,7 +571,7 @@ function AuthedCheckoutForm() {
   );
 }
 
-// ── Flux d'achat invité (sans compte) ───────────────────────────────────────
+// Flux d'achat invité (sans compte)
 function GuestCheckoutForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();

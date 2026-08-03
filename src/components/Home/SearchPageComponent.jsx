@@ -8,8 +8,9 @@ import { useSearchParams } from "react-router-dom";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "react-i18next";
 import Card from "@/components/ui/Card";
+import LoadError from "@/components/ui/LoadError";
 
-// ── Skeleton card ─────────────────────────────────────────────────────────────
+// Skeleton card
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
     <div className="skeleton w-full" style={{ aspectRatio: "1/1" }} />
@@ -20,7 +21,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-// ── Range input ──────────────────────────────────────────────────────────────
+// Range input
 function PriceRange({ min, max, onChange, minLabel, maxLabel }) {
   const [localMin, setLocalMin] = useState(min ?? "");
   const [localMax, setLocalMax] = useState(max ?? "");
@@ -59,7 +60,7 @@ function PriceRange({ min, max, onChange, minLabel, maxLabel }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// Main component
 export default function SearchPage() {
   const { t } = useTranslation();
   const [urlParams, setUrlParams] = useSearchParams();
@@ -79,6 +80,8 @@ export default function SearchPage() {
 
   const [results, setResults]   = useState([]);
   const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [total, setTotal]       = useState(0);
   const [page, setPage]         = useState(1);
   const LIMIT = 12;
@@ -102,6 +105,7 @@ export default function SearchPage() {
       return;
     }
     setLoading(true);
+    setError(false);
 
     const params = {
       ...(q                              && { text: q }),
@@ -124,10 +128,9 @@ export default function SearchPage() {
         setResults(Array.isArray(items) ? items : []);
         setTotal(data?.total ?? (Array.isArray(items) ? items.length : 0));
       })
-      .catch(() => { setResults([]); setTotal(0); })
+      .catch(() => { setError(true); setResults([]); setTotal(0); })
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, selectedCategory, selectedService, minPrice, maxPrice, onlyAvailable, sortBy, sortOrder, page]);
+  }, [q, selectedCategory, selectedService, minPrice, maxPrice, onlyAvailable, sortBy, sortOrder, page, reloadKey]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -152,7 +155,7 @@ export default function SearchPage() {
 
   const totalPages = Math.ceil(total / LIMIT) || 1;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
   return (
     <div className="page-enter" style={{ background: "var(--bg-base)", minHeight: "70vh" }}>
 
@@ -196,7 +199,7 @@ export default function SearchPage() {
       <div className="cyna-container cyna-container-custom py-8">
         <div className="flex flex-col lg:flex-row gap-6">
 
-          {/* ── Sidebar filters (desktop) / collapse (mobile) ── */}
+          {/* Sidebar filters (desktop) / collapse (mobile) */}
           <aside className="lg:w-72 flex-shrink-0">
             {/* Mobile toggle */}
             <button
@@ -308,7 +311,7 @@ export default function SearchPage() {
             </div>
           </aside>
 
-          {/* ── Results ── */}
+          {/* Results */}
           <div className="flex-1 min-w-0">
             {!q && !hasActiveFilters ? (
               <div
@@ -327,6 +330,8 @@ export default function SearchPage() {
               <div className="products-grid">
                 {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
+            ) : error ? (
+              <LoadError onRetry={() => setReloadKey((k) => k + 1)} />
             ) : results.length === 0 ? (
               <div
                 className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center"

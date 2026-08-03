@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Mail, MessageSquare, Send } from "lucide-react";
-import { contactAPI } from "@/services/api";
+import { contactAPI, getApiErrorMessage } from "@/services/api";
 import { useTranslation } from "react-i18next";
 
 export default function ContactPage() {
@@ -32,8 +32,7 @@ export default function ContactPage() {
       setStatus({ type: "success", text: t("contact.success") });
       setForm({ email: "", subject: "", message: "" });
     } catch (err) {
-      const msg = err.response?.data?.message ?? err.message ?? t("contact.error_send");
-      setStatus({ type: "error", text: msg });
+      setStatus({ type: "error", text: getApiErrorMessage(err, t("contact.error_send")) });
     } finally {
       setSubmitting(false);
     }

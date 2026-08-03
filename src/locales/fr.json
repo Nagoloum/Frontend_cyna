@@ -118,14 +118,25 @@
     "login_failed": "Connexion échouée",
     "register_failed": "Inscription échouée",
     "register_error_generic": "Une erreur est survenue lors de l'inscription.",
-    "register_success_title": "Inscription réussie 🎉",
+    "register_success_title": "Inscription réussie",
     "register_success_message": "Votre compte a été créé. Vérifiez votre boîte mail pour confirmer votre adresse et activer votre compte.",
     "register_success_cta": "Aller à la connexion",
     "show_password": "Afficher le mot de passe",
     "hide_password": "Masquer le mot de passe"
   },
   "errors": {
-    "generic": "Une erreur est survenue. Veuillez réessayer plus tard."
+    "generic": "Une erreur est survenue. Veuillez réessayer plus tard.",
+    "load_failed": "Impossible de charger le contenu.",
+    "load_failed_msg": "Vérifiez votre connexion Internet, puis réessayez.",
+    "retry": "Réessayer"
+  },
+  "confirm": {
+    "title": "Confirmer l'action",
+    "body": "Voulez-vous vraiment continuer ?",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "processing": "Traitement…",
+    "close": "Fermer"
   },
   "cookie_banner": {
     "title": "Nous utilisons des cookies",
@@ -136,7 +147,7 @@
     "login_blocked": "La connexion nécessite l'acceptation des cookies. Veuillez accepter les cookies via le bandeau en bas de page pour vous connecter."
   },
   "logout": {
-    "title": "À bientôt 👋",
+    "title": "À bientôt",
     "subtitle": "Déconnexion en cours…"
   },
   "twoFactor": {
@@ -210,7 +221,7 @@
     "mixed_billing": "Votre panier mélange des abonnements mensuels et annuels. Veuillez les commander séparément.",
     "billing_address": "Adresse de Facturation",
     "guest_title": "Achat invité",
-    "guest_subtitle": "Finalisez votre achat sans vous connecter — nous créons un compte pour que vous puissiez gérer votre abonnement. Vous avez déjà un compte ?",
+    "guest_subtitle": "Finalisez votre achat sans vous connecter : nous créons un compte pour que vous puissiez gérer votre abonnement. Vous avez déjà un compte ?",
     "guest_login_link": "Se connecter",
     "guest_account": "Vos coordonnées",
     "field_email": "Email",
@@ -535,8 +546,8 @@
     "twofa_title": "Double authentification (2FA)",
     "twofa_desc": "Protégez votre compte avec une deuxième étape de vérification à chaque connexion.",
     "twofa_status_none": "Désactivée",
-    "twofa_status_email": "Activée — e-mail",
-    "twofa_status_totp": "Activée — Google Authenticator",
+    "twofa_status_email": "Activée (e-mail)",
+    "twofa_status_totp": "Activée (Google Authenticator)",
     "twofa_enable_totp": "Google Authenticator",
     "twofa_enable_email": "2FA par e-mail",
     "twofa_totp_scan": "Scannez ce QR code avec Google Authenticator, puis entrez le code généré.",
@@ -580,7 +591,7 @@
     "title": "Mentions légales",
     "subtitle": "Informations légales relatives au site et à l'éditeur",
     "editor_title": "Éditeur du site",
-    "editor_body": "Cyna\nSociété par actions simplifiée (SAS)\nSiège social : à compléter\nRCS : à compléter — Capital social : à compléter\nNuméro de TVA intracommunautaire : à compléter\nEmail : support@cyna-it.fr",
+    "editor_body": "Cyna\nSociété par actions simplifiée (SAS)\nSiège social : à compléter\nRCS : à compléter\nCapital social : à compléter\nNuméro de TVA intracommunautaire : à compléter\nEmail : support@cyna-it.fr",
     "publication_title": "Directeur de la publication",
     "publication_body": "Le directeur de la publication est le représentant légal de Cyna.",
     "host_title": "Hébergement",
@@ -696,14 +707,14 @@
     "mission_body": "Cyna a pour mission de rendre la cybersécurité de niveau entreprise accessible à toutes les organisations. Nous concevons et opérons des services managés qui protègent vos systèmes, vos données et vos utilisateurs face à des menaces en constante évolution.",
     "offer_title": "Nos services",
     "offer_intro": "Nous proposons une gamme complète de services de cybersécurité par abonnement :",
-    "offer_soc": "SOC managé — supervision et réponse aux incidents 24/7.",
-    "offer_edr": "EDR — détection et réponse sur les terminaux.",
-    "offer_xdr": "XDR — détection étendue corrélée sur l'ensemble du système d'information.",
+    "offer_soc": "SOC managé : supervision et réponse aux incidents 24/7.",
+    "offer_edr": "EDR : détection et réponse sur les terminaux.",
+    "offer_xdr": "XDR : détection étendue corrélée sur l'ensemble du système d'information.",
     "offer_audit": "Audits et tests d'intrusion pour évaluer votre exposition au risque.",
     "values_title": "Nos valeurs",
-    "values_trust": "Confiance — transparence totale sur nos pratiques et la protection de vos données.",
-    "values_expertise": "Expertise — des équipes certifiées et une veille continue sur la menace.",
-    "values_proximity": "Proximité — un accompagnement humain et réactif, en français.",
+    "values_trust": "Confiance : transparence totale sur nos pratiques et la protection de vos données.",
+    "values_expertise": "Expertise : des équipes certifiées et une veille continue sur la menace.",
+    "values_proximity": "Proximité : un accompagnement humain et réactif, en français.",
     "contact_title": "Nous contacter",
     "contact_body": "Une question sur nos services ou un besoin spécifique ? Écrivez-nous via notre",
     "contact_link": "formulaire de contact"
@@ -760,12 +771,16 @@
   },
   "error": {
     "not_found": "Page introuvable",
-    "go_home": "Aller à l'accueil"
+    "not_found_desc": "La page demandée n'existe pas ou n'est plus disponible. Elle a peut-être été déplacée ou supprimée.",
+    "go_home": "Aller à l'accueil",
+    "go_login": "Se connecter",
+    "need_help": "Besoin d'aide ?",
+    "contact_support": "Contacter le support"
   },
   "cart": {
     "badge": "Commande",
     "title": "Mon Panier",
-    "empty_subtitle": "Votre panier est vide parcourez notre catalogue de cybersécurité pour commencer.",
+    "empty_subtitle": "Votre panier est vide. Parcourez notre catalogue de cybersécurité pour commencer.",
     "subtitle": "Vous avez {{count}} article dans votre panier. Vérifiez les détails avant de passer commande.",
     "subtitle_plural": "Vous avez {{count}} articles dans votre panier. Vérifiez les détails avant de passer commande.",
     "service_unavailable": "Service indisponible",
@@ -814,7 +829,7 @@
     "per_year": "/an",
     "per_month_short": "€/mois",
     "service_unavailable": "Service indisponible",
-    "added_to_cart": "Ajouté au panier ✓",
+    "added_to_cart": "Ajouté au panier",
     "subscribe": "S'abonner",
     "view_cart": "Voir le panier →",
     "added_notif": "Ajouté au panier",
@@ -1284,7 +1299,7 @@
       "badge_top": "En avant",
       "more_products_one": "+{{count}} produit de plus",
       "more_products_other": "+{{count}} produits de plus",
-      "top_products_empty": "Aucune commande payée pour le moment — les meilleures ventes apparaîtront ici une fois le chiffre d'affaires enregistré.",
+      "top_products_empty": "Aucune commande payée pour le moment. Les meilleures ventes apparaîtront ici une fois le chiffre d'affaires enregistré.",
       "no_data_period": "Aucune donnée pour cette période",
       "total": "Total",
       "no_paid_orders_period": "Aucune commande payée pour cette période",

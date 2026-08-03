@@ -69,7 +69,7 @@ export const {
   setCartItems, addToCart, updateCartItem, removeCartItem, clearCart,
 } = cartSlice.actions;
 
-// ── Thunks (cart operations involving localStorage) ────────────────────────────
+// Thunks (cart operations involving localStorage)
 
 export const mergeOnLogin = (userId) => (dispatch, getState) => {
   if (!userId) return;

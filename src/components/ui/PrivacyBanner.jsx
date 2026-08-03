@@ -7,7 +7,7 @@ import { getCookieConsent, setCookieConsent } from '@/lib/privacyPrefs';
 /**
  * Bandeau de consentement cookies (RGPD), fixé en bas des pages utilisateur.
  * Affiché une seule fois : dès qu'un choix est fait (accepter ou refuser),
- * il est mémorisé et le bandeau ne réapparaît plus — sauf réouverture
+ * il est mémorisé et le bandeau ne réapparaît plus - sauf réouverture
  * explicite via openCookieBanner() (footer ou tentative de connexion).
  *
  * ⚠️ NE PAS renommer ce fichier avec un nom contenant « cookie » ou

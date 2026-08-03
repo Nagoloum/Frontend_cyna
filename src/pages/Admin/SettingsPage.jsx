@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// src/pages/Admin/Settings.jsx
 import {
     AlertCircle,
     CheckCircle,
@@ -46,7 +45,7 @@ const applyTheme = (theme) => {
   }
 };
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// Toast
 function Toast({ message, type, onDismiss }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 4000);
@@ -65,7 +64,7 @@ function Toast({ message, type, onDismiss }) {
   );
 }
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
+// Section wrapper
 function Section({ title, subtitle, icon: Icon, children }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm overflow-hidden">
@@ -83,7 +82,7 @@ function Section({ title, subtitle, icon: Icon, children }) {
   );
 }
 
-// ── Save button ───────────────────────────────────────────────────────────────
+// Save button
 function SaveBtn({ loading, label, onClick }) {
   const { t } = useTranslation();
   return (
@@ -105,7 +104,7 @@ function SaveBtn({ loading, label, onClick }) {
   );
 }
 
-// ── Password field with lock icon + individual eye toggle ─────────────────────
+// Password field with lock icon + individual eye toggle
 function PwdField({ label, value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
   return (
@@ -134,9 +133,7 @@ function PwdField({ label, value, onChange, placeholder }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // Main component
-// ══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
@@ -159,7 +156,7 @@ export default function Settings() {
     setTimeout(() => setSavingAppearance(false), 250);
   };
 
-  // ── Language ──────────────────────────────────────────────────────────────
+  // Language
   const [lang, setLang] = useState(localStorage.getItem('lang') || i18n.language || 'fr');
   const [savingLang, setSavingLang] = useState(false);
   const saveLanguage = () => {
@@ -170,7 +167,7 @@ export default function Settings() {
     setTimeout(() => setSavingLang(false), 250);
   };
 
-  // ── Password ──────────────────────────────────────────────────────────────
+  // Password
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [savingPwd, setSavingPwd] = useState(false);
   const changePassword = async () => {
@@ -195,7 +192,7 @@ export default function Settings() {
     } finally { setSavingPwd(false); }
   };
 
-  // ── Danger zone ───────────────────────────────────────────────────────────
+  // Danger zone
   const navigate = useNavigate();
   const tokenUser = getUser();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -219,7 +216,7 @@ export default function Settings() {
 
   const pwdInputCls = "w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 transition-all";
 
-  // ── Two-factor authentication ───────────────────────────────────────────────
+  // Two-factor authentication
   const [twoFAMethod, setTwoFAMethod] = useState('NONE');
   const [loading2FA, setLoading2FA] = useState(true);
   const [saving2FA, setSaving2FA] = useState(false);
@@ -365,17 +362,17 @@ export default function Settings() {
         <SaveBtn loading={savingLang} onClick={saveLanguage} />
       </Section>
 
-      {/* Security — password */}
+      {/* Sécurité : mot de passe */}
       <Section icon={Lock} title={t('admin.settings.pwd_section_title')} subtitle={t('admin.settings.pwd_section_sub')}>
         <div className="space-y-3">
-          {/* Mot de passe actuel — pleine largeur */}
+          {/* Mot de passe actuel : pleine largeur */}
           <PwdField
             label={t('admin.settings.pwd_current')}
             value={pwd.current}
             onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))}
             placeholder="••••••••"
           />
-          {/* Nouveau + Confirmer — côte à côte sur sm+, empilés sur mobile */}
+          {/* Nouveau + Confirmer : côte à côte sur sm+, empilés sur mobile */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <PwdField
               label={t('admin.settings.pwd_new')}

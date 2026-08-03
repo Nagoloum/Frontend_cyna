@@ -1,11 +1,12 @@
 import { DEFAULT_PRODUCT_IMAGE, buildImageUrl, getProductImage, productsAPI } from "@/services/api";
 import { notify } from "@/components/ui/feedback";
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Shield, ShoppingBag, Star, Users, XCircle, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
+import LoadError from "@/components/ui/LoadError";
 
 const ImageGallery = ({ images }) => {
   const [idx, setIdx] = useState(0);
@@ -76,6 +77,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [billing, setBilling] = useState("monthly");
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -87,21 +89,26 @@ export default function ProductDetailPage() {
     { icon: Users,  label: t("product.feat4_label"), desc: t("product.feat4_desc") },
   ];
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
+    setError(false);
     productsAPI.getBySlug(slug)
       .then(res => {
         const p = res.data?.data ?? res.data;
         setProduct(p);
-        return productsAPI.getAllByOrder();
+        // L'échec des produits similaires ne doit pas faire échouer la page.
+        return productsAPI.getAllByOrder()
+          .then(res2 => {
+            const all = res2.data?.data?.items ?? res2.data?.data ?? res2.data ?? [];
+            setRelated(Array.isArray(all) ? all.filter(x => x.slug !== slug).slice(0, 4) : []);
+          })
+          .catch(() => {});
       })
-      .then(res => {
-        const all = res.data?.data?.items ?? res.data?.data ?? res.data ?? [];
-        setRelated(Array.isArray(all) ? all.filter(p => p.slug !== slug).slice(0, 4) : []);
-      })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => { load(); }, [load]);
 
   const handleAddToCart = () => {
     if (!product || product.stock === 0) return;
@@ -124,6 +131,12 @@ export default function ProductDetailPage() {
           {Array.from({ length: 5 }).map((_, i) => <div key={i} className={`skeleton h-${i === 0 ? 8 : 4} rounded`} />)}
         </div>
       </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="cyna-container py-16">
+      <LoadError onRetry={load} />
     </div>
   );
 

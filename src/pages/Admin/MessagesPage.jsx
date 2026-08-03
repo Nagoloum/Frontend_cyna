@@ -1,4 +1,3 @@
-// src/pages/Admin/MessagesPage.jsx
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
   AlertCircle,

@@ -40,7 +40,7 @@ export default class ErrorBoundary extends Component {
           Une erreur est survenue
         </h1>
         <p style={{ fontSize: 14, maxWidth: 420, margin: 0, color: 'var(--text-secondary, #55516e)' }}>
-          Quelque chose s'est mal passé. Rechargez la page pour continuer —
+          Quelque chose s'est mal passé. Rechargez la page pour continuer :
           votre panier est conservé.
         </p>
         <button

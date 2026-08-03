@@ -1,4 +1,3 @@
-// src/layouts/admin/AdminHeader.jsx
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +6,7 @@ import ThemeToggle from '../../components/Kit/ThemeToggle';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleAdminUserMenu, setAdminShowUserMenu, setAdminRefreshing } from '../../store/slices/uiSlice';
 
-// ── Language switcher ───────────────────────────────────────────────────────
+// Language switcher
 // Sélecteur de langue compact, accessible depuis toutes les pages admin
 // (desktop + mobile). Met à jour i18n instantanément et persiste le choix.
 const LANGS = [
@@ -83,7 +82,7 @@ function LanguageSwitcher() {
   );
 }
 
-// ── Global admin refresh bus ────────────────────────────────────────────────
+// Global admin refresh bus
 export const ADMIN_REFRESH_EVENT = 'admin-refresh';
 export const triggerAdminRefresh = () =>
   window.dispatchEvent(new Event(ADMIN_REFRESH_EVENT));

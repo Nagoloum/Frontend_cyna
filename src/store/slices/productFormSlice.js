@@ -52,7 +52,7 @@ const productFormSlice = createSlice({
       state.form = { ...initialForm };
     },
     initProductForm: (state, action) => {
-      const { serviceId, existingImages, previews, form } = action.payload;
+      const { existingImages, previews, form } = action.payload;
       state.existingImages = existingImages;
       state.previews = previews;
       state.form = form;

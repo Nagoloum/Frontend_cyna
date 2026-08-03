@@ -1,4 +1,3 @@
-// src/pages/Admin/UsersPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search, AlertCircle, Users as UsersIcon,
@@ -6,7 +5,8 @@ import {
   CheckCircle, Ban, Loader2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { usersAPI } from '../../services/api';
+import { confirmDialog } from '@/components/ui/feedback';
+import { getApiErrorMessage, usersAPI } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 
 const decodeJwt = (token) => {
@@ -100,8 +100,14 @@ export default function UsersPage() {
 
   const toggleActive = async (user) => {
     const next = !user.isActive;
-    if (!next && !window.confirm(t('admin.users.suspend_confirm', { email: user.email }))) {
-      return;
+    if (!next) {
+      const ok = await confirmDialog({
+        message: t('admin.users.suspend_confirm', { email: user.email }),
+        confirmLabel: t('admin.common.confirm'),
+        cancelLabel: t('admin.common.cancel'),
+        variant: 'danger',
+      });
+      if (!ok) return;
     }
     setActingId(user._id);
     setError(null);
@@ -109,7 +115,7 @@ export default function UsersPage() {
       await usersAPI.setActive(user._id, next);
       await fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message ?? t('admin.users.status_update_failed'));
+      setError(getApiErrorMessage(err, t('admin.users.status_update_failed')));
     } finally {
       setActingId(null);
     }

@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// src/pages/Admin/MyProfile.jsx
 import { useState, useEffect } from 'react';
 import {
   User, Mail, CheckCircle, AlertCircle, Loader2,
@@ -7,7 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { authAPI, usersAPI } from '../../services/api';
 
-// ── Helper: decode JWT payload (used as fallback before /auth/user/me resolves) ─
+// Helper: decode JWT payload (used as fallback before /auth/user/me resolves)
 const getUserIdFromToken = () => {
   try {
     const token = localStorage.getItem('token');
@@ -17,7 +16,7 @@ const getUserIdFromToken = () => {
   } catch { return null; }
 };
 
-// ── Toast local ───────────────────────────────────────────────────────────────
+// Toast local
 function Toast({ message, type, onDismiss }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 4000);
@@ -37,7 +36,7 @@ function Toast({ message, type, onDismiss }) {
   );
 }
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
+// Section wrapper
 function Section({ title, subtitle, icon: Icon, children }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm overflow-hidden">
@@ -114,9 +113,7 @@ function SaveBtn({ loading, label, onClick }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // Main component
-// ══════════════════════════════════════════════════════════════════════════════
 export default function MyProfile() {
   const { t } = useTranslation();
   const [toast, setToast] = useState(null);

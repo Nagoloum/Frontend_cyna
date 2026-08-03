@@ -8,9 +8,7 @@ import { archiveOnLogout, mergeOnLogin } from '../store/slices/cartSlice';
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 export const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Build absolute URL for stored images (storage/*).
@@ -56,9 +54,7 @@ export const extractList = (responseData) => {
 export const extractTotal = (responseData) =>
   responseData?.data?.total ?? responseData?.total ?? 0;
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Axios instance
-// ─────────────────────────────────────────────────────────────────────────────
 
 const api = axios.create({
   baseURL: API_URL,
@@ -95,8 +91,8 @@ const doLogout = () => {
   localStorage.removeItem('twoFARequired');
   setAuthToken(null);
   notify.warning(
-    'Session expirée',
-    'Veuillez vous reconnecter pour continuer.',
+    i18n.t('routeLayout.session_expired'),
+    i18n.t('routeLayout.session_expired_msg'),
     { duration: 5000 }
   );
   setTimeout(() => { window.location.href = '/auth'; }, 600);
@@ -167,8 +163,8 @@ api.interceptors.response.use(
  * Message d'erreur présentable à l'utilisateur.
  * - Messages métier du backend (4xx) : transmis tels quels.
  * - Erreurs levées localement (ex. consentement cookies) : transmises.
- * - Erreurs techniques (réseau, 5xx, exceptions JS) : remplacées par un
- *   message générique — ne jamais exposer de détails internes.
+ * - Erreurs techniques (réseau, 5xx) : remplacées par un message générique
+ *   traduit. Ne jamais exposer de détails internes.
  */
 export const getApiErrorMessage = (err, fallback) => {
   const status = err?.response?.status;
@@ -179,16 +175,14 @@ export const getApiErrorMessage = (err, fallback) => {
   if (!err?.response && !err?.request && err?.message) {
     return err.message;
   }
-  return fallback ?? 'Une erreur est survenue. Veuillez réessayer plus tard.';
+  return fallback ?? i18n.t('errors.generic');
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // AUTH   POST /auth/login · POST /auth/register · GET /auth/user/me
 //        POST /auth/forgot-password · POST /auth/change-password?token=
 //        GET  /auth/email-confirmation?token=
-// ─────────────────────────────────────────────────────────────────────────────
 
-/** Decode a JWT payload (no signature check display-only). */
+/** Decode a JWT payload (no signature check, display only). */
 const decodeJwt = (token) => {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -266,7 +260,7 @@ export const authAPI = {
     setAuthToken(null);
 
     // Efface le cookie httpOnly côté serveur (le JS ne peut pas le lire/supprimer
-    // directement — seul le backend peut le révoquer via Set-Cookie).
+    // directement - seul le backend peut le révoquer via Set-Cookie).
     api.post('/auth/logout').catch(() => { /* fire-and-forget */ });
   },
 
@@ -282,7 +276,7 @@ export const authAPI = {
   },
 
   /**
-   * POST /auth/refresh — échange le refresh token (cookie httpOnly) contre un
+   * POST /auth/refresh - échange le refresh token (cookie httpOnly) contre un
    * nouvel access token. Met à jour le token stocké et renvoie le nouveau token
    * (ou null si la session ne peut pas être renouvelée).
    */
@@ -307,17 +301,17 @@ export const authAPI = {
   /** POST /auth/check-code  { code: "123456" } verifies the 6-digit EMAIL 2FA code */
   verify2FA: (code) => api.post('/auth/check-code', { code }),
 
-  /** POST /auth/2fa/totp/verify { code } — verifies a TOTP code at the login 2FA step */
+  /** POST /auth/2fa/totp/verify { code } - verifies a TOTP code at the login 2FA step */
   verifyTotp: (code) => api.post('/auth/2fa/totp/verify', { code }),
 
-  // ── 2FA management (settings) ──
+  // 2FA management (settings)
   /** POST /auth/2fa/totp/init → { otpauthUrl, qrDataUrl, secret } */
   setupTotp: () => api.post('/auth/2fa/totp/init'),
-  /** POST /auth/2fa/totp/activate { code } — verify code then enable Google Authenticator */
+  /** POST /auth/2fa/totp/activate { code } - verify code then enable Google Authenticator */
   activateTotp: (code) => api.post('/auth/2fa/totp/activate', { code }),
-  /** POST /auth/2fa/email/activate — enable email 2FA */
+  /** POST /auth/2fa/email/activate - enable email 2FA */
   activateEmail2FA: () => api.post('/auth/2fa/email/activate'),
-  /** POST /auth/2fa/disable { password } — disable 2FA (password required) */
+  /** POST /auth/2fa/disable { password } - disable 2FA (password required) */
   disable2FA: (password) => api.post('/auth/2fa/disable', { password }),
 
   /** GET /auth/email-confirmation?token= */
@@ -337,9 +331,7 @@ export const authAPI = {
     }),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // USERS   GET /users · GET /users/:id · PATCH /users/profil/:id · DELETE /users/:id
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const usersAPI = {
   /** Admin only list all users */
@@ -364,16 +356,14 @@ export const usersAPI = {
   /** DELETE /users/:id */
   delete: (id) => api.delete(`/users/${id}`),
 
-  /** PATCH /users/:id/status — admin suspend/reactivate. Body: { isActive } */
+  /** PATCH /users/:id/status - admin suspend/reactivate. Body: { isActive } */
   setActive: (id, isActive) => api.patch(`/users/${id}/status`, { isActive }),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CATEGORIES   GET /categories · GET /categories/category-by-order
 //              GET /categories/category-for-user/:slug · GET /categories/:slug
 //              POST /categories (multipart) · PATCH /categories/:slug (multipart)
 //              DELETE /categories/:slug
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const categoriesAPI = {
   /** Paginated list admin */
@@ -402,10 +392,8 @@ export const categoriesAPI = {
   delete: (slug) => api.delete(`/categories/${slug}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SERVICES   GET /services · GET /services/:slug
 //            POST /services (multipart/no-file) · PATCH · DELETE
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const servicesAPI = {
   getAll:    (params = {}) => api.get('/services', { params }),
@@ -417,12 +405,10 @@ export const servicesAPI = {
   delete: (slug) => api.delete(`/services/${slug}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // PRODUCTS   GET /products · GET /products/product-by-order
 //            GET /products/findBySlug/:slug (public)
 //            GET /products/:slug (admin)
 //            POST /products (multipart) · PATCH · DELETE
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const productsAPI = {
   /** Paginated list supports { page, limit, sortBy, order, search, categorySlug } */
@@ -451,12 +437,10 @@ export const productsAPI = {
   delete: (slug) => api.delete(`/products/${slug}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SLIDERS   GET /sliders · GET /sliders/sliderTop?limit=N
 //           POST /sliders (multipart, field: newImage)
 //           PATCH /sliders/:idSlider (multipart, field: newImage)
 //           DELETE /sliders/:idSlider
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const slidersAPI = {
   /** Full list admin */
@@ -479,13 +463,11 @@ export const slidersAPI = {
   delete: (id) => api.delete(`/sliders/${id}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ADRESSE FACTURATIONS   (auth required)
 //   POST /adresse-facturations · GET /adresse-facturations/by-user
 //   GET /adresse-facturations/:id · PATCH /adresse-facturations/:id
 //   DELETE /adresse-facturations/:id
 //   Admin: GET /adresse-facturations (paginated)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const adressesAPI = {
   /** Current user's addresses */
@@ -501,7 +483,7 @@ export const adressesAPI = {
 
   update: (id, data) => api.patch(`/adresse-facturations/${id}`, data),
 
-  /** GET /adresse-facturations/defaut/:id — marks this address as default (unsets the others). */
+  /** GET /adresse-facturations/defaut/:id - marks this address as default (unsets the others). */
   setDefault: (id) => api.get(`/adresse-facturations/defaut/${id}`),
 
   delete: (id) => api.delete(`/adresse-facturations/${id}`),
@@ -510,12 +492,10 @@ export const adressesAPI = {
   getAll: (params = {}) => api.get('/adresse-facturations', { params }),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CARTES BANCAIRES   (auth required)
 //   POST /carte-bancaires · GET /carte-bancaires/by-user
 //   GET /carte-bancaires/:id · PATCH /carte-bancaires/:id
 //   DELETE /carte-bancaires/:id
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const cartesAPI = {
   /** Current user's saved cards */
@@ -532,7 +512,8 @@ export const cartesAPI = {
 
   /**
    * Body: { carteName, carteNumber, carteDate, carteCVV }
-   * NOTE: Store tokens / last-4 only in production never raw card numbers.
+   * NOTE : ne stocker que des tokens / 4 derniers chiffres, jamais un numéro
+   * de carte brut.
    */
   create: (data) => api.post('/carte-bancaires', data),
 
@@ -541,7 +522,6 @@ export const cartesAPI = {
   delete: (id) => api.delete(`/carte-bancaires/${id}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // COMMANDES   (auth required)
 //   POST /commandes/create               → creates order + Stripe Checkout session
 //   GET  /commandes/by-user              → current user's orders
@@ -549,7 +529,6 @@ export const cartesAPI = {
 //   GET  /commandes/payment/success?orderId=&session_id=
 //   GET  /commandes/payment/cancel?orderId=
 //   Admin: GET /commandes (paginated)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const commandesAPI = {
   /**
@@ -582,7 +561,7 @@ export const commandesAPI = {
     return res.data;
   },
 
-  /** Confirm a Stripe payment (after 3-D Secure) — pass the PaymentIntent id. */
+  /** Confirm a Stripe payment (after 3-D Secure) - pass the PaymentIntent id. */
   paymentSuccess: (orderId, sessionId, paymentIntentId) =>
     api.get('/commandes/payment/success', {
       params: { orderId, session_id: sessionId, payment_intent: paymentIntentId },
@@ -591,58 +570,54 @@ export const commandesAPI = {
   /** Admin only paginated list of all orders */
   getAll: (params = {}) => api.get('/commandes', { params }),
 
-  /** Admin only — change an order's status. statut: 'PENDING'|'PAID'|'CANCELED' */
+  /** Admin only - change an order's status. statut: 'PENDING'|'PAID'|'CANCELED' */
   updateStatut: (id, statut) =>
     api.patch(`/commandes/${id}/statut`, { statut }),
 
-  // ── Subscriptions (abonnements) ──
+  // Subscriptions (abonnements)
   /** Current user's subscriptions (flattened across orders, raw ISO dates). */
   getAbonnements: () => api.get('/commandes/abonnements/by-user'),
 
   /** Cancel a subscription. */
   resilierAbonnement: (id) => api.get(`/commandes/abonnement/resilier/${id}`),
 
-  /** Modify a subscription — body: { quantity, periode: 'MOIS'|'ANNEE' } (price recomputed, no charge). */
+  /** Modify a subscription - body: { quantity, periode: 'MOIS'|'ANNEE' } (price recomputed, no charge). */
   updateAbonnement: (id, data) => api.patch(`/commandes/abonnement/${id}`, data),
 
   /**
-   * Renew a subscription — charges the saved card off-session.
+   * Renew a subscription - charges the saved card off-session.
    * Returns `data.status` = 'PAID' | 'REQUIRES_ACTION' (with clientSecret) | 'PENDING'.
    */
   renouvelerAbonnement: (id) => api.post(`/commandes/abonnement/renouveler/${id}`),
 
-  /** Finalize a renewal after 3-D Secure — pass the confirmed PaymentIntent id. */
+  /** Finalize a renewal after 3-D Secure - pass the confirmed PaymentIntent id. */
   confirmRenouvellement: (id, paymentIntentId) =>
     api.post(`/commandes/abonnement/renouveler/${id}/confirm`, { paymentIntentId }),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CONTACT   POST /contact (public)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const contactAPI = {
   /** Body: { email, subject, message } */
   create: (data) => api.post('/contact', data),
 
-  /** Admin — list contact messages (paginated when page/limit are passed) */
+  /** Admin - list contact messages (paginated when page/limit are passed) */
   getAll: (params = {}) => api.get('/contact', { params }),
 
-  /** Admin — reply to a message (persists + emails the customer). */
+  /** Admin - reply to a message (persists + emails the customer). */
   reply: (id, message) => api.patch(`/contact/${id}/reply`, { message }),
 
-  /** Admin — set ticket status: 'NEW' | 'READ' | 'REPLIED' | 'CLOSED'. */
+  /** Admin - set ticket status: 'NEW' | 'READ' | 'REPLIED' | 'CLOSED'. */
   setStatus: (id, status) => api.patch(`/contact/${id}/status`, { status }),
 
-  /** Admin — delete a message */
+  /** Admin - delete a message */
   remove: (id) => api.delete(`/contact/${id}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SEARCH   GET /search
 //   Params: text?, categories[]?, services[]?, minPrice?, maxPrice?,
 //           onlyAvailable?, sortBy? (prix|nouveauté|disponibilité),
 //           sortOrder? (asc|desc), page?, limit?
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const searchAPI = {
   /**
@@ -676,9 +651,7 @@ export const searchAPI = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD   (aggregates several endpoints for the admin overview)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const dashboardAPI = {
   fetchAll: async () => {
@@ -704,7 +677,7 @@ export const dashboardAPI = {
   },
 
   /**
-   * GET /commandes/stats?period= — statistiques agrégées côté serveur
+   * GET /commandes/stats?period= - statistiques agrégées côté serveur
    * (CA, panier moyen, abonnements actifs, séries par période, top produits,
    * CA par catégorie). Corrige le calcul client limité à 1000 commandes.
    */
@@ -714,36 +687,30 @@ export const dashboardAPI = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // AUDIT   GET /audit-logs (admin, paginated, read-only)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const auditAPI = {
-  /** Admin — paginated audit log. params: { page, limit, search } */
+  /** Admin - paginated audit log. params: { page, limit, search } */
   getAll: (params = {}) => api.get('/audit-logs', { params }),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // COUPONS   POST /coupons/validate (public) · admin CRUD on /coupons
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const couponsAPI = {
   /** Validate a code against an HT amount. Body: { code, amount }. */
   validate: (code, amount) => api.post('/coupons/validate', { code, amount }),
 
-  /** Admin — list coupons (paginated when page/limit passed). */
+  /** Admin - list coupons (paginated when page/limit passed). */
   getAll: (params = {}) => api.get('/coupons', { params }),
-  /** Admin — create a coupon. */
+  /** Admin - create a coupon. */
   create: (data) => api.post('/coupons', data),
-  /** Admin — update a coupon. */
+  /** Admin - update a coupon. */
   update: (id, data) => api.patch(`/coupons/${id}`, data),
-  /** Admin — delete a coupon. */
+  /** Admin - delete a coupon. */
   remove: (id) => api.delete(`/coupons/${id}`),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // PUSH   POST /push/subscribe · POST /push/unsubscribe
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const pushAPI = {
   /** Enregistre (ou met à jour) la souscription push de l'appareil courant. */

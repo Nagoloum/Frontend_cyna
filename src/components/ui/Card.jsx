@@ -90,7 +90,7 @@ export default function Card({
       style={{ textDecoration: "none" }}
       {...rest}
     >
-      {/* ── Image ── */}
+      {/* Image */}
       <div
         className="relative overflow-hidden flex-shrink-0"
         style={{ aspectRatio: ratio, background: "var(--bg-muted)" }}
@@ -145,7 +145,7 @@ export default function Card({
         )}
       </div>
 
-      {/* ── Corps ── */}
+      {/* Corps */}
       <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
         <div>
           <h3

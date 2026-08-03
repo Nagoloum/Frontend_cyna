@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── ACCESSIBILITÉ ──────────────────────────────────────────────────────── */
+/* ACCESSIBILITÉ */
 /* Anneau de focus visible au clavier, restauré malgré les focus:outline-none
    présents dans les composants (le ring ne s'affiche qu'à la navigation clavier,
    pas au clic souris). */
@@ -45,7 +45,7 @@ select:focus-visible {
   top: 8px;
 }
 
-/* ─── SUPPORT RTL (arabe) ────────────────────────────────────────────────── */
+/* SUPPORT RTL (arabe) */
 /* Le sens (dir="rtl") est posé sur <html> par i18n.js selon la langue active.
    On aligne le texte et on repositionne les éléments ancrés à gauche. */
 [dir="rtl"] {
@@ -77,7 +77,7 @@ select:focus-visible {
   }
 }
 
-/* ─── DESIGN SYSTEM CYNA ─────────────────────────────────────────────────── */
+/* DESIGN SYSTEM CYNA */
 
 :root {
   --cyna-50: #f5f3ff;

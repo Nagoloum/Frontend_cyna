@@ -1,10 +1,10 @@
-// src/components/admin/products/ProductModal.jsx
 import { AlertCircle, Loader2, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   buildImageUrl,
+  getApiErrorMessage,
   getImagePath,
   productsAPI,
 } from "../../../services/api";
@@ -171,9 +171,7 @@ export default function ProductModal({
 
       onSaved();
     } catch (err) {
-      const msg =
-        err.response?.data?.message ?? err.message ?? t("admin.common.error");
-      dispatch(setProductFormError(Array.isArray(msg) ? msg.join(" · ") : msg));
+      dispatch(setProductFormError(getApiErrorMessage(err, t("admin.common.error"))));
     } finally {
       dispatch(setProductFormLoading(false));
     }

@@ -6,7 +6,7 @@ import fs from "fs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Lit un fichier .env sans passer par process.env (contrairement à loadEnv,
-// où une variable d'environnement du build — ex. dashboard Vercel — écrase le
+// où une variable d'environnement du build - ex. dashboard Vercel - écrase le
 // fichier ; c'est ainsi qu'un VITE_API_URL obsolète côté Vercel a pointé la
 // prod sur un ancien backend).
 const parseEnvFile = (file) => {

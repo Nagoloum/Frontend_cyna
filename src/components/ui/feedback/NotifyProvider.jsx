@@ -1,10 +1,10 @@
-// Unified, theme-aware notification system (toasts + confirm dialogs).
-// Renders into <body> via portal. State is now managed entirely by Redux.
+// Système de notification unifié (toasts + boîtes de confirmation), rendu
+// dans <body> via un portail. L'état vit dans le store Redux.
 //
-// Usage:
-//   const { notify, confirmDialog } = from '@/components/ui/feedback';
-//   notify.success('Saved', 'Profile updated');
-//   const ok = await confirmDialog({ title: 'Delete?', message: '...', variant: 'danger' });
+// Usage :
+//   import { notify, confirmDialog } from '@/components/ui/feedback';
+//   notify.success('Enregistré', 'Profil mis à jour');
+//   const ok = await confirmDialog({ title: '...', message: '...', variant: 'danger' });
 
 import {
     AlertTriangle, CheckCircle2, Info, Loader2, X, XCircle,
@@ -12,11 +12,12 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
+import i18n from '../../../i18n';
 import { useAppDispatch } from '../../../store/hooks';
 import { removeToast } from '../../../store/slices/notificationsSlice';
 import { resolveConfirm } from './notify';
 
-// ─── Visual config ──────────────────────────────────────────────────────────
+// Configuration visuelle
 const ICONS = {
   success: CheckCircle2,
   error:   XCircle,
@@ -34,7 +35,6 @@ const variantTone = (type) => {
   }
 };
 
-// ─── Toast ──────────────────────────────────────────────────────────────────
 function Toast({ toast, onRemove }) {
   const { id, type = 'info', title, message, duration = 4500 } = toast;
   const Icon = ICONS[type] ?? Info;
@@ -65,7 +65,7 @@ function Toast({ toast, onRemove }) {
         type="button"
         className="cyna-toast-close"
         onClick={() => onRemove(id)}
-        aria-label="Dismiss"
+        aria-label={i18n.t('confirm.close')}
       >
         <X size={14} />
       </button>
@@ -77,7 +77,6 @@ function Toast({ toast, onRemove }) {
   );
 }
 
-// ─── Confirm dialog ─────────────────────────────────────────────────────────
 function ConfirmDialog({ state }) {
   const [busy, setBusy] = useState(false);
 
@@ -94,10 +93,10 @@ function ConfirmDialog({ state }) {
 
   if (!state) return null;
   const {
-    title = 'Confirm action',
-    message = 'Are you sure you want to continue?',
-    confirmLabel = 'Confirm',
-    cancelLabel = 'Cancel',
+    title = i18n.t('confirm.title'),
+    message = i18n.t('confirm.body'),
+    confirmLabel = i18n.t('confirm.confirm'),
+    cancelLabel = i18n.t('confirm.cancel'),
     variant = 'danger',
   } = state;
 
@@ -125,7 +124,7 @@ function ConfirmDialog({ state }) {
           type="button"
           className="cyna-modal-close"
           onClick={() => !busy && resolveConfirm(false)}
-          aria-label="Close"
+          aria-label={i18n.t('confirm.close')}
           disabled={busy}
         >
           <X size={15} />
@@ -154,7 +153,7 @@ function ConfirmDialog({ state }) {
             disabled={busy}
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
-            {busy ? 'Processing…' : confirmLabel}
+            {busy ? i18n.t('confirm.processing') : confirmLabel}
           </button>
         </div>
       </div>
@@ -162,8 +161,8 @@ function ConfirmDialog({ state }) {
   );
 }
 
-// ─── Provider ───────────────────────────────────────────────────────────────
-// Reads all state from Redux no local useState for toasts or confirm.
+// Provider : lit tout l'état depuis Redux (aucun useState local pour les
+// toasts ou la confirmation).
 export function NotifyProvider({ children }) {
   const dispatch = useAppDispatch();
   const toasts   = useSelector((s) => s.notifications.toasts);
@@ -187,7 +186,7 @@ export function NotifyProvider({ children }) {
   );
 }
 
-// ─── Portal ──────────────────────────────────────────────────────────────────
+// Portal
 function Portal({ children }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setReady(true); }, []);
@@ -195,7 +194,7 @@ function Portal({ children }) {
   return createPortal(children, document.body);
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// Styles
 function NotifyStyles() {
   return (
     <style>{`

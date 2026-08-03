@@ -118,14 +118,25 @@
     "login_failed": "Login failed",
     "register_failed": "Registration failed",
     "register_error_generic": "Something went wrong during registration.",
-    "register_success_title": "Registration successful 🎉",
+    "register_success_title": "Registration successful",
     "register_success_message": "Your account has been created. Check your inbox to confirm your email address and activate your account.",
     "register_success_cta": "Go to login",
     "show_password": "Show password",
     "hide_password": "Hide password"
   },
   "errors": {
-    "generic": "Something went wrong. Please try again later."
+    "generic": "Something went wrong. Please try again later.",
+    "load_failed": "We couldn't load this content.",
+    "load_failed_msg": "Check your internet connection and try again.",
+    "retry": "Retry"
+  },
+  "confirm": {
+    "title": "Confirm action",
+    "body": "Are you sure you want to continue?",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "processing": "Processing…",
+    "close": "Close"
   },
   "cookie_banner": {
     "title": "We use cookies",
@@ -136,7 +147,7 @@
     "login_blocked": "Signing in requires accepting cookies. Please accept cookies via the banner at the bottom of the page to log in."
   },
   "logout": {
-    "title": "See you soon 👋",
+    "title": "See you soon",
     "subtitle": "Signing you out…"
   },
   "twoFactor": {
@@ -210,7 +221,7 @@
     "mixed_billing": "Your cart mixes monthly and yearly subscriptions. Please checkout them separately.",
     "billing_address": "Billing Address",
     "guest_title": "Guest checkout",
-    "guest_subtitle": "Complete your purchase without signing in first — we'll create an account so you can manage your subscription. Already have one?",
+    "guest_subtitle": "Complete your purchase without signing in first: we'll create an account so you can manage your subscription. Already have one?",
     "guest_login_link": "Log in",
     "guest_account": "Your contact details",
     "field_email": "Email",
@@ -535,8 +546,8 @@
     "twofa_title": "Two-factor authentication (2FA)",
     "twofa_desc": "Protect your account with a second verification step at each login.",
     "twofa_status_none": "Disabled",
-    "twofa_status_email": "Enabled — email",
-    "twofa_status_totp": "Enabled — Google Authenticator",
+    "twofa_status_email": "Enabled (email)",
+    "twofa_status_totp": "Enabled (Google Authenticator)",
     "twofa_enable_totp": "Google Authenticator",
     "twofa_enable_email": "Email 2FA",
     "twofa_totp_scan": "Scan this QR code with Google Authenticator, then enter the generated code.",
@@ -580,7 +591,7 @@
     "title": "Legal notice",
     "subtitle": "Legal information about the site and its publisher",
     "editor_title": "Site publisher",
-    "editor_body": "Cyna\nSimplified joint-stock company (SAS)\nRegistered office: to be completed\nTrade register: to be completed — Share capital: to be completed\nVAT number: to be completed\nEmail: support@cyna-it.fr",
+    "editor_body": "Cyna\nSimplified joint-stock company (SAS)\nRegistered office: to be completed\nTrade register: to be completed\nShare capital: to be completed\nVAT number: to be completed\nEmail: support@cyna-it.fr",
     "publication_title": "Publication director",
     "publication_body": "The publication director is the legal representative of Cyna.",
     "host_title": "Hosting",
@@ -696,14 +707,14 @@
     "mission_body": "Cyna's mission is to make enterprise-grade cybersecurity accessible to every organization. We design and operate managed services that protect your systems, data and users against constantly evolving threats.",
     "offer_title": "Our services",
     "offer_intro": "We offer a full range of subscription-based cybersecurity services:",
-    "offer_soc": "Managed SOC — 24/7 monitoring and incident response.",
-    "offer_edr": "EDR — endpoint detection and response.",
-    "offer_xdr": "XDR — extended, correlated detection across your information system.",
+    "offer_soc": "Managed SOC: 24/7 monitoring and incident response.",
+    "offer_edr": "EDR: endpoint detection and response.",
+    "offer_xdr": "XDR: extended, correlated detection across your information system.",
     "offer_audit": "Audits and penetration testing to assess your risk exposure.",
     "values_title": "Our values",
-    "values_trust": "Trust — full transparency on our practices and the protection of your data.",
-    "values_expertise": "Expertise — certified teams and continuous threat intelligence.",
-    "values_proximity": "Proximity — responsive, human support.",
+    "values_trust": "Trust: full transparency on our practices and the protection of your data.",
+    "values_expertise": "Expertise: certified teams and continuous threat intelligence.",
+    "values_proximity": "Proximity: responsive, human support.",
     "contact_title": "Contact us",
     "contact_body": "A question about our services or a specific need? Reach us through our",
     "contact_link": "contact form"
@@ -760,12 +771,16 @@
   },
   "error": {
     "not_found": "Page not found",
-    "go_home": "Go to homepage"
+    "not_found_desc": "Sorry, we couldn't find the page you're looking for. It may have been moved or removed.",
+    "go_home": "Go to homepage",
+    "go_login": "Go to login",
+    "need_help": "Need help?",
+    "contact_support": "Contact support"
   },
   "cart": {
     "badge": "Order",
     "title": "My Cart",
-    "empty_subtitle": "Your cart is empty browse our cybersecurity catalog to get started.",
+    "empty_subtitle": "Your cart is empty. Browse our cybersecurity catalog to get started.",
     "subtitle": "You have {{count}} item in your cart. Review the details before checking out.",
     "subtitle_plural": "You have {{count}} items in your cart. Review the details before checking out.",
     "service_unavailable": "Service unavailable",
@@ -814,7 +829,7 @@
     "per_year": "/year",
     "per_month_short": "€/month",
     "service_unavailable": "Service unavailable",
-    "added_to_cart": "Added to cart ✓",
+    "added_to_cart": "Added to cart",
     "subscribe": "Subscribe Now",
     "view_cart": "View Cart →",
     "added_notif": "Added to cart",
@@ -1284,7 +1299,7 @@
       "badge_top": "Top",
       "more_products_one": "+{{count}} more product",
       "more_products_other": "+{{count}} more products",
-      "top_products_empty": "No paid orders yet — top sellers will show here once revenue is recorded.",
+      "top_products_empty": "No paid orders yet. Top sellers will show here once revenue is recorded.",
       "no_data_period": "No data for this period",
       "total": "Total",
       "no_paid_orders_period": "No paid orders for this period",

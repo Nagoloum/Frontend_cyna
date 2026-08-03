@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { Loader2, Lock, ShieldAlert, ShieldOff } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,9 +9,8 @@ import {
     setAuthStatus, setRedirectTarget
 } from '../store/slices/authSlice';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// JWT utilities (client-side read only real validation stays on backend)
-// ─────────────────────────────────────────────────────────────────────────────
+// Utilitaires JWT : lecture côté client uniquement, la vraie validation
+// reste côté backend.
 
 const decodeToken = (token) => {
   try {
@@ -34,9 +32,7 @@ const getRoleFromToken = (token) => {
   return payload?.role ?? payload?.user?.role ?? null;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Cyna logo SVG
-// ─────────────────────────────────────────────────────────────────────────────
 
 const CynaLogo = ({ className = '' }) => (
   <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
@@ -157,9 +153,7 @@ function AccessDeniedScreen({ countdown }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RouteLayout Universal route guard with Redux state management
-// ─────────────────────────────────────────────────────────────────────────────
+// RouteLayout : garde de route universelle appuyée sur l'état Redux.
 
 export default function RouteLayout({
   children,
@@ -236,7 +230,7 @@ export default function RouteLayout({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireAuth, redirectTo, allowedRolesKey]);
 
-  // ── Countdown timer for expired / denied screens
+  // Countdown timer for expired / denied screens
   useEffect(() => {
     if (authStatus !== 'expired' && authStatus !== 'denied') return;
 

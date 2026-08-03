@@ -1,8 +1,9 @@
 import { categoriesAPI } from "@/services/api";
 import { Layers, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Card from "@/components/ui/Card";
+import LoadError from "@/components/ui/LoadError";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -19,17 +20,22 @@ export default function CategoriesPage() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     categoriesAPI.getAllByOrder()
       .then(res => {
         const d = res.data?.data ?? res.data ?? [];
         setCategories(Array.isArray(d) ? d : []);
       })
-      .catch(() => setCategories([]))
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const filtered = categories.filter(c =>
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -74,6 +80,8 @@ export default function CategoriesPage() {
           <div className="categories-grid">
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
+        ) : error ? (
+          <LoadError onRetry={load} className="mt-12" />
         ) : filtered.length === 0 ? (
           <div
             className="rounded-2xl border border-dashed border-[var(--border)] p-16 text-center mt-12"

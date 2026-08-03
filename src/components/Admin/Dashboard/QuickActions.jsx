@@ -1,4 +1,3 @@
-// src/components/admin/dashboard/QuickActions.jsx
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, ShoppingCart, HeadphonesIcon, Tag, ArrowRight } from 'lucide-react';

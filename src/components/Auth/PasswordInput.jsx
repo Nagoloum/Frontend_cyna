@@ -1,4 +1,3 @@
-// src/components/PasswordInput.jsx
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; // Icônes élégantes (installe lucide-react si pas déjà fait)
 

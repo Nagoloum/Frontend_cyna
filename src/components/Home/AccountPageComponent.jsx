@@ -63,7 +63,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-// ── Auth helpers ──────────────────────────────────────────────────────────────
+// Auth helpers
 const getUser = () => {
   try {
     const t = localStorage.getItem("token");
@@ -87,7 +87,7 @@ const apiMessage = (err, fallback) => {
   return fallback;
 };
 
-// ── Reusable "set as default" switch (addresses / cards) ──────────────────────
+// Reusable "set as default" switch (addresses / cards)
 const DefaultToggle = ({ checked, onChange, label }) => (
   <label className="flex items-center gap-2.5 cursor-pointer pt-1">
     <div className="relative">
@@ -105,7 +105,7 @@ const DefaultToggle = ({ checked, onChange, label }) => (
   </label>
 );
 
-// ─── Utils ───────────────────────────────────────────────────────────────────
+// Utils
 const fmtDateLong = (iso) => {
   if (!iso) return "—";
   try {
@@ -175,7 +175,7 @@ const Notify = ({ msg }) => {
   );
 };
 
-// ── Address form modal ────────────────────────────────────────────────────────
+// Address form modal
 function AddressModal({ address, onClose, onSaved }) {
   const { t } = useTranslation();
   const isEdit = !!address;
@@ -358,7 +358,7 @@ function AddressModal({ address, onClose, onSaved }) {
   );
 }
 
-// ── Card form modal (Stripe Elements — saves the card without charging) ───────
+// Modale d'ajout de carte (Stripe Elements : enregistre la carte sans débit)
 function CardModal(props) {
   return (
     <Elements stripe={stripePromise}>
@@ -520,7 +520,7 @@ function CardModalForm({ card, onClose, onSaved }) {
   );
 }
 
-// ── Addresses tab ─────────────────────────────────────────────────────────────
+// Addresses tab
 function AddressesTab() {
   const { t } = useTranslation();
   const [addresses, setAddresses] = useState([]);
@@ -681,7 +681,7 @@ function AddressesTab() {
   );
 }
 
-// ── Subscription status pill ──────────────────────────────────────────────────
+// Subscription status pill
 const SUB_STATUS = {
   ACTIF: {
     key: "status_active",
@@ -721,7 +721,7 @@ const subPeriodeLabel = (p, t) =>
     ? t("account.yearly")
     : t("account.monthly");
 
-// ── Subscription detail modal ────────────────────────────────────────────────
+// Subscription detail modal
 function SubscriptionDetailModal({ subscription, onClose }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -922,7 +922,7 @@ function DetailCell({ icon: Icon, label, value }) {
   );
 }
 
-// ── Edit subscription modal (quantity + period; price recomputed) ─────────────
+// Edit subscription modal (quantity + period; price recomputed)
 function SubEditModal({ subscription, onClose, onSaved }) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
@@ -1063,7 +1063,7 @@ function SubEditModal({ subscription, onClose, onSaved }) {
   );
 }
 
-// ── Reusable confirm modal (résilier / renouveler) ────────────────────────────
+// Reusable confirm modal (résilier / renouveler)
 function ConfirmActionModal({
   title,
   body,
@@ -1114,7 +1114,7 @@ function ConfirmActionModal({
   );
 }
 
-// ── Subscriptions tab ─────────────────────────────────────────────────────────
+// Subscriptions tab
 function SubscriptionsTab() {
   const { t } = useTranslation();
   const [subs, setSubs] = useState([]);
@@ -1391,7 +1391,7 @@ function SubscriptionsTab() {
   );
 }
 
-// ── Client-side PDF invoice generator ────────────────────────────────────────
+// Client-side PDF invoice generator
 function generateInvoicePDF(order) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const PW = 210;
@@ -1419,7 +1419,7 @@ function generateInvoicePDF(order) {
 
   let y = mg;
 
-  // ── 1. Header ─────────────────────────────────────────────────────────────
+  // 1. Header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(...ACCENT);
@@ -1454,7 +1454,7 @@ function generateInvoicePDF(order) {
   doc.line(mg, y, PW - mg, y);
   y += 10;
 
-  // ── 2. Billing address (left) + Card (right) ──────────────────────────────
+  // 2. Billing address (left) + Card (right)
   const midX = PW / 2 + 2;
   let yL = y;
   let yR = y;
@@ -1480,7 +1480,7 @@ function generateInvoicePDF(order) {
       a.adresse,
       a.complementAdresse,
       `${a.codePostal} ${a.city}`,
-      `${a.region} — ${a.country}`,
+      `${a.region}, ${a.country}`,
       a.phone,
     ]
       .filter(Boolean)
@@ -1519,7 +1519,7 @@ function generateInvoicePDF(order) {
   doc.line(mg, y, PW - mg, y);
   y += 8;
 
-  // ── 3. Products table ──────────────────────────────────────────────────────
+  // 3. Products table
   if (order.abonnements?.length > 0) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
@@ -1588,7 +1588,7 @@ function generateInvoicePDF(order) {
     y += 8;
   }
 
-  // ── 4. Totals ──────────────────────────────────────────────────────────────
+  // 4. Totals
   const totX = PW - mg - 65;
   const hasReduction =
     order.totalPriceAfterReduction != null &&
@@ -1628,7 +1628,7 @@ function generateInvoicePDF(order) {
   doc.text(fmtMoney(finalTotal), PW - mg - 4, y + 2, { align: "right" });
   y += bandH + 6;
 
-  // ── 5. Footer ──────────────────────────────────────────────────────────────
+  // 5. Footer
   const footerY = 285;
   doc.setDrawColor(...BORDER);
   doc.setLineWidth(0.3);
@@ -1638,7 +1638,7 @@ function generateInvoicePDF(order) {
   doc.setFontSize(7.5);
   doc.setTextColor(...GRAY);
   doc.text(
-    `CYNA — Document généré le ${new Date().toLocaleDateString("fr-FR")} — Réf. ${order.reference}`,
+    `CYNA - Document généré le ${new Date().toLocaleDateString("fr-FR")} - Réf. ${order.reference}`,
     PW / 2,
     footerY,
     { align: "center" },
@@ -1647,7 +1647,7 @@ function generateInvoicePDF(order) {
   doc.save(`facture-${order.reference}.pdf`);
 }
 
-// ── Order status badge (module-level so InvoiceDetailModal can use it) ────────
+// Order status badge (module-level so InvoiceDetailModal can use it)
 const statusBadge = (statut) => {
   const map = {
     PAID: { label: "Paid", cls: "bg-green-50 text-green-600 border-green-200" },
@@ -1673,7 +1673,7 @@ const statusBadge = (statut) => {
   );
 };
 
-// ── Invoice detail modal ──────────────────────────────────────────────────────
+// Invoice detail modal
 function InvoiceDetailModal({ reference, onClose }) {
   const { t } = useTranslation();
   const [order, setOrder] = useState(null);
@@ -2018,7 +2018,7 @@ function InvoiceDetailModal({ reference, onClose }) {
   );
 }
 
-// ── Orders tab ────────────────────────────────────────────────────────────────
+// Orders tab
 function OrdersTab() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
@@ -2209,7 +2209,7 @@ function OrdersTab() {
   );
 }
 
-// ── Payment cards tab ─────────────────────────────────────────────────────────
+// Payment cards tab
 function CardsTab() {
   const { t } = useTranslation();
   const [cards, setCards] = useState([]);
@@ -2367,7 +2367,7 @@ function CardsTab() {
   );
 }
 
-// ── Notifications tab ─────────────────────────────────────────────────────────
+// Notifications tab
 function SecurityTab() {
   const { t } = useTranslation();
   const [method, setMethod] = useState(null); // null = loading
@@ -2696,13 +2696,8 @@ function NotificationsTab() {
           false,
         );
       }
-    } catch (err) {
-      flash(
-        err.message ||
-          t("account.push_error") ||
-          "Erreur lors de l'activation.",
-        true,
-      );
+    } catch {
+      flash(t("account.push_error"), true);
     }
     setBusy(false);
   };
@@ -2814,7 +2809,7 @@ function NotificationsTab() {
   );
 }
 
-// ── Main AccountPage ──────────────────────────────────────────────────────────
+// Main AccountPage
 export default function AccountPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -3009,7 +3004,7 @@ export default function AccountPage() {
           <div className="flex-1 min-w-0">
             <Notify msg={msg} />
 
-            {/* ── Profile ── */}
+            {/* Profile */}
             {tab === "profile" && (
               <div className="space-y-6 mb-6 lg:mb-0">
                 <div className="cyna-card p-6 space-y-4">
@@ -3077,7 +3072,7 @@ export default function AccountPage() {
               </div>
             )}
 
-            {/* ── Password ── */}
+            {/* Password */}
             {tab === "password" && (
               <div className="cyna-card p-6 space-y-4 mb-6 lg:mb-0">
                 <h2 className="font-semibold text-[var(--text-primary)] mb-4">
@@ -3134,28 +3129,28 @@ export default function AccountPage() {
               </div>
             )}
 
-            {/* ── Addresses ── */}
+            {/* Addresses */}
             {tab === "addresses" && <AddressesTab />}
 
-            {/* ── Payment cards ── */}
+            {/* Payment cards */}
             {tab === "cards" && <CardsTab />}
 
-            {/* ── Active subscriptions ── */}
+            {/* Active subscriptions */}
             {tab === "subscriptions" && <SubscriptionsTab />}
 
-            {/* ── Orders ── */}
+            {/* Orders */}
             {tab === "orders" && <OrdersTab />}
 
-            {/* ── Security / 2FA ── */}
+            {/* Security / 2FA */}
             {tab === "security" && <SecurityTab />}
 
-            {/* ── Notifications ── */}
+            {/* Notifications */}
             {tab === "notifications" && <NotificationsTab />}
           </div>
         </div>
       </div>
 
-      {/* ── Delete account confirmation ── */}
+      {/* Delete account confirmation */}
       {deleteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div

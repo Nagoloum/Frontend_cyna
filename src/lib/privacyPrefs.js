@@ -1,9 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // Consentement cookies (RGPD).
 //
 // ⚠️ NE PAS renommer ce fichier en "cookieConsent.js" (ni un nom contenant
 // « cookie ») : en dev, Vite sert chaque module par son URL réelle et les
-// bloqueurs de publicité (uBlock, Adblock — listes EasyList) bloquent toute
+// bloqueurs de publicité (uBlock, Adblock - listes EasyList) bloquent toute
 // URL contenant « cookieconsent » → ERR_BLOCKED_BY_CLIENT.
 //
 // Le choix est stocké une seule fois sous la clé "cookieConsent" :
@@ -12,7 +11,6 @@
 //   null       → aucun choix encore fait (le bandeau doit s'afficher)
 // Le stockage du choix lui-même est strictement nécessaire (exempt de
 // consentement) : il évite de redemander à chaque visite.
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const COOKIE_CONSENT_KEY = 'cookieConsent';
 

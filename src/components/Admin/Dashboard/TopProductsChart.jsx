@@ -1,4 +1,3 @@
-// src/components/admin/dashboard/TopProductsChart.jsx
 import { Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

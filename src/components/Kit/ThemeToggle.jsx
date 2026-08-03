@@ -1,4 +1,3 @@
-// src/components/ThemeToggle.jsx
 import { Sun, Moon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleTheme } from '../../store/slices/uiSlice';

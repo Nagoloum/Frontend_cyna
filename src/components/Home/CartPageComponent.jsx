@@ -181,7 +181,7 @@ export default function CartPage() {
     const p = i.billingPeriod === "monthly" ? i.priceMonth : i.priceYear;
     return sum + (Number(p) || 0) * (i.qty || 1);
   }, 0);
-  // ── Code promo ────────────────────────────────────────────────────────────
+  // Code promo
   const [coupon, setCoupon] = useState(() => getAppliedCoupon());
   const [couponInput, setCouponInput] = useState("");
   const [couponMsg, setCouponMsg] = useState("");

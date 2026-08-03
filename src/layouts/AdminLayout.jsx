@@ -1,4 +1,3 @@
-// src/layouts/AdminLayout.jsx
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './admin/AdminSidebar';
@@ -25,12 +24,12 @@ export default function AdminLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
 
-      {/* ── Sidebar desktop (toujours visible ≥ lg) ── */}
+      {/* Sidebar desktop (toujours visible ≥ lg) */}
       <div className="hidden lg:flex flex-col h-full">
         <AdminSidebar />
       </div>
 
-      {/* ── Drawer sidebar mobile ── */}
+      {/* Drawer sidebar mobile */}
       {mobileMenuOpen && (
         <>
           <div
@@ -43,7 +42,7 @@ export default function AdminLayout() {
         </>
       )}
 
-      {/* ── Zone principale ── */}
+      {/* Zone principale */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
         <div className="flex items-center">

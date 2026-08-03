@@ -1,4 +1,3 @@
-// src/pages/admin/DashboardPage.jsx
 import {
     AlertCircle,
     BarChart3,
@@ -16,9 +15,9 @@ import RevenueLineChart from '../../components/Admin/Dashboard/RevenueLineChart'
 import SalesPieChart from '../../components/Admin/Dashboard/SalesPieChart';
 import TopProductsChart from '../../components/Admin/Dashboard/TopProductsChart';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
-import { buildImageUrl, dashboardAPI } from '../../services/api';
+import { buildImageUrl, dashboardAPI, getApiErrorMessage } from '../../services/api';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function fmt(n, opts = {}) {
   if (n === null || n === undefined) return '—';
@@ -51,7 +50,7 @@ function ProductThumb({ src, name }) {
   );
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// Component
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -81,7 +80,7 @@ export default function DashboardPage() {
       setStats(statsData);
       setLastRefresh(new Date());
     } catch (err) {
-      setError(err.response?.data?.message ?? err.message ?? t('admin.dashboard.load_error'));
+      setError(getApiErrorMessage(err, t('admin.dashboard.load_error')));
     } finally { setLoading(false); }
   }, [t, period]);
 
@@ -94,7 +93,7 @@ export default function DashboardPage() {
     return () => window.removeEventListener(ADMIN_REFRESH_EVENT, onRefresh);
   }, [fetchData]);
 
-  // ── KPIs ──────────────────────────────────────────────────────────────────
+  // KPIs
   // `is_selected` désigne les "Top products" (mis en avant sur la home page).
   const topProducts      = products.filter(p => p.is_selected);
   const avgPrice = products.length
@@ -102,18 +101,18 @@ export default function DashboardPage() {
     : 0;
   const availableServices = services.filter(s => s.available !== false);
 
-  // ── Chart data : agrégation serveur (corrige le calcul client < 1000 cmds) ──
+  // Chart data : agrégation serveur (corrige le calcul client < 1000 cmds)
   const revenueSeries  = stats?.revenueSeries   ?? [];
   const periodRevenue  = stats?.kpis?.periodRevenue ?? 0;
   const salesPieData   = stats?.salesByCategory ?? [];
   const topProductData = stats?.topProducts     ?? [];
   const paidOrdersCount = stats?.kpis?.totalOrders ?? 0;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // Render
   return (
     <div className="p-2 sm:p-6 space-y-6">
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-0 sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.nav.dashboard')}</h1>
@@ -133,7 +132,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Error ── */}
+      {/* Error */}
       {error && (
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400">
           <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
@@ -145,10 +144,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Quick Actions ── */}
+      {/* Quick Actions */}
       <QuickActions />
 
-      {/* ── KPI Cards: 2 cols mobile, 4 cols desktop ── */}
+      {/* KPI Cards: 2 cols mobile, 4 cols desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KPICard
           title={t('admin.dashboard.kpi_total_products')}
@@ -188,7 +187,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Users + Catalog summary ── */}
+      {/* Users + Catalog summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <KPICard
           title={t('admin.dashboard.kpi_registered_users')}
@@ -217,7 +216,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Charts row 1 ── */}
+      {/* Charts row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
@@ -243,7 +242,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Charts row 2 ── */}
+      {/* Charts row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
@@ -256,7 +255,7 @@ export default function DashboardPage() {
           <TopProductsChart data={topProductData} loading={loading} />
         </div>
 
-        {/* ── Recent Products ── */}
+        {/* Recent Products */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 shadow-sm p-5 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('admin.dashboard.recent_products')}</h3>

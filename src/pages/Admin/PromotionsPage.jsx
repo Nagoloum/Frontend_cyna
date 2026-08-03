@@ -1,11 +1,10 @@
-// src/pages/Admin/PromotionsPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search, AlertCircle, Tag, Plus, Pencil, Trash2,
   ChevronLeft, ChevronRight, X, Loader2,
 } from 'lucide-react';
-import { couponsAPI, extractList } from '../../services/api';
+import { couponsAPI } from '../../services/api';
 import { ADMIN_REFRESH_EVENT } from '../../layouts/admin/AdminHeader';
 import AdminSelect from '../../components/Admin/Shared/AdminSelect';
 
@@ -135,7 +134,7 @@ function CouponModal({ coupon, onClose, onSaved }) {
               <input type="number" min="0" className={inp} value={form.minAmount} onChange={set('minAmount')} />
             </div>
 
-            {/* Active toggle — styled like other admin toggles */}
+            {/* Interrupteur actif/inactif, même style que les autres toggles admin */}
             <label className="col-span-2 flex items-center gap-2.5 cursor-pointer mt-1">
               <div className="relative">
                 <input

@@ -1,4 +1,3 @@
-// src/components/admin/dashboard/SalesPieChart.jsx
 import {
     ArcElement,
     Chart,
@@ -20,7 +19,7 @@ const COLORS = [
 ];
 
 /**
- * SalesPieChart Doughnut chart showing sales distribution
+ * SalesPieChart : répartition des ventes (graphique doughnut).
  *
  * Props:
  *   data    {Array}   – [{ label: 'EDR', value: 4500 }, ...]

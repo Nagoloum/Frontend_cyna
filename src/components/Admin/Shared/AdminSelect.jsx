@@ -35,7 +35,7 @@ export default function AdminSelect({
   const [highlighted, setHighlighted]   = useState(-1);
   const [menuStyle, setMenuStyle]       = useState({ left: 0, top: 0, width: 0 });
 
-  // ── Parse <option> children → [{ value, label, disabled }] ────────────────
+  // Parse <option> children → [{ value, label, disabled }]
   const options = useMemo(() => {
     const collected = [];
     const walk = (nodes) => {
@@ -63,7 +63,7 @@ export default function AdminSelect({
   const selected = options.find(o => o.kind === 'option' && String(o.value) === String(value ?? ''));
   const displayLabel = selected?.label ?? placeholder ?? '';
 
-  // ── Position floating menu under trigger ──────────────────────────────────
+  // Position floating menu under trigger
   const recomputePosition = useCallback(() => {
     const el = triggerRef.current;
     if (!el) return;
@@ -87,7 +87,7 @@ export default function AdminSelect({
     };
   }, [open, recomputePosition]);
 
-  // ── Click outside / Escape ────────────────────────────────────────────────
+  // Click outside / Escape
   useEffect(() => {
     if (!open) return;
     const onClick = (e) => {
@@ -106,21 +106,21 @@ export default function AdminSelect({
     };
   }, [open]);
 
-  // ── Open menu and snap highlight to current selection ─────────────────────
+  // Open menu and snap highlight to current selection
   const openMenu = () => {
     const idx = selectableOptions.findIndex(o => String(o.value) === String(value ?? ''));
     setHighlighted(idx >= 0 ? idx : 0);
     setOpen(true);
   };
 
-  // ── Pick a value ──────────────────────────────────────────────────────────
+  // Pick a value
   const pick = (v) => {
     onChange?.({ target: { value: v, name } });
     setOpen(false);
     triggerRef.current?.focus();
   };
 
-  // ── Keyboard nav on trigger ───────────────────────────────────────────────
+  // Keyboard nav on trigger
   const onTriggerKey = (e) => {
     if (disabled) return;
     if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) {

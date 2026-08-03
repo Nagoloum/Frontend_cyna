@@ -94,7 +94,7 @@ function App() {
           {/* Redirect racine */}
           <Route path="/" element={<Navigate to="/home" replace />} />
 
-          {/* ── Routes publiques (avec layout Navbar+Footer) ── */}
+          {/* Routes publiques (avec layout Navbar+Footer) */}
           <Route path="/home" element={<PublicPage><HomePage /></PublicPage>} />
           <Route path="/categories" element={<PublicPage><CategoriesPage /></PublicPage>} />
           <Route path="/categories/:slug" element={<PublicPage><CategoryDetailPage /></PublicPage>} />
@@ -104,12 +104,12 @@ function App() {
           <Route path="/search" element={<PublicPage><SearchPage /></PublicPage>} />
           <Route path="/contact" element={<PublicPage><ContactPage /></PublicPage>} />
 
-          {/* ── Checkout : accessible aux invités (achat invité) comme aux
-               utilisateurs connectés. Le composant gère les deux flux. ── */}
+          {/* Checkout : accessible aux invités (achat invité) comme aux
+               utilisateurs connectés. Le composant gère les deux flux. */}
           <Route path="/checkout" element={<PublicPage><CheckoutPage /></PublicPage>} />
           <Route path="/checkout/confirmation" element={<PublicPage><OrderConfirmationPage /></PublicPage>} />
 
-          {/* ── Routes privées utilisateur ── */}
+          {/* Routes privées utilisateur */}
           <Route path="/account" element={
             <RouteLayout requireAuth redirectTo="/auth">
               <PublicPage><AccountPage /></PublicPage>
@@ -117,7 +117,7 @@ function App() {
           } />
           <Route path="/compte" element={<Navigate to="/account" replace />} />
 
-          {/* ── Auth ── */}
+          {/* Auth */}
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -125,14 +125,14 @@ function App() {
           <Route path="/2FA" element={<TwoFactor />} />
           <Route path="/logout" element={<Logout />} />
 
-          {/* ── Pages légales ── */}
+          {/* Pages légales */}
           <Route path="/terms-of-use" element={<PublicPage><TermsOfUseComponent /></PublicPage>} />
           <Route path="/privacy-policy" element={<PublicPage><PrivacyPolicyComponent /></PublicPage>} />
           <Route path="/cookie-policy" element={<PublicPage><CookiePolicyComponent /></PublicPage>} />
           <Route path="/about" element={<PublicPage><AboutComponent /></PublicPage>} />
           <Route path="/legal" element={<PublicPage><LegalNoticeComponent /></PublicPage>} />
 
-          {/* ── Admin (rôle ADMIN obligatoire) ── */}
+          {/* Admin (rôle ADMIN obligatoire) */}
           <Route
             path="/admin"
             element={

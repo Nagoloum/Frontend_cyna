@@ -7,12 +7,13 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
 import Card from "@/components/ui/Card";
+import LoadError from "@/components/ui/LoadError";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -34,13 +35,16 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [selCat, setSelCat] = useState("");
   const [sort, setSort] = useState("priority");
   const [showAvail, setShowAvail] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     Promise.all([
       productsAPI.getAll({ limit: 1000 }),
       categoriesAPI.getAllByOrder(),
@@ -56,9 +60,11 @@ export default function ProductsPage() {
         setProducts(Array.isArray(pd) ? pd : []);
         setCategories(Array.isArray(cd) ? cd : []);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const handleAddToCart = (product) => {
     try {
@@ -252,6 +258,8 @@ export default function ProductsPage() {
               <SkeletonCard key={i} />
             ))}
           </div>
+        ) : error ? (
+          <LoadError onRetry={load} className="mb-10" />
         ) : filtered.length === 0 ? (
           <div
             className="rounded-2xl mb-10 border border-dashed border-[var(--border)] p-16 text-center"

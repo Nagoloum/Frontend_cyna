@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// src/pages/admin/OrdersPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -50,7 +49,7 @@ const customerName = (user) => {
   return full || user.email || '—';
 };
 
-// ── Order Detail Modal (with admin status change) ─────────────────────────────
+// Order Detail Modal (with admin status change)
 function OrderDetailModal({ order, onClose, onUpdated }) {
   const { t } = useTranslation();
   const items = Array.isArray(order.abonnements) ? order.abonnements : [];
@@ -167,7 +166,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// Main Component
 export default function OrdersPage() {
   const { t } = useTranslation();
   const [orders, setOrders]               = useState([]);

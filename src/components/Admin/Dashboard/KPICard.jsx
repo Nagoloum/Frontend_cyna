@@ -1,4 +1,3 @@
-// src/components/admin/dashboard/KPICard.jsx
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 export default function KPICard({

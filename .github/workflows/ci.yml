@@ -2,13 +2,13 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [master]
   pull_request:
-    branches: [main, master]
+    branches: [master]
 
 jobs:
   build:
-    name: Lint & build
+    name: Lint, test & build
     runs-on: ubuntu-latest
 
     steps:
@@ -24,11 +24,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Lint informatif (n'échoue pas le pipeline tant que la dette lint
-      # pré-existante n'est pas résorbée). Le build reste la barrière bloquante.
+      # Lint informatif : la dette restante concerne des règles react-hooks
+      # strictes (set-state-in-effect) sur le motif de chargement de données
+      # utilisé dans toute l'application. Le build et les tests restent
+      # les barrières bloquantes.
       - name: Lint (non-blocking)
         run: npm run lint
         continue-on-error: true
+
+      - name: Unit tests (vitest)
+        run: npm test
 
       - name: Build (vite)
         run: npm run build

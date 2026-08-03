@@ -1,4 +1,3 @@
-// src/layouts/admin/AdminSidebar.jsx
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -74,7 +73,7 @@ export default function AdminSidebar() {
         ${collapsed ? 'w-[72px]' : 'w-64'}
       `}
     >
-      {/* ── Logo & Titre ── */}
+      {/* Logo & Titre */}
       <div className={`flex items-center gap-3 px-4 py-5 border-b border-gray-200 dark:border-gray-700/60 ${collapsed ? 'justify-center' : ''}`}>
         <CynaLogo className="w-8 h-8 flex-shrink-0" />
         {!collapsed && (
@@ -89,7 +88,7 @@ export default function AdminSidebar() {
         )}
       </div>
 
-      {/* ── Navigation ── */}
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
         {!collapsed && (
           <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-3 mb-3">
@@ -136,7 +135,7 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* ── Section admin + Logout ── */}
+      {/* Section admin + Logout */}
       <div className="border-t border-gray-200 dark:border-gray-700/60 p-3 space-y-1">
         {/* Badge 2FA dynamique (masqué pendant le chargement du statut). */}
         {twoFA != null && (
@@ -184,7 +183,7 @@ export default function AdminSidebar() {
         </button>
       </div>
 
-      {/* ── Bouton collapse ── */}
+      {/* Bouton collapse */}
       <button
         onClick={() => dispatch(toggleSidebar())}
         className="

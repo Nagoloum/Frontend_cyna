@@ -1,4 +1,4 @@
-// Calcul de TVA cote client — UNIQUEMENT pour l'affichage (panier, recapitulatif
+// Calcul de TVA cote client - UNIQUEMENT pour l'affichage (panier, recapitulatif
 // checkout). Le montant reellement debite est (re)calcule cote serveur a la
 // creation de la commande, qui fait foi. Le taux est configurable via
 // VITE_TVA_RATE (fraction, ex. 0.20 = 20%) et doit rester aligne avec le

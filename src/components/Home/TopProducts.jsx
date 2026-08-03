@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Card from "@/components/ui/Card";
+import LoadError from "@/components/ui/LoadError";
 
 const SkeletonCard = () => (
   <div className="cyna-card overflow-hidden">
@@ -38,18 +39,23 @@ export default function TopProducts() {
   const dispatch = useAppDispatch();
   const [products, setProducts] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(false);
   const [carouselApi, setCarouselApi] = React.useState(null);
   const [current, setCurrent] = React.useState(0);
 
-  React.useEffect(() => {
+  const load = React.useCallback(() => {
+    setLoading(true);
+    setError(false);
     productsAPI.getAllByOrder()
       .then((res) => {
         const data = res.data?.data ?? res.data ?? [];
         setProducts(Array.isArray(data) ? data.slice(0, 8) : []);
       })
-      .catch(() => setProducts([]))
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  React.useEffect(() => { load(); }, [load]);
 
   React.useEffect(() => {
     if (!carouselApi) return;
@@ -102,8 +108,11 @@ export default function TopProducts() {
           </>
         )}
 
+        {/* Erreur de chargement */}
+        {!loading && error && <LoadError onRetry={load} />}
+
         {/* Empty */}
-        {!loading && products.length === 0 && (
+        {!loading && !error && products.length === 0 && (
           <div
             className="rounded-2xl border border-dashed border-[var(--border)] p-6 sm:p-12 text-center"
             style={{ background: "var(--bg-base)" }}
@@ -116,9 +125,9 @@ export default function TopProducts() {
         )}
 
         {/* Content */}
-        {!loading && products.length > 0 && (
+        {!loading && !error && products.length > 0 && (
           <>
-            {/* ── Mobile: horizontal carousel ── */}
+            {/* Mobile: horizontal carousel */}
             <div className="sm:hidden overflow-hidden -mx-4">
               <Carousel
                 setApi={setCarouselApi}
@@ -164,7 +173,7 @@ export default function TopProducts() {
               </div>
             </div>
 
-            {/* ── Desktop: grid ── */}
+            {/* Desktop: grid */}
             <div className="hidden sm:block">
               <div className="products-grid">
                 {products.map((p) => (

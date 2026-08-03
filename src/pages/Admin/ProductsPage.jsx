@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// src/pages/admin/ProductsPage.jsx
 import { notify } from "@/components/ui/feedback";
 import {
   AlertCircle,
@@ -33,7 +32,7 @@ import {
   buildImageUrl,
   categoriesAPI,
   extractList,
-
+  getApiErrorMessage,
   productsAPI,
   servicesAPI,
   slidersAPI,
@@ -54,8 +53,9 @@ const emitAdminChange = (kind) =>
  */
 const ensureOk = (res) => {
   if (res?.data && res.data.success === false) {
-    const err = new Error(res.data.message ?? "Operation failed");
-    err.response = { data: res.data };
+    const err = new Error(res.data.message ?? "");
+    // Statut 400 simulé : getApiErrorMessage transmet alors le message métier.
+    err.response = { status: 400, data: res.data };
     throw err;
   }
   return res;
@@ -68,9 +68,7 @@ const refToValue = (raw) => {
   return raw._id ?? raw.id ?? raw.slug ?? "";
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 const fmtDate = (d) =>
   d
@@ -283,9 +281,7 @@ function DeleteModal({ name, onClose, onConfirm }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SLIDERS TAB
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Slider form modal supports create & edit.
@@ -358,7 +354,7 @@ function SliderFormModal({ slider, onClose, onSaved }) {
       onSaved();
     } catch (err) {
       const m =
-        err.response?.data?.message ?? err.message ?? t("admin.common.error");
+        getApiErrorMessage(err, t("admin.common.error"));
       const msg = Array.isArray(m) ? m.join(" · ") : m;
       setError(msg);
       notify.error(t("admin.common.save_failed"), msg);
@@ -592,7 +588,7 @@ function SlidersTab() {
     } catch (err) {
       notify.error(
         t("admin.common.delete_failed"),
-        err.response?.data?.message ?? err.message ?? t("admin.common.error"),
+        getApiErrorMessage(err, t("admin.common.error")),
       );
     }
     setModal(null);
@@ -735,9 +731,7 @@ function SlidersTab() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // PRODUCTS TAB
-// ─────────────────────────────────────────────────────────────────────────────
 
 function ProductsTab({ categories, services }) {
   const { t } = useTranslation();
@@ -855,7 +849,7 @@ function ProductsTab({ categories, services }) {
     } catch (err) {
       notify.error(
         t("admin.common.delete_failed"),
-        err.response?.data?.message ?? err.message ?? t("admin.common.error"),
+        getApiErrorMessage(err, t("admin.common.error")),
       );
     }
     setModal(null);
@@ -1086,9 +1080,7 @@ function ProductsTab({ categories, services }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SERVICES TAB (unchanged)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function ServiceFormModal({ service, categories, onClose, onSaved }) {
   const { t } = useTranslation();
@@ -1143,7 +1135,7 @@ function ServiceFormModal({ service, categories, onClose, onSaved }) {
       onSaved();
     } catch (err) {
       const m =
-        err.response?.data?.message ?? err.message ?? t("admin.common.error");
+        getApiErrorMessage(err, t("admin.common.error"));
       const msg = Array.isArray(m) ? m.join(" · ") : m;
       setError(msg);
       notify.error(t("admin.common.save_failed"), msg);
@@ -1323,7 +1315,7 @@ function ServicesTab({ categories }) {
     } catch (err) {
       notify.error(
         t("admin.common.delete_failed"),
-        err.response?.data?.message ?? err.message ?? t("admin.common.error"),
+        getApiErrorMessage(err, t("admin.common.error")),
       );
     }
     setModal(null);
@@ -1492,9 +1484,7 @@ function ServicesTab({ categories }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CATEGORIES TAB (unchanged)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
   const { t } = useTranslation();
@@ -1563,7 +1553,7 @@ function CategoryFormModal({ category, onClose, onSaved, nextOrder }) {
       onSaved();
     } catch (err) {
       const m =
-        err.response?.data?.message ?? err.message ?? t("admin.common.error");
+        getApiErrorMessage(err, t("admin.common.error"));
       const msg = Array.isArray(m) ? m.join(" · ") : m;
       setError(msg);
       notify.error(t("admin.common.save_failed"), msg);
@@ -1756,7 +1746,7 @@ function CategoriesTab() {
     } catch (err) {
       notify.error(
         t("admin.common.delete_failed"),
-        err.response?.data?.message ?? err.message ?? t("admin.common.error"),
+        getApiErrorMessage(err, t("admin.common.error")),
       );
     }
     setModal(null);
@@ -1904,9 +1894,7 @@ function CategoriesTab() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE  4 tabs: Products · Services · Categories · Sliders
-// ─────────────────────────────────────────────────────────────────────────────
 
 const TABS = [
   { id: "products", labelKey: "admin.catalog.tab_products", icon: Package },
