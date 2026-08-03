@@ -595,7 +595,8 @@ function GuestCheckoutForm() {
   const appliedCoupon = getAppliedCoupon();
   const { tva: tvaAmount, ttc: totalTTC, discount: discountAmount } = computeTotals(total, appliedCoupon?.discount || 0);
 
-  const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  // InputField transmet directement la valeur (pas l'événement).
+  const setField = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
   const requiredFilled = [
     "email", "firstName", "lastName", "adresse", "city", "region", "country", "codePostal", "phone",

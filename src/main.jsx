@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react';
 import { store } from './store';
 import './i18n';
 import App from './App.jsx';
+import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 
 // Monitoring d'erreurs : actif uniquement si VITE_SENTRY_DSN est défini
 // (no-op en développement / sans DSN).
@@ -18,8 +19,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Provider store={store}>
-      <App />
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </ErrorBoundary>
   </StrictMode>,
 );
