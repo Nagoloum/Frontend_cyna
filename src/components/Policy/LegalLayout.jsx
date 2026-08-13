@@ -7,7 +7,7 @@ const LEGAL_LINKS = [
   { to: "/privacy-policy", key: "legal.privacy", icon: Shield },
   { to: "/cookie-policy", key: "legal.cookies", icon: Cookie },
 ];
-
+ 
 /**
  * Shared shell for the legal pages: the standard page header + an <aside> to
  * navigate between the legal pages. Pass the page content as children.

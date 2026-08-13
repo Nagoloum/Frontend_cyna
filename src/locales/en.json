@@ -590,6 +590,9 @@
     "error_send": "Failed to send message."
   },
   "legal": {
+    "terms":"Terms of Use",
+    "privacy":"Privacy Policy",
+    "cookies":"Cookie Policy",
     "badge": "Legal notice",
     "title": "Legal notice",
     "subtitle": "Legal information about the site and its publisher",

@@ -590,6 +590,9 @@
     "error_send": "Échec de l'envoi du message."
   },
   "legal": {
+    "terms":"Conditions d'Utilisation",
+    "privacy":"Politique de Confidentialité",
+    "cookies":"Politique de Cookies",
     "badge": "Mentions légales",
     "title": "Mentions légales",
     "subtitle": "Informations légales relatives au site et à l'éditeur",
